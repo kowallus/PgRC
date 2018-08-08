@@ -1,20 +1,21 @@
-#include <iostream>
-#include <fstream>
-#include <string>
 #include <cstdlib>
 #include <unistd.h>
 
+#include "matcher.h"
+
 using namespace std;
 
-const string PSEUDOGENOME_HEADER = "PGEN";
-const string OFFSETS_SUFFIX = "_matched_offsets.txt";
-const string MISSED_READS_SUFFIX = "_missed.txt";
+static const string PSEUDOGENOME_HEADER = "PGEN";
+static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
+static const string MISSED_READS_SUFFIX = "_missed.txt";
+
+static const int PSEUDOGENOME_PRECEDING_LINES = 13;
 
 string getPgFromFile(ifstream &pgSrc) {
     string line;
     pgSrc >> line;
     if (line == PSEUDOGENOME_HEADER) {
-        for (int i = 0; i < 13; i++)
+        for (int i = 0; i < PSEUDOGENOME_PRECEDING_LINES; i++)
             pgSrc >> line;
     }
     return line;
@@ -45,7 +46,9 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         fprintf(stderr, "cannot write to missed reads file %s\n", missedReadsFile.c_str());
         exit(EXIT_FAILURE);
     }
-//    exactMatch(pg, readsSrc, offsetsDest, missedReadsDest);
+
+    exactMatchConstantLengthPatterns(pg, readsSrc, offsetsDest, missedReadsDest);
+
     offsetsDest.close();
     missedReadsDest.close();
     readsSrc.close();
