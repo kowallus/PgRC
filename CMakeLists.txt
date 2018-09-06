@@ -4,8 +4,11 @@ project(PgTools)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 
+set(HELPER_FILES
+        helper.cpp helper.h)
+
 set(MATCHER_FILES
-        matcher.cpp
-        matcher.h)
+        ${HELPER_FILES}
+        matcher.cpp matcher.h)
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})

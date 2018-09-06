@@ -2,24 +2,12 @@
 #include <unistd.h>
 
 #include "matcher.h"
+#include "helper.h"
 
 using namespace std;
 
-static const string PSEUDOGENOME_HEADER = "PGEN";
 static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
 static const string MISSED_READS_SUFFIX = "_missed.txt";
-
-static const int PSEUDOGENOME_PRECEDING_LINES = 13;
-
-string getPgFromFile(ifstream &pgSrc) {
-    string line;
-    pgSrc >> line;
-    if (line == PSEUDOGENOME_HEADER) {
-        for (int i = 0; i < PSEUDOGENOME_PRECEDING_LINES; i++)
-            pgSrc >> line;
-    }
-    return line;
-}
 
 void matchReadsInPgFile(const string &pgFile, const string &readsFile, const string &outPrefix) {
     std::ifstream pgSrc(pgFile, std::ios::in | std::ios::binary);
@@ -32,7 +20,7 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         fprintf(stderr, "cannot open readsfile %s\n", readsFile.c_str());
         exit(EXIT_FAILURE);
     }
-    string pg = getPgFromFile(pgSrc);
+    string pg = pgTools::getPgFromPgenFile(pgSrc);
     pgSrc.close();
     string offsetsFile = outPrefix + OFFSETS_SUFFIX;
     std::ofstream offsetsDest(offsetsFile, std::ios::out | std::ios::binary);
