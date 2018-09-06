@@ -12,3 +12,4 @@ set(MATCHER_FILES
         matcher.cpp matcher.h)
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
+add_executable(PgExtractor PgExtractor.cpp ${HELPER_FILES})
