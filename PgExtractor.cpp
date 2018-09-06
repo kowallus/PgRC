@@ -5,7 +5,7 @@
 
 using namespace std;
 
-static const string RAWPSEUDOGENOME_HEADER = "PG";
+static const string RAWPSEUDOGENOME_EXTENSION = ".pg";
 
 int main(int argc, char *argv[])
 {
@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     string pg = pgTools::getPgFromPgenFile(pgSrc);
     pgSrc.close();
 
-    string rawPgFile = outPrefix + RAWPSEUDOGENOME_HEADER;
+    string rawPgFile = outPrefix + RAWPSEUDOGENOME_EXTENSION;
     std::ofstream rawPgDest(rawPgFile, std::ios::out | std::ios::binary);
     if (rawPgDest.fail()) {
         fprintf(stderr, "cannot write to raw pseudogenome file %s\n", rawPgFile.c_str());
