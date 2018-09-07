@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "helper.h"
+#include "pghelper.h"
 
 using namespace std;
 
@@ -42,14 +43,7 @@ int main(int argc, char *argv[])
     pgSrc.close();
 
     string rawPgFile = outPrefix + RAWPSEUDOGENOME_EXTENSION;
-    std::ofstream rawPgDest(rawPgFile, std::ios::out | std::ios::binary);
-    if (rawPgDest.fail()) {
-        fprintf(stderr, "cannot write to raw pseudogenome file %s\n", rawPgFile.c_str());
-        exit(EXIT_FAILURE);
-    }
-
-    rawPgDest << pg.data();
-    rawPgDest.close();
+    PgSAHelpers::writeArrayToFile(rawPgFile, (void*) pg.data(), pg.length());
 
     exit(EXIT_SUCCESS);
 }
