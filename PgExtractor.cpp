@@ -34,13 +34,9 @@ int main(int argc, char *argv[])
     string pgFile(argv[optind++]);
     string outPrefix(argv[optind++]);
 
-    std::ifstream pgSrc(pgFile, std::ios::in | std::ios::binary);
-    if (pgSrc.fail()) {
-        fprintf(stderr, "cannot open pseudogenome file %s\n", pgFile.c_str());
-        exit(EXIT_FAILURE);
-    }
-    string pg = pgTools::getPgFromPgenFile(pgSrc);
-    pgSrc.close();
+    PseudoGenomeBase* pgb = pgTools::openPg(pgFile);
+    string pg = pgb->getPseudoGenomeVirtual();
+    delete pgb;
 
     string rawPgFile = outPrefix + RAWPSEUDOGENOME_EXTENSION;
     PgSAHelpers::writeArrayToFile(rawPgFile, (void*) pg.data(), pg.length());

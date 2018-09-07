@@ -5,13 +5,13 @@
 #include <fstream>
 #include <string>
 
+#include "pseudogenome/persistence/PseudoGenomePersistence.h"
+
 using namespace std;
 
 namespace pgTools {
 
-    static const string PSEUDOGENOME_HEADER = "PGEN";
-
-    string getPgFromPgenFile(ifstream &pgSrc);
+    PseudoGenomeBase* openPg(string pgFile);
 
 };
 

@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "helper.h"
+#include "pghelper.h"
 
 using namespace std;
 
@@ -39,12 +40,10 @@ int main(int argc, char *argv[])
         pairFile = argv[optind++];
     string outPrefix(argv[optind++]);
 
-    std::ifstream pgSrc(pgFile, std::ios::in | std::ios::binary);
-    if (pgSrc.fail()) {
-        fprintf(stderr, "cannot open pseudogenome file %s\n", pgFile.c_str());
-        exit(EXIT_FAILURE);
-    }
-    pgSrc.close();
+    PseudoGenomeBase* pgb = pgTools::openPg(pgFile);
+    pgb->getReadsSetProperties()->printout();
+
+    delete pgb;
 
     exit(EXIT_SUCCESS);
 }

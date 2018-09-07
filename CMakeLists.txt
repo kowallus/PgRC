@@ -7,10 +7,46 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 set(HELPER_FILES
         byteswap.h helper.cpp helper.h pghelper.cpp pghelper.h)
 
+set(READSSET_FILES
+        ${HELPER_FILES}
+        readsset/DefaultReadsSet.cpp
+        readsset/DefaultReadsSet.h
+        readsset/iterator
+        readsset/PackedReadsSet.cpp
+        readsset/PackedReadsSet.h
+        readsset/ReadsSetBase.h
+        readsset/ReadsSetInterface.h
+        readsset/iterator/ReadsSetIterator.cpp
+        readsset/iterator/ReadsSetIterator.h)
+
+set(PG_FILES
+        ${READSSET_FILES}
+        pgsaconfig.cpp pgsaconfig.h
+        pseudogenome/DefaultPseudoGenome.cpp
+        pseudogenome/DefaultPseudoGenome.h
+        pseudogenome/PackedPseudoGenome.cpp
+        pseudogenome/PackedPseudoGenome.h
+        pseudogenome/PackedPseudoGenomeBase.h
+        pseudogenome/packing
+        pseudogenome/persistence
+        pseudogenome/PseudoGenomeBase.h
+        pseudogenome/PseudoGenomeInterface.h
+        pseudogenome/readslist
+        pseudogenome/packing/SymbolsPackingFacility.cpp
+        pseudogenome/packing/SymbolsPackingFacility.h
+        pseudogenome/persistence/PseudoGenomePersistence.cpp
+        pseudogenome/persistence/PseudoGenomePersistence.h
+        pseudogenome/readslist/iterator
+        pseudogenome/readslist/ListOfConstantLengthReads.cpp
+        pseudogenome/readslist/ListOfConstantLengthReads.h
+        pseudogenome/readslist/ReadsListInterface.h
+        pseudogenome/readslist/ReadsListTypes.h
+        pseudogenome/readslist/iterator/ReadsListIteratorInterface.h)
+
 set(MATCHER_FILES
         ${HELPER_FILES}
         matcher.cpp matcher.h)
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
-add_executable(PgExtractor PgExtractor.cpp ${HELPER_FILES})
-add_executable(PgStrandDetector PgStrandDetector.cpp ${HELPER_FILES})
+add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
+add_executable(PgStrandDetector PgStrandDetector.cpp ${PG_FILES})

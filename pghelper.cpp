@@ -2,16 +2,18 @@
 
 namespace pgTools {
 
-    static const int PSEUDOGENOME_PRECEDING_LINES = 13;
+    PseudoGenomeBase* openPg(string pgFile) {
+        PseudoGenomeBase* pgb = 0;
 
-    string getPgFromPgenFile(ifstream &pgSrc) {
-        string line;
-        pgSrc >> line;
-        if (line == PSEUDOGENOME_HEADER) {
-            for (int i = 0; i < PSEUDOGENOME_PRECEDING_LINES; i++)
-                pgSrc >> line;
+        if (PseudoGenomePersistence::isValidPseudoGenome(pgFile))
+            pgb = PseudoGenomePersistence::readPseudoGenome(pgFile);
+
+        if (pgb == 0) {
+            fprintf(stderr, "Failed loading Pg\n");
+            exit(EXIT_FAILURE);
         }
-        return line;
+
+        return pgb;
     }
 
 }
