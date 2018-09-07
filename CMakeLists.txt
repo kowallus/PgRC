@@ -13,3 +13,4 @@ set(MATCHER_FILES
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgExtractor PgExtractor.cpp ${HELPER_FILES})
+add_executable(PgStrandDetector PgStrandDetector.cpp ${HELPER_FILES})
