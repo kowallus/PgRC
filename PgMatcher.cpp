@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (optind > (argc - 3) || optind < (argc - 4)) {
+    if (optind != (argc - 3)) {
         fprintf(stderr, "%s: Expected 3 arguments (found %d)\n", argv[0], argc-optind);
         fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         
