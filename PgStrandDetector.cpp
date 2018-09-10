@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
 
     StrandDetectorBase* sdb = TemplateUserGenerator::generateReadsListUser<DefaultStrandDetector, StrandDetectorBase>(pgb);
 
+    sdb->detectStrands();
+
     delete pgb;
 
     exit(EXIT_SUCCESS);

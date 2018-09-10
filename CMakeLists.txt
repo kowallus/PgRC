@@ -46,7 +46,7 @@ set(PG_FILES
 
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
-        strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h)
+        strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h)
 
 set(MATCHER_FILES
         ${HELPER_FILES}
