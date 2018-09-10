@@ -30,12 +30,12 @@ namespace PgTools {
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
     vector<int8_t> AbstractStrandDetector<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::detectStrands(
-            int8_t groups_limit, bool paired_reads, bool concatanated_readssrc) {
+            uint_read_len_max overlap_threshold, bool paired_reads, bool concatenated_readssrc, int8_t groups_limit) {
 
         init();
 
         if (paired_reads)
-            matchPairedReads(concatanated_readssrc);
+            matchPairedReads(concatenated_readssrc);
 
         matchReadStrands();
 
@@ -144,9 +144,9 @@ namespace PgTools {
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
     void AbstractStrandDetector<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::quick_stats() {
-        cout << "Matched reads groups count: " << readsCountPerHead.size() << endl;
+        cout << "Matched read groups count: " << readsCountPerHead.size() << endl;
         const uint_reads_cnt GROUPS_TO_SHOW = 5;
-        cout << "Largest (" << GROUPS_TO_SHOW << ") match groups count: " << readsCountPerHead[heads[0]];
+        cout << "Largest (" << GROUPS_TO_SHOW << ") matched read groups count: " << readsCountPerHead[heads[0]];
         uint_reads_cnt i = 0;
         while (++i < readsCountPerHead.size() && i < GROUPS_TO_SHOW) {
             cout << ", " << readsCountPerHead[heads[i]];

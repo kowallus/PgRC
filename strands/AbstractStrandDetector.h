@@ -50,7 +50,7 @@ namespace PgTools {
 
         virtual ~AbstractStrandDetector();
 
-        vector<int8_t> detectStrands(int8_t groups_limit, bool paired_reads, bool concatanated_readssrc) override;
+        vector<int8_t> detectStrands(uint_read_len_max overlap_threshold, bool paired_reads, bool concatenated_readssrc, int8_t groups_limit) override;
     };
 
 }

@@ -10,18 +10,14 @@ static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
 static const string MISSED_READS_SUFFIX = "_missed.txt";
 
 void matchReadsInPgFile(const string &pgFile, const string &readsFile, const string &outPrefix) {
-    std::ifstream pgSrc(pgFile, std::ios::in | std::ios::binary);
-    if (pgSrc.fail()) {
-        fprintf(stderr, "cannot open pseudogenome file %s\n", pgFile.c_str());
-        exit(EXIT_FAILURE);
-    }
     std::ifstream readsSrc(readsFile, std::ios::in | std::ios::binary);
     if (readsSrc.fail()) {
         fprintf(stderr, "cannot open readsfile %s\n", readsFile.c_str());
         exit(EXIT_FAILURE);
     }
-    string pg = PgTools::getPgFromPgenFile(pgSrc);
-    pgSrc.close();
+    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
+    string pg = pgb->getPseudoGenomeVirtual();
+    delete pgb;
     string offsetsFile = outPrefix + OFFSETS_SUFFIX;
     std::ofstream offsetsDest(offsetsFile, std::ios::out | std::ios::binary);
     if (offsetsDest.fail()) {

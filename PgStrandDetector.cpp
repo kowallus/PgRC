@@ -13,16 +13,22 @@ int main(int argc, char *argv[])
 {
 
     int opt; // current option
-    int overlap_threshold = 40;
+    uint_read_len_max overlap_threshold = 40;
+    bool concatenated_readssrc = false;
+    bool paired_reads = false;
 
-    while ((opt = getopt(argc, argv, "k?")) != -1) {
+    while ((opt = getopt(argc, argv, "k:c?")) != -1) {
         switch (opt) {
             case 'k':
                 overlap_threshold = atoi(optarg);
                 break;
+            case 'c':
+                concatenated_readssrc = true;
+                paired_reads = true;
+                break;
             case '?':
                 default: /* '?' */
-                fprintf(stderr, "Usage: %s [-k overlap_threshold] pgfile readssrcfile [pairsrcfile] outputprefix\n\n",
+                fprintf(stderr, "Usage: %s [-k overlap_threshold] [-c concatenated source files] pgfile readssrcfile [pairsrcfile] outputprefix\n\n",
                     argv[0]);
                 fprintf(stderr, "\n\n");
                 exit(EXIT_FAILURE);
@@ -39,8 +45,14 @@ int main(int argc, char *argv[])
     string pgFile(argv[optind++]);
     string srcFile(argv[optind++]);
     string pairFile = "";
-    if (optind == argc - 2)
+    if (optind == argc - 2) {
         pairFile = argv[optind++];
+        paired_reads = true;
+        if (concatenated_readssrc) {
+            fprintf(stderr, "Cannot use -c option with [pairsrcfile] parameter present.\n");
+            exit(EXIT_FAILURE);
+        }
+    }
     string outPrefix(argv[optind++]);
 
     PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
@@ -48,7 +60,7 @@ int main(int argc, char *argv[])
 
     StrandDetectorBase* sdb = TemplateUserGenerator::generateReadsListUser<DefaultStrandDetector, StrandDetectorBase>(pgb);
 
-    sdb->detectStrands();
+    sdb->detectStrands(overlap_threshold, paired_reads, concatenated_readssrc);
 
     delete pgb;
 
