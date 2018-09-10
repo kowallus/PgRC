@@ -41,7 +41,12 @@ set(PG_FILES
         pseudogenome/readslist/ListOfConstantLengthReads.h
         pseudogenome/readslist/ReadsListInterface.h
         pseudogenome/readslist/ReadsListTypes.h
-        pseudogenome/readslist/iterator/ReadsListIteratorInterface.h)
+        pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
+        pseudogenome/TemplateUserGenerator.cpp pseudogenome/TemplateUserGenerator.h)
+
+set(STRAND_DETECTOR_FILES
+        ${PG_FILES}
+        strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h)
 
 set(MATCHER_FILES
         ${HELPER_FILES}
@@ -49,4 +54,4 @@ set(MATCHER_FILES
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
-add_executable(PgStrandDetector PgStrandDetector.cpp ${PG_FILES})
+add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})

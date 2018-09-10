@@ -3,8 +3,11 @@
 
 #include "helper.h"
 #include "pghelper.h"
+#include "pseudogenome/TemplateUserGenerator.h"
+#include "strands/DefaultStrandDetector.h"
 
 using namespace std;
+using namespace PgTools;
 
 int main(int argc, char *argv[])
 {
@@ -40,8 +43,10 @@ int main(int argc, char *argv[])
         pairFile = argv[optind++];
     string outPrefix(argv[optind++]);
 
-    PseudoGenomeBase* pgb = pgTools::openPg(pgFile);
+    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
     pgb->getReadsSetProperties()->printout();
+
+    StrandDetectorBase* sdb = TemplateUserGenerator::generateReadsListUser<DefaultStrandDetector, StrandDetectorBase>(pgb);
 
     delete pgb;
 

@@ -20,7 +20,7 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         fprintf(stderr, "cannot open readsfile %s\n", readsFile.c_str());
         exit(EXIT_FAILURE);
     }
-    string pg = pgTools::getPgFromPgenFile(pgSrc);
+    string pg = PgTools::getPgFromPgenFile(pgSrc);
     pgSrc.close();
     string offsetsFile = outPrefix + OFFSETS_SUFFIX;
     std::ofstream offsetsDest(offsetsFile, std::ios::out | std::ios::binary);

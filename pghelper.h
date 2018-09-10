@@ -9,7 +9,7 @@
 
 using namespace std;
 
-namespace pgTools {
+namespace PgTools {
 
     PseudoGenomeBase* openPg(string pgFile);
 

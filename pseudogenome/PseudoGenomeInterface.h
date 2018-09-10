@@ -15,7 +15,10 @@ namespace PgSAIndex {
     {
         public:
             virtual ~PseudoGenomeInterface() {};
-            
+
+            template<class ReadsListClass>
+            ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>* getReadsList() { return static_cast<PseudoGenomeClass*>(this)->getReadsList(); };
+
             inline const char_pg getSymbol(const uint_pg_len posIdx) { return static_cast<PseudoGenomeClass*>(this)->getSymbolImpl(posIdx); };
             inline const uint_pg_len getLength() { return static_cast<PseudoGenomeClass*>(this)->getLengthImpl(); };
     };

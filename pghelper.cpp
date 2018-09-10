@@ -1,6 +1,6 @@
 #include "pghelper.h"
 
-namespace pgTools {
+namespace PgTools {
 
     PseudoGenomeBase* openPg(string pgFile) {
         PseudoGenomeBase* pgb = 0;

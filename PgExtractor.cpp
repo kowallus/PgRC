@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     string pgFile(argv[optind++]);
     string outPrefix(argv[optind++]);
 
-    PseudoGenomeBase* pgb = pgTools::openPg(pgFile);
+    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
     string pg = pgb->getPseudoGenomeVirtual();
     delete pgb;
 
