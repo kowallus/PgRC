@@ -37,7 +37,7 @@ namespace PgTools {
         if (paired_reads)
             matchPairedReads(concatenated_readssrc);
 
-        matchReadStrands();
+        matchReadStrands(overlap_threshold);
 
         vector<int8_t> res = prepareClassification(groups_limit);
         quick_stats();
@@ -79,9 +79,10 @@ namespace PgTools {
         if (headRead[idx] == 0)
             return idx;
 
-        bool sameStrand = headStrand[headIdx];
+//        bool prevHeadStrand = headStrand[headIdx];
         headRead[idx] = getHead(headIdx);
-        headStrand[idx] = (headStrand[idx] == (headStrand[headIdx] == sameStrand));
+        if (!headStrand[headIdx])
+            headStrand[idx] = !headStrand[idx];
 
         return headRead[idx];
     }

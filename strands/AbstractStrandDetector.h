@@ -39,7 +39,7 @@ namespace PgTools {
         bool isInHeadStrand(uint_reads_cnt idx);
         bool isHeadOf(uint_reads_cnt head, uint_reads_cnt idx);
 
-        virtual void matchReadStrands() = 0;
+        virtual void matchReadStrands(uint_read_len overlap_threshold) = 0;
 
         // statistics
         uint_reads_cnt matchingContradictionCount = 0;
