@@ -42,14 +42,24 @@ set(PG_FILES
         pseudogenome/readslist/ReadsListInterface.h
         pseudogenome/readslist/ReadsListTypes.h
         pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
-        pseudogenome/TemplateUserGenerator.cpp pseudogenome/TemplateUserGenerator.h)
+        pseudogenome/TemplateUserGenerator.h)
 
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
         strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h)
 
+set(ROLLING_HASH_FILES
+        rollinghash/adler32.h
+        rollinghash/characterhash.h
+        rollinghash/cyclichash.h
+        rollinghash/generalhash.h
+        rollinghash/mersennetwister.h
+        rollinghash/rabinkarphash.h
+        rollinghash/threewisehash.h
+        )
+
 set(MATCHER_FILES
-        ${HELPER_FILES}
+        ${PG_FILES} ${ROLLING_HASH_RILES}
         matcher.cpp matcher.h)
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
