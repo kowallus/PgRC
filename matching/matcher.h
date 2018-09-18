@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void exactMatchConstantLengthPatterns(string text, ifstream& patternsSrc, ofstream& offsetsDest,
+void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest,
                                       ofstream& missedPatternsDest);
 
 #endif //PGMATCHER_MATCHER_H

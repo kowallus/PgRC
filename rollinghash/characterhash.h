@@ -1,9 +1,11 @@
 #ifndef CHARACTERHASH
 #define CHARACTERHASH
 
-typedef unsigned long long uint64;
-typedef unsigned int uint32;
-typedef unsigned int uint;
+#include <stdint.h>
+
+typedef uint64_t uint64;
+typedef uint32_t uint32;
+typedef uint32_t uint;
 
 #include <cassert>
 #include <iostream>

@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#include "matcher.h"
+#include "matching/matcher.h"
 #include "pghelper.h"
 
 using namespace std;
@@ -15,6 +15,7 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         fprintf(stderr, "cannot open readsfile %s\n", readsFile.c_str());
         exit(EXIT_FAILURE);
     }
+    readsSrc.close();
     PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
     string pg = pgb->getPseudoGenomeVirtual();
     delete pgb;
@@ -31,11 +32,10 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         exit(EXIT_FAILURE);
     }
 
-    exactMatchConstantLengthPatterns(pg, readsSrc, offsetsDest, missedReadsDest);
+    exactMatchConstantLengthPatterns(pg, readsFile, offsetsDest, missedReadsDest);
 
     offsetsDest.close();
     missedReadsDest.close();
-    readsSrc.close();
 }
 
 int main(int argc, char *argv[])
