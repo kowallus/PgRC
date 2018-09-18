@@ -20,12 +20,14 @@ namespace PgTools {
     void AbstractStrandDetector<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::init() {
         headRead.resize(readsList->getReadsCount() + 1, 0);
         headStrand.resize(readsList->getReadsCount() + 1, true);
+        matchingContradictionsCount.resize(readsList->getReadsCount() + 1, 0);
     }
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
     void AbstractStrandDetector<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::dispose() {
         headRead.clear();
         headStrand.clear();
+        matchingContradictionsCount.clear();
     }
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
@@ -60,7 +62,8 @@ namespace PgTools {
 
         if (headIdx == joiningIdx) {
             if (!sameStrand) {
-                matchingContradictionCount++;
+                matchingContradictionTotal++;
+                matchingContradictionsCount[headIdx]++;
                 return false;
             }
             return true;
@@ -68,6 +71,7 @@ namespace PgTools {
 
         headRead[joiningIdx] = headIdx;
         headStrand[joiningIdx] = sameStrand;
+        matchingContradictionsCount[headIdx] += matchingContradictionsCount[joiningIdx];
 
         return true;
     }
@@ -137,7 +141,7 @@ namespace PgTools {
             heads.push_back(kv.first);
 
         std::sort(heads.begin(), heads.end(), [this](const uint_reads_cnt& headIdx1, const uint_reads_cnt& headIdx2) -> bool
-            { return readsCountPerHead[headIdx1] > readsCountPerHead[headIdx2]; });
+        { return readsCountPerHead[headIdx1] > readsCountPerHead[headIdx2]; });
 
         cout << "Reads/strands classification assembled in " << clock_millis() << " msec\n\n";
         return result;
@@ -147,13 +151,13 @@ namespace PgTools {
     void AbstractStrandDetector<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::quick_stats() {
         cout << "Matched read groups count: " << readsCountPerHead.size() << endl;
         const uint_reads_cnt GROUPS_TO_SHOW = 5;
-        cout << "Largest (" << GROUPS_TO_SHOW << ") matched read groups count: " << readsCountPerHead[heads[0]];
+        cout << "Largest (" << GROUPS_TO_SHOW << ") matched read groups count (with contradictions count): " << readsCountPerHead[heads[0]] << "(" << matchingContradictionsCount[heads[0]] << ")";
         uint_reads_cnt i = 0;
         while (++i < readsCountPerHead.size() && i < GROUPS_TO_SHOW) {
-            cout << ", " << readsCountPerHead[heads[i]];
+            cout << ", " << readsCountPerHead[heads[i]] << "(" << matchingContradictionsCount[heads[i]] << ")";
         };
         cout << endl;
-        cout << "Contradicted read strands during matching: " << matchingContradictionCount << endl;
+        cout << "Contradicted read strands during matching: " << matchingContradictionTotal << endl;
     }
 
     template class AbstractStrandDetector<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std>::Type>;

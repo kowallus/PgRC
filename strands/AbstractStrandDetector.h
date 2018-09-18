@@ -32,6 +32,7 @@ namespace PgTools {
         // auxiliary structures
         vector<uint_reads_cnt> headRead;
         vector<bool> headStrand;
+        vector<uint_reads_cnt> matchingContradictionsCount;
 
         bool pairReads(uint_reads_cnt destIdx, uint_reads_cnt srcIdx, bool sameStrand);
 
@@ -42,7 +43,7 @@ namespace PgTools {
         virtual void matchReadStrands(uint_read_len overlap_threshold) = 0;
 
         // statistics
-        uint_reads_cnt matchingContradictionCount = 0;
+        uint_reads_cnt matchingContradictionTotal = 0;
 
     public:
         AbstractStrandDetector(
