@@ -17,7 +17,7 @@ private:
     uint64_t txtSize = 0;
 
     //iterator fields
-    uint64_t txtPos = 0;
+    int64_t txtPos = -1;
     unordered_multimap<uint32_t, uint32_t>::iterator indexIter, indexIterEnd;
 
 public:
@@ -39,8 +39,9 @@ void ConstantLengthPatternsOnTextHashMatcher::iterateOver(const char *txt, uint6
     this->txt = txt;
     this->txtSize = length;
     hf.reset();
-    for(this->txtPos = 0; this->txtPos < txtSize && this->txtPos < patternLength; this->txtPos++)
-        hf.eat(this->txt[this->txtPos]);
+    for(uint32_t i = 0; i < txtSize && i < patternLength; i++)
+        hf.eat(this->txt[i]);
+    this->txtPos = -1;
     indexIter = hashToIndexMap.end();
     indexIterEnd = hashToIndexMap.end();
 }
@@ -49,12 +50,11 @@ bool ConstantLengthPatternsOnTextHashMatcher::moveNext() {
     if (indexIter != indexIterEnd) {
         indexIter++;
         if (indexIter != indexIterEnd)
-            return indexIter->second;
+            return true;
     }
-    while(this->txtPos < txtSize) {
+    while(++this->txtPos <= txtSize - patternLength) {
         auto indexIterRange = hashToIndexMap.equal_range(hf.hashvalue);
-        hf.update(this->txt[this->txtPos - patternLength], this->txt[this->txtPos]);
-        this->txtPos++;
+        hf.update(this->txt[this->txtPos], this->txt[this->txtPos + patternLength]);
         indexIter = indexIterRange.first;
         indexIterEnd = indexIterRange.second;
         if (indexIter != indexIterEnd)

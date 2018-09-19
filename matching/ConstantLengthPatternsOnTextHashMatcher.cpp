@@ -1,7 +1,8 @@
 #include "ConstantLengthPatternsOnTextHashMatcher.h"
 
 ConstantLengthPatternsOnTextHashMatcher::ConstantLengthPatternsOnTextHashMatcher(uint32_t patternLength)
-        : patternLength(patternLength), hf(patternLength, 32) {}
+        : patternLength(patternLength), hf(patternLength, 32) {
+}
 
 ConstantLengthPatternsOnTextHashMatcher::~ConstantLengthPatternsOnTextHashMatcher() {
 
@@ -23,5 +24,5 @@ uint32_t ConstantLengthPatternsOnTextHashMatcher::getHashMatchPatternIndex() {
 }
 
 uint64_t ConstantLengthPatternsOnTextHashMatcher::getHashMatchTextPosition() {
-    return this->txtPos - patternLength;
+    return this->txtPos;
 }
