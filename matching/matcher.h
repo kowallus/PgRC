@@ -10,6 +10,8 @@ using namespace std;
 void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest,
                                       ofstream& missedPatternsDest);
 
+uint8_t countMismatches(const char* pattern, const char* text, uint64_t length, uint8_t max_mismatches = UINT8_MAX);
+
 void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest, uint8_t max_mismatches,
                                       ofstream& missedPatternsDest);
 
