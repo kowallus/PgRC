@@ -9,7 +9,8 @@ using namespace std;
 static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
 static const string MISSED_READS_SUFFIX = "_missed.txt";
 
-void matchReadsInPgFile(const string &pgFile, const string &readsFile, const string &outPrefix, bool revComplPg = false) {
+void matchReadsInPgFile(const string &pgFile, const string &readsFile, const string &outPrefix,
+        uint8_t max_mismatches, bool revComplPg = false) {
     std::ifstream readsSrc(readsFile, std::ios::in | std::ios::binary);
     if (readsSrc.fail()) {
         fprintf(stderr, "cannot open readsfile %s\n", readsFile.c_str());
@@ -34,7 +35,11 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
 
     if (revComplPg)
         pg = PgSAHelpers::reverseComplement(pg);
-    exactMatchConstantLengthPatterns(pg, readsFile, offsetsDest, missedReadsDest);
+
+    if (max_mismatches)
+        approxMatchConstantLengthPatterns(pg, readsFile, offsetsDest, max_mismatches, missedReadsDest);
+    else
+        exactMatchConstantLengthPatterns(pg, readsFile, offsetsDest, missedReadsDest);
 
     offsetsDest.close();
     missedReadsDest.close();
@@ -45,15 +50,19 @@ int main(int argc, char *argv[])
 
     int opt; // current option
     bool revComplPg = false;
+    uint8_t max_mismatches = 0;
 
-    while ((opt = getopt(argc, argv, "r?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:r?")) != -1) {
         switch (opt) {
+        case 'm':
+            max_mismatches = atoi(optarg);
+            break;
         case 'r':
             revComplPg = true;
-            break;
+        break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-r] pgfile readsfile outputprefix\n\n",
+            fprintf(stderr, "Usage: %s [-r] [-m max_mismatches] pgfile readsfile outputprefix\n\n",
                     argv[0]);
                 fprintf(stderr, "-r match reverse compliment of pseudogenome\n\n");
             fprintf(stderr, "\n\n");
@@ -72,7 +81,7 @@ int main(int argc, char *argv[])
     string readsFile(argv[optind++]);
     string outPrefix(argv[optind++]);
 
-    matchReadsInPgFile(pgFile, readsFile, outPrefix, revComplPg);
+    matchReadsInPgFile(pgFile, readsFile, outPrefix, max_mismatches, revComplPg);
    
     exit(EXIT_SUCCESS);
 }

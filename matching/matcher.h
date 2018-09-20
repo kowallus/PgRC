@@ -10,4 +10,7 @@ using namespace std;
 void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest,
                                       ofstream& missedPatternsDest);
 
+void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest, uint8_t max_mismatches,
+                                      ofstream& missedPatternsDest);
+
 #endif //PGMATCHER_MATCHER_H
