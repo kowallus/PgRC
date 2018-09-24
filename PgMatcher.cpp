@@ -34,7 +34,7 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
     }
 
     if (revComplPg)
-        pg = PgSAHelpers::reverseComplement(pg);
+        pg = pg + "XXXXXX" + PgSAHelpers::reverseComplement(pg);
 
     if (max_mismatches)
         approxMatchConstantLengthPatterns(pg, readsFile, offsetsDest, max_mismatches, missedReadsDest);
