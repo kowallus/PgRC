@@ -5,7 +5,7 @@
 
 
 void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest,
-                                      ofstream& missedPatternsDest) {
+                                      uint32_t matchPrefixLength, ofstream& missedPatternsDest) {
     clock_checkpoint();
     cout << "Reading reads set\n";
     PackedReadsSet* readsSet = PackedReadsSet::readReadsSet(readsFile);
@@ -13,7 +13,8 @@ void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& o
     cout << "... checkpoint " << clock_millis() << " msec. " << endl;
     cout << "Feeding patterns...\n" << endl;
     const uint_read_len_max readLength = readsSet->readLength(0);
-    ConstantLengthPatternsOnTextHashMatcher hashMatcher(readLength);
+    const uint_read_len_max matchingLength = readLength>matchPrefixLength?matchPrefixLength:readLength;
+    ConstantLengthPatternsOnTextHashMatcher hashMatcher(matchingLength);
     const uint_reads_cnt_max readsCount = readsSet->readsCount();
     for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
         const string &read = readsSet->getRead(i);
@@ -34,7 +35,7 @@ void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& o
         const uint32_t matchReadIndex = hashMatcher.getHashMatchPatternIndex();
         const string &matchedRead = readsSet->getRead(matchReadIndex);
 
-        bool exactMatch = strncmp(text.data() + matchPosition, matchedRead.data(), readLength) == 0;
+        bool exactMatch = strncmp(text.data() + matchPosition, matchedRead.data(), matchingLength) == 0;
         if (exactMatch) {
             if (readMatchPos[matchReadIndex] == UINT32_MAX) {
                 readMatchPos[matchReadIndex] = matchPosition;
@@ -47,7 +48,7 @@ void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& o
             cout << "Matched: " << matchReadIndex << "; "
                  << matchPosition << "; " << exactMatch << endl;
             cout << matchedRead << endl;
-            const basic_string<char, char_traits<char>, allocator<char>> &pgPart = text.substr(matchPosition, readLength);
+            const basic_string<char, char_traits<char>, allocator<char>> &pgPart = text.substr(matchPosition, matchingLength);
             cout << pgPart << endl;
         }
     }
@@ -59,8 +60,12 @@ void exactMatchConstantLengthPatterns(string text, string readsFile, ofstream& o
     for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
         if (readMatchPos[i] == UINT32_MAX)
             missedPatternsDest << readsSet->getRead(i) << "\n";
-        else
-            offsetsDest << i << "\t" << readMatchPos[i] << "\n";
+        else {
+            offsetsDest << i << "\t" << readMatchPos[i];
+            if (matchingLength < readLength)
+                offsetsDest << "\t" << readsSet->getRead(i).substr(matchingLength);
+            offsetsDest << "\n";
+        }
     }
 
     cout << "... matching and writing output files completed in  " << clock_millis() << " msec. " << endl;
@@ -90,7 +95,7 @@ void reportMismatches(const char *read, const char *pgPart, const uint_read_len_
 }
 
 void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& offsetsDest, uint8_t max_mismatches,
-                                       ofstream& missedPatternsDest) {
+                                       uint32_t matchPrefixLength, ofstream& missedPatternsDest) {
     uint8_t min_mismatches = 0;
 
     clock_checkpoint();
@@ -100,7 +105,8 @@ void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& 
     cout << "... checkpoint " << clock_millis() << " msec. " << endl;
     cout << "Feeding patterns...\n" << endl;
     const uint_read_len_max readLength = readsSet->readLength(0);
-    const uint_read_len_max partLength = readLength / (max_mismatches + 1);
+    const uint_read_len_max matchingLength = readLength>matchPrefixLength?matchPrefixLength:readLength;
+    const uint_read_len_max partLength = matchingLength / (max_mismatches + 1);
     ConstantLengthPatternsOnTextHashMatcher hashMatcher(partLength);
     const uint_reads_cnt_max readsCount = readsSet->readsCount();
     for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
@@ -135,7 +141,7 @@ void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& 
             continue;
         if (readMatchPos[matchReadIndex] == matchPosition)
             continue;
-        const uint8_t mismatchesCount = countMismatches(matchedRead.data(), text.data() + matchPosition, readLength, max_mismatches);
+        const uint8_t mismatchesCount = countMismatches(matchedRead.data(), text.data() + matchPosition, matchingLength, max_mismatches);
         if (mismatchesCount < readMismatches[matchReadIndex]) {
             if (readMismatches[matchReadIndex] == UINT8_MAX)
                 matchedReadsCount++;
@@ -151,7 +157,7 @@ void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& 
             cout << "Matched: " << matchReadIndex  << " (" << matchPatternIndex << "); "
                  << matchPosition << "; " << (int) mismatchesCount << endl;
             cout << matchedRead << endl;
-            const basic_string<char, char_traits<char>, allocator<char>> &pgPart = text.substr(matchPosition, readLength);
+            const basic_string<char, char_traits<char>, allocator<char>> &pgPart = text.substr(matchPosition, matchingLength);
             cout << pgPart << endl;
         }
     }
@@ -167,7 +173,9 @@ void approxMatchConstantLengthPatterns(string text, string readsFile, ofstream& 
             missedPatternsDest << read << "\n";
         else {
             offsetsDest << i << "\t" << readMatchPos[i];
-            reportMismatches(read.data(), text.data() + readMatchPos[i], readLength, offsetsDest);
+            reportMismatches(read.data(), text.data() + readMatchPos[i], matchingLength, offsetsDest);
+            if (matchingLength < readLength)
+                offsetsDest << "\t" << readsSet->getRead(i).substr(matchingLength);
             offsetsDest << "\n";
             mismatchedReadsCount[readMismatches[i]]++;
         }

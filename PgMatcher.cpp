@@ -10,7 +10,7 @@ static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
 static const string MISSED_READS_SUFFIX = "_missed.txt";
 
 void matchReadsInPgFile(const string &pgFile, const string &readsFile, const string &outPrefix,
-        uint8_t max_mismatches, bool revComplPg = false) {
+        uint8_t max_mismatches, uint_read_len_max matchPrefixLength, bool revComplPg = false) {
     std::ifstream readsSrc(readsFile, std::ios::in | std::ios::binary);
     if (readsSrc.fail()) {
         fprintf(stderr, "cannot open readsfile %s\n", readsFile.c_str());
@@ -37,9 +37,9 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         pg = pg + "XXXXXX" + PgSAHelpers::reverseComplement(pg);
 
     if (max_mismatches)
-        approxMatchConstantLengthPatterns(pg, readsFile, offsetsDest, max_mismatches, missedReadsDest);
+        approxMatchConstantLengthPatterns(pg, readsFile, offsetsDest, max_mismatches, matchPrefixLength, missedReadsDest);
     else
-        exactMatchConstantLengthPatterns(pg, readsFile, offsetsDest, missedReadsDest);
+        exactMatchConstantLengthPatterns(pg, readsFile, offsetsDest, matchPrefixLength, missedReadsDest);
 
     offsetsDest.close();
     missedReadsDest.close();
@@ -51,18 +51,22 @@ int main(int argc, char *argv[])
     int opt; // current option
     bool revComplPg = false;
     uint8_t max_mismatches = 0;
+    uint_read_len_max matchPrefixLength = (uint_read_len_max) -1;
 
-    while ((opt = getopt(argc, argv, "m:r?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:p:r?")) != -1) {
         switch (opt) {
         case 'm':
             max_mismatches = atoi(optarg);
+            break;
+        case 'p':
+            matchPrefixLength = atoi(optarg);
             break;
         case 'r':
             revComplPg = true;
         break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-r] [-m max_mismatches] pgfile readsfile outputprefix\n\n",
+            fprintf(stderr, "Usage: %s [-r] [-m max_mismatches] [-p match_prefix_length] pgfile readsfile outputprefix\n\n",
                     argv[0]);
                 fprintf(stderr, "-r match reverse compliment of pseudogenome\n\n");
             fprintf(stderr, "\n\n");
@@ -81,7 +85,7 @@ int main(int argc, char *argv[])
     string readsFile(argv[optind++]);
     string outPrefix(argv[optind++]);
 
-    matchReadsInPgFile(pgFile, readsFile, outPrefix, max_mismatches, revComplPg);
+    matchReadsInPgFile(pgFile, readsFile, outPrefix, max_mismatches, matchPrefixLength, revComplPg);
    
     exit(EXIT_SUCCESS);
 }
