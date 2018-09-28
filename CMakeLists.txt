@@ -44,6 +44,16 @@ set(PG_FILES
         pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
         pseudogenome/TemplateUserGenerator.h)
 
+set(PG_GEN_FILES
+        ${PG_FILES}
+        pseudogenome/generator/AbstractOverlapPseudoGenomeGenerator.cpp
+        pseudogenome/generator/AbstractOverlapPseudoGenomeGenerator.h
+        pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.cpp
+        pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
+        pseudogenome/generator/PackedPseudoGenomeGenerator.h
+        pseudogenome/generator/PseudoGenomeGeneratorBase.h
+        )
+
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
         strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h)
@@ -67,4 +77,5 @@ set(MATCHER_FILES
 
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
+add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
 add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
