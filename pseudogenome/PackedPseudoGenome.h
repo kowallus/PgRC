@@ -66,6 +66,7 @@ namespace PgSAIndex {
             uint_read_len readLength(uint_reads_cnt originalIdx);
 
             const char_pg getSymbolImpl(const uint_pg_len posIdx);
+            const string getPartImpl(const uint_pg_len posIdx, const uint_pg_len length);
             const uint_pg_len getLengthImpl();
             
             SymbolsPackingFacility<uint_pg_element>* getSymbolsPacker();

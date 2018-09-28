@@ -114,6 +114,12 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
+    const string DefaultPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::getPartImpl(
+            const uint_pg_len posIdx, const uint_pg_len length) {
+        return string(sequence + posIdx, length);
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
     inline const uint_pg_len DefaultPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::getLengthImpl() {
         return this->getPseudoGenomeLength();
     }
