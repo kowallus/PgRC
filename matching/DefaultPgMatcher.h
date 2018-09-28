@@ -16,7 +16,7 @@ namespace PgTools {
         DefaultPgMatcher(
                 PseudoGenomeInterface<uint_read_len, uint_reads_cnt, uint_pg_len, PseudoGenomeClass> *pg);
 
-        void exactMatchPg(string text, ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg) override;
+        void exactMatchPg(const string& text, ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg) override;
 
         virtual ~DefaultPgMatcher();
     };

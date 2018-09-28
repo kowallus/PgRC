@@ -5,7 +5,7 @@
 
 namespace PgTools {
 
-    void exactMatchConstantLengthReads(string text, string readsFile, ofstream &offsetsDest,
+    void exactMatchConstantLengthReads(const string& text, string readsFile, ofstream &offsetsDest,
                                        uint32_t matchPrefixLength, ofstream &missedPatternsDest,
                                        ofstream &suffixesDest) {
         clock_checkpoint();
@@ -98,7 +98,7 @@ namespace PgTools {
         } while (++pos < length);
     }
 
-    void approxMatchConstantLengthReads(string text, string readsFile, ofstream &offsetsDest, uint8_t maxMismatches,
+    void approxMatchConstantLengthReads(const string& text, string readsFile, ofstream &offsetsDest, uint8_t maxMismatches,
                                         uint32_t matchPrefixLength, ofstream &missedPatternsDest,
                                         ofstream &suffixesDest) {
         uint8_t min_mismatches = 0;

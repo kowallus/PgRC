@@ -80,16 +80,19 @@ void matchPgInPgFile(const string &pgFile, const string &pgReadsFile, const stri
         exit(EXIT_FAILURE);
     }
 
-    if (revComplPg)
-        pg = pg + "XXXXXX" + PgSAHelpers::reverseComplement(pg);
+    if (revComplPg) {
+        //pg = pg + "XXXXXX" + PgSAHelpers::reverseComplement(pg);
+        pg = PgSAHelpers::reverseComplement(pg);
+        samePg = false;
+    }
 
     pgb = PgTools::openPg(pgReadsFile);
-    if (!samePg) {
+    if (pgFile != pgReadsFile) {
         cout << "Reading pattern pseudogenome..." << endl;
         cout << "Pseudogenome length: " << pgb->getPseudoGenomeLength() << endl;
         pgb->getReadsSetProperties()->printout();
     }
-    uint_pg_len_max minMatchLength = pgb->getReadsSetProperties()->maxReadLength;
+    uint_pg_len_max minMatchLength = pgb->getReadsSetProperties()->maxReadLength * 1.5;
 
     using namespace PgTools;
 

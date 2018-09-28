@@ -7,7 +7,7 @@ namespace PgTools {
     public:
         virtual ~PgMatcherBase() {}
 
-        virtual void exactMatchPg(string text, ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg) = 0;
+        virtual void exactMatchPg(const string &text, ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg) = 0;
     };
 
 }
