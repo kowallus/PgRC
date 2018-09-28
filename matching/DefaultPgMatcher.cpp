@@ -92,9 +92,9 @@ namespace PgTools {
         uint64_t shorterMatchCount = 0;
         uint64_t falseMatchCount = 0;
         while (hashMatcher.moveNext()) {
-            uint_pg_len_max matchTextPos = hashMatcher.getHashMatchTextPosition();
+            uint64_t matchTextPos = hashMatcher.getHashMatchTextPosition();
             const uint32_t matchPatternIndex = hashMatcher.getHashMatchPatternIndex();
-            uint_pg_len_max matchPatternPos = matchPatternIndex * matchingLength;
+            uint64_t matchPatternPos = matchPatternIndex * matchingLength;
             if(textFromSamePg && matchTextPos >= matchPatternPos)
                 continue;
             auto cmIt = currentMatches.begin();
@@ -114,7 +114,7 @@ namespace PgTools {
                 continue;
 
             bool confirmPatternMatch = strncmp(textPtr + matchTextPos, pgPtr + matchPatternPos, matchingLength) == 0;
-            uint_pg_len_max matchLength = matchingLength;
+            uint64_t matchLength = matchingLength;
             if (confirmPatternMatch) {
                 backMatchExpand(text, matchTextPos, pgPattern, matchPatternPos, matchLength);
                 forwardMatchExpand(text, matchTextPos, pgPattern, matchPatternPos, matchLength);

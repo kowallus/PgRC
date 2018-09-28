@@ -154,7 +154,7 @@ void MTRand::seed()
     // Otherwise use a hash of time() and clock() values
 
     // First try getting an array from /dev/urandom
-    struct _iobuf * urandom = fopen("/dev/urandom", "rb" );
+/*    struct _iobuf * urandom = fopen("/dev/urandom", "rb" );
     if( urandom )
     {
         uint32_t bigSeed[N];
@@ -169,7 +169,7 @@ void MTRand::seed()
             return;
         }
     }
-
+*/
     // Was not successful, so use time() and clock() instead
     seed( hash( time(NULL), clock() ) );
 }
