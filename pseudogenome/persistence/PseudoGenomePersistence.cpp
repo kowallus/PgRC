@@ -40,16 +40,20 @@ namespace PgSAIndex {
 
     void PseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase* pgb, std::ostream& dest) {
         // header
+        writePseudoGenomeHeader(pgb, dest);
+
+        // default pseudogenome
+        pgb->write(dest);
+
+    }
+
+    void PseudoGenomePersistence::writePseudoGenomeHeader(PseudoGenomeBase *pgb, std::ostream &dest) {
         PseudoGenomeHeader pgh(pgb);
         pgh.write(dest);
         if (pgh.getType() == PGTYPE_PACKED) {
             PackedPseudoGenomeHeaderExtension ppghe(static_cast<PackedPseudoGenomeBase*> (pgb));
             ppghe.write(dest);
         }
-
-        // default pseudogenome
-        pgb->write(dest);
-
     }
 
     void PseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase* pgb, string pseudoGenomePrefix) {

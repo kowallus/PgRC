@@ -6,6 +6,9 @@
 
 clock_t checkpoint;
 
+bool PgSAHelpers::plainTextWriteMode = false;
+bool PgSAHelpers::plainTextReadMode = false;
+
 void PgSAHelpers::clock_checkpoint() {
     checkpoint = clock();
 //    cout << "Clock reset!\n";
@@ -201,3 +204,4 @@ int PgSAHelpers::strcmplcp(const char* lStrPtr, const char* rStrPtr, int length)
     return 0;
 
 }
+

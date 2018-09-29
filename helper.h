@@ -27,6 +27,34 @@ namespace PgSAHelpers {
     void* readWholeArrayFromFile(string srcFile, size_t& arraySizeInBytes);
     void writeArrayToFile(string destFile, void* srcArray, size_t arraySize);
 
+    extern bool plainTextWriteMode;
+    extern bool plainTextReadMode;
+
+    template<typename t_val>
+    void writeValue(std::ostream &dest, const t_val value, bool plainTextWriteMode) {
+        if (plainTextWriteMode)
+            dest << value << endl;
+        else
+            dest.write((char *) &value, sizeof(t_val));
+    }
+    template<typename t_val>
+    void readValue(std::istream &src, t_val& value, bool plainTextReadMode) {
+        if (plainTextReadMode)
+            src >> value;
+        else
+            src.read((char *) &value, sizeof(t_val));
+    }
+
+    template<typename t_val>
+    void writeValue(std::ostream &dest, const t_val value) {
+        writeValue(dest, value, plainTextWriteMode);
+    }
+
+    template<typename t_val>
+    void readValue(std::istream &src, t_val& value) {
+        readValue(src, value, plainTextReadMode);
+    }
+
     string toString(unsigned long long value);
     string toMB(unsigned long long value, unsigned char decimalPlaces);
     string toString(long double value, unsigned char decimalPlaces);

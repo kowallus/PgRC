@@ -30,6 +30,7 @@ namespace PgSAIndex {
 
             static PseudoGenomeBase* readPseudoGenome(string pseudoGenomeFile);
 
+            static void writePseudoGenomeHeader(PseudoGenomeBase *pgb, std::ostream &dest);
     };
 
 }
