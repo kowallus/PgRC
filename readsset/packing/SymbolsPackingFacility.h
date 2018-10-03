@@ -10,7 +10,7 @@
 
 #include "../../helper.h"
 #include "../../pgsaconfig.h"
-#include "../../readsset/ReadsSetBase.h"
+#include "../ReadsSetBase.h"
 
 using namespace PgSAHelpers;
 

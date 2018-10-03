@@ -4,7 +4,7 @@
 #include "DefaultPseudoGenome.h"
 #include "PackedPseudoGenomeBase.h"
 #include "readslist/ReadsListTypes.h"
-#include "packing/SymbolsPackingFacility.h"
+#include "../readsset/packing/SymbolsPackingFacility.h"
 
 using namespace PgSAReadsSet;
 

@@ -5,10 +5,13 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 
 set(HELPER_FILES
-        byteswap.h helper.cpp helper.h pghelper.cpp pghelper.h)
+        byteswap.h helper.cpp helper.h)
 
 set(READSSET_FILES
         ${HELPER_FILES}
+        readsset/packing
+        readsset/packing/SymbolsPackingFacility.cpp
+        readsset/packing/SymbolsPackingFacility.h
         readsset/DefaultReadsSet.cpp
         readsset/DefaultReadsSet.h
         readsset/iterator
@@ -21,19 +24,17 @@ set(READSSET_FILES
 
 set(PG_FILES
         ${READSSET_FILES}
+        pghelper.cpp pghelper.h
         pgsaconfig.cpp pgsaconfig.h
         pseudogenome/DefaultPseudoGenome.cpp
         pseudogenome/DefaultPseudoGenome.h
         pseudogenome/PackedPseudoGenome.cpp
         pseudogenome/PackedPseudoGenome.h
         pseudogenome/PackedPseudoGenomeBase.h
-        pseudogenome/packing
         pseudogenome/persistence
         pseudogenome/PseudoGenomeBase.h
         pseudogenome/PseudoGenomeInterface.h
         pseudogenome/readslist
-        pseudogenome/packing/SymbolsPackingFacility.cpp
-        pseudogenome/packing/SymbolsPackingFacility.h
         pseudogenome/persistence/PseudoGenomePersistence.cpp
         pseudogenome/persistence/PseudoGenomePersistence.h
         pseudogenome/readslist/iterator
@@ -75,7 +76,12 @@ set(MATCHER_FILES
         matching/ConstantLengthPatternsOnTextHashMatcher.h
         matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h)
 
+set(READS_DIVIDER_FILES
+        ${READSSET_FILES}
+        )
+
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
 add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
+add_executable(ReadsDivider ReadsDivider.cpp ${READS_DIVIDER_FILES})

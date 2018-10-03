@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
     bool vFlag = false;
     bool tFlag = false;
 
-    while ((opt = getopt(argc, argv, "r:k:svt?")) != -1) {
+    while ((opt = getopt(argc, argv, "svt?")) != -1) {
         switch (opt) {
             case 's':
                 sFlag = true;

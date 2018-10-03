@@ -5,7 +5,7 @@
 #include "ReadsSetBase.h"
 #include "iterator/ReadsSetIterator.h"
 #include "ReadsSetInterface.h"
-#include "../pseudogenome/packing/SymbolsPackingFacility.h"
+#include "packing/SymbolsPackingFacility.h"
 
 using namespace PgSAIndex;
 
