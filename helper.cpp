@@ -170,6 +170,10 @@ string PgSAHelpers::reverseComplement(string kmer) {
     return revcomp;
 }
 
+double PgSAHelpers::combinedQuality(string quality) {
+    return 0;
+}
+
 int PgSAHelpers::readsSufPreCmp(const char* suffixPart, const char* prefixRead) {
     while (*suffixPart) {
         if (*suffixPart > *prefixRead)
@@ -204,4 +208,3 @@ int PgSAHelpers::strcmplcp(const char* lStrPtr, const char* rStrPtr, int length)
     return 0;
 
 }
-
