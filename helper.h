@@ -20,7 +20,8 @@ namespace PgSAHelpers {
     // bioinformatical routines
 
     string reverseComplement(string kmer);
-    double combinedQuality(string quality);
+    double qualityScore2approxCorrectProb(string quality);
+    double qualityScore2correctProb(string quality);
 
     // time routines
 

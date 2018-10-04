@@ -2,6 +2,7 @@
 
 #include "ConstantLengthPatternsOnTextHashMatcher.h"
 #include "../readsset/PackedReadsSet.h"
+#include "../readsset/persistance/ReadsSetPersistence.h"
 
 namespace PgTools {
 
@@ -10,7 +11,9 @@ namespace PgTools {
                                        ofstream &suffixesDest) {
         clock_checkpoint();
         cout << "Reading reads set\n";
-        PackedReadsSet *readsSet = PackedReadsSet::readReadsSet(readsFile);
+        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(readsFile);
+        PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+        delete(readsIterator);
         readsSet->printout();
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Feeding patterns...\n" << endl;
@@ -105,7 +108,9 @@ namespace PgTools {
 
         clock_checkpoint();
         cout << "Reading reads set\n";
-        PackedReadsSet *readsSet = PackedReadsSet::readReadsSet(readsFile);
+        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(readsFile);
+        PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+        delete(readsIterator);
         readsSet->printout();
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Feeding patterns...\n" << endl;

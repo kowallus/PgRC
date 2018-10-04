@@ -20,7 +20,9 @@ set(READSSET_FILES
         readsset/ReadsSetBase.h
         readsset/ReadsSetInterface.h
         readsset/iterator/ReadsSetIterator.cpp
-        readsset/iterator/ReadsSetIterator.h)
+        readsset/iterator/ReadsSetIterator.h
+        readsset/iterator/DivisionReadsSetDecorators.cpp readsset/iterator/DivisionReadsSetDecorators.h
+        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h)
 
 set(PG_FILES
         ${READSSET_FILES}

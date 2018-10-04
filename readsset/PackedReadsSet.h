@@ -54,32 +54,7 @@ namespace PgSAReadsSet {
 //                for (auto readIt = reads.begin(); readIt != reads.end(); readIt++)
 //                    cout << *readIt << "\n";
             }
-           
-            static PackedReadsSet* readReadsSet(std::string filename, std::string pairfile = "") {
-                istream* streamSource = new std::ifstream(filename, std::ios::in | std::ios::binary);
-                istream* pairSource = 0;
-                if (pairfile != "")
-                    pairSource = new std::ifstream(pairfile, std::ios::in | std::ios::binary);
-                        
-                PackedReadsSet* readsSet;
-                if (filename.substr(filename.length() - 6) == ".fasta") {
-                    FASTAReadsSourceIterator<uint_read_len_max>* readsSource = new FASTAReadsSourceIterator<uint_read_len_max>(streamSource, pairSource);
-                    readsSet = new PackedReadsSet(readsSource);
-                    delete(readsSource);
-                } else if (filename.substr(filename.length() - 6) == ".fastq") {
-                    FASTQReadsSourceIterator<uint_read_len_max>* readsSource = new FASTQReadsSourceIterator<uint_read_len_max>(streamSource, pairSource);
-                    readsSet = new PackedReadsSet(readsSource);
-                    delete(readsSource);
-                } else {
-                    ConcatenatedReadsSourceIterator<uint_read_len_max>* readsSource = new ConcatenatedReadsSourceIterator<uint_read_len_max>(streamSource);
-                    readsSet = new PackedReadsSet(readsSource);
-                    delete(readsSource);
-                }
-                delete(streamSource);
-                if (pairSource)
-                    delete(pairSource);
-                return readsSet;
-            }
+
     };
 
     //typedef PackedReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_max>> ConcatenatedReadsSet;

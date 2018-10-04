@@ -1,19 +1,19 @@
 #include "PackedReadsSet.h"
 
 namespace PgSAReadsSet {
-        
+
     template<class ReadsSourceIterator>
     PackedReadsSet::PackedReadsSet(ReadsSourceIterator* readsIterator) {
 
         bool symbolOccured[UCHAR_MAX] = {0};
         uint_read_len_max minReadLength = 0;
-        
-        while (readsIterator->moveNext()) {
+
+        while (readsIterator->moveNextVirtual()) {
 
             properties->readsCount++;
 
             // analize read length
-            uint_read_len_max length = readsIterator->getReadLength();
+            uint_read_len_max length = readsIterator->getReadLengthVirtual();
             if (properties->maxReadLength == 0) {
                 properties->maxReadLength = length;
                 minReadLength = length;
@@ -26,10 +26,10 @@ namespace PgSAReadsSet {
             }
 
             properties->allReadsLength += length;
-            
+
             //analize symbols
-            string read(readsIterator->getRead());
-            
+            string read(readsIterator->getReadVirtual());
+
             for (uint_read_len_max i = 0; i < length; i++) {
                 read[i] = toupper(read[i]);
                 if (!symbolOccured[(unsigned char) read[i]]) {
@@ -37,7 +37,7 @@ namespace PgSAReadsSet {
                     properties->symbolsCount++;
                 }
             }
-            
+
             lengths.push_back((uint_read_len_max) read.length());
         }
 
@@ -51,7 +51,7 @@ namespace PgSAReadsSet {
             for(uint_reads_cnt_max i = 0; i < properties->readsCount; i++)
                 lengths[i] = minReadLength;
         }
-        
+
         // order symbols
 
         for (uint_symbols_cnt i = 0, j = 0; i < properties->symbolsCount; j++)
@@ -62,16 +62,16 @@ namespace PgSAReadsSet {
 
         uchar symbolsPerElement = SymbolsPackingFacility<uint_ps_element_min>::maxSymbolsPerElement(properties->symbolsCount);
         sPacker = new SymbolsPackingFacility<uint_ps_element_min>(properties, symbolsPerElement);
- 
+
         packedLength = (properties->maxReadLength + symbolsPerElement - 1) / symbolsPerElement;
-        
+
         packedReads = new uint_ps_element_min[(size_t) packedLength * properties->readsCount];
-        
+
         uint_ps_element_min* packedReadsPtr = packedReads;
-        
-        readsIterator->rewind();
-        while (readsIterator->moveNext()) {
-            sPacker->packSequence(readsIterator->getRead().data(), readsIterator->getReadLength()>properties->maxReadLength?properties->maxReadLength:readsIterator->getReadLength(), packedReadsPtr);
+
+        readsIterator->rewindVirtual();
+        while (readsIterator->moveNextVirtual()) {
+            sPacker->packSequence(readsIterator->getReadVirtual().data(), readsIterator->getReadLengthVirtual() > properties->maxReadLength?properties->maxReadLength:readsIterator->getReadLengthVirtual(), packedReadsPtr);
             packedReadsPtr += packedLength;
         }
         
@@ -93,6 +93,8 @@ namespace PgSAReadsSet {
         return sPacker->compareSuffixWithPrefix(packedReads + sufIdx * (size_t) packedLength, packedReads + preIdx * (size_t) packedLength, sufOffset, properties->maxReadLength - sufOffset);
     }
 
+    template PackedReadsSet::PackedReadsSet<ReadsSourceIteratorTemplate<uint_read_len_min>>(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
+    template PackedReadsSet::PackedReadsSet<ReadsSourceIteratorTemplate<uint_read_len_std>>(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
     template PackedReadsSet::PackedReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_min>>(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);
     template PackedReadsSet::PackedReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_std>>(ConcatenatedReadsSourceIterator<uint_read_len_std>* readsIterator);
     template PackedReadsSet::PackedReadsSet<FASTAReadsSourceIterator<uint_read_len_min>>(FASTAReadsSourceIterator<uint_read_len_min>* readsIterator);

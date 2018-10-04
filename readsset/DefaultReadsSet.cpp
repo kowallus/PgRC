@@ -8,12 +8,12 @@ namespace PgSAReadsSet {
         bool symbolOccured[UCHAR_MAX] = {0};
         uint_read_len_max minReadLength = 0;
         
-        while (readsIterator->moveNext()) {
+        while (readsIterator->moveNextVirtual()) {
 
             properties->readsCount++;
 
             // analize read length
-            uint_read_len_max length = readsIterator->getReadLength();
+            uint_read_len_max length = readsIterator->getReadLengthVirtual();
             if (properties->maxReadLength == 0) {
                 properties->maxReadLength = length;
                 minReadLength = length;
@@ -28,7 +28,7 @@ namespace PgSAReadsSet {
             properties->allReadsLength += length;
 
             //analize symbols
-            string read(readsIterator->getRead());
+            string read(readsIterator->getReadVirtual());
 
             for (uint_read_len_max i = 0; i < length; i++) {
                 read[i] = toupper(read[i]);
@@ -51,6 +51,8 @@ namespace PgSAReadsSet {
 
     };
 
+    template DefaultReadsSet::DefaultReadsSet<ReadsSourceIteratorTemplate<uint_read_len_min>>(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet<ReadsSourceIteratorTemplate<uint_read_len_std>>(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
     template DefaultReadsSet::DefaultReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_min>>(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);
     template DefaultReadsSet::DefaultReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_std>>(ConcatenatedReadsSourceIterator<uint_read_len_std>* readsIterator);
     template DefaultReadsSet::DefaultReadsSet<FASTAReadsSourceIterator<uint_read_len_min>>(FASTAReadsSourceIterator<uint_read_len_min>* readsIterator);

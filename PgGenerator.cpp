@@ -3,6 +3,7 @@
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
 #include "helper.h"
+#include "readsset/persistance/ReadsSetPersistence.h"
 #include <stdlib.h>    /* for exit */
 #include <unistd.h>
 
@@ -38,9 +39,11 @@ bool verifyPg(string srcFile, string pairFile, string pgFile) {
     else {
         fprintf(stderr, (pgFile + " is not a valid pseudogenome file.\n").c_str());
         return false;
-    } 
-    
-    DefaultReadsSet* readsSet = DefaultReadsSet::readReadsSet(srcFile, pairFile);
+    }
+
+    ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(srcFile, pairFile);
+    DefaultReadsSet* readsSet = new DefaultReadsSet(readsIterator);
+    delete(readsIterator);
     bool isValid = pgb->validateUsing(readsSet);
     delete readsSet;
     

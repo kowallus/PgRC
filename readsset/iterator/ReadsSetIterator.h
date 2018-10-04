@@ -19,7 +19,9 @@ namespace PgSAReadsSet {
 
             virtual bool moveNextVirtual() = 0;
             virtual string getReadVirtual() = 0;
+            virtual string getQualityInfoVirtual() { return std::string(); };
             virtual uint_read_len getReadLengthVirtual() = 0;
+            virtual void rewindVirtual() = 0;
     };
 
     template < typename uint_read_len >
@@ -47,6 +49,7 @@ namespace PgSAReadsSet {
             bool moveNextVirtual();
             string getReadVirtual();
             uint_read_len getReadLengthVirtual();
+            void rewindVirtual();
 
     };
     
@@ -79,13 +82,14 @@ namespace PgSAReadsSet {
             bool moveNextVirtual();
             string getReadVirtual();
             uint_read_len getReadLengthVirtual();
+            void rewindVirtual();
     };
     
     template < typename uint_read_len >
     class FASTQReadsSourceIterator: public ReadsSourceIteratorTemplate< uint_read_len >
     {
         private:
-            std::string line;
+            std::string id, line, opt_id, quality;
             uint_read_len length;
             std::istream* source = 0;
             std::istream* pairSource = 0;
@@ -100,6 +104,7 @@ namespace PgSAReadsSet {
             bool moveNext();
 
             string getRead();
+            string getQualityInfo();
 
             uint_read_len getReadLength();
 
@@ -107,7 +112,9 @@ namespace PgSAReadsSet {
             
             bool moveNextVirtual();
             string getReadVirtual();
+            string getQualityInfoVirtual();
             uint_read_len getReadLengthVirtual();
+            void rewindVirtual();
     };
 }
 

@@ -1,4 +1,5 @@
 #include "GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
+#include "../../readsset/persistance/ReadsSetPersistence.h"
 
 using namespace PgSAReadsSet;
 using namespace PgSAHelpers;
@@ -239,7 +240,9 @@ namespace PgSAIndex {
         cout << "Reading reads set\n";
         
         // readsSet will be freed during generator destruction.        
-        PackedReadsSet* readsSet = PackedReadsSet::readReadsSet(readsFile, pairFile);
+        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(readsFile, pairFile);
+        PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+        delete(readsIterator);
           
         readsSet->printout();
 

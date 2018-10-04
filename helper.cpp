@@ -170,8 +170,98 @@ string PgSAHelpers::reverseComplement(string kmer) {
     return revcomp;
 }
 
-double PgSAHelpers::combinedQuality(string quality) {
-    return 0;
+double PgSAHelpers::qualityScore2approxCorrectProb(string quality) {
+    double val = 1;
+    for (char q : quality) {
+        switch (q) {
+            case 33:case 34:case 35:case 36: return 0;
+            case 37: val *= 0.6018928294465028; break;
+            case 38: val *= 0.683772233983162; break;
+            case 39: val *= 0.748811356849042; break;
+            case 40: val *= 0.800473768503112; break;
+            case 41: val *= 0.8415106807538887; break;
+            case 42: val *= 0.8741074588205833; break;
+            case 43: val *= 0.9; break;
+            case 44: val *= 0.9205671765275718; break;
+            case 45: val *= 0.9369042655519807; break;
+            case 46: val *= 0.9498812766372727; break;
+            case 47: val *= 0.9601892829446502; break;
+            case 48: val *= 0.9683772233983162; break;
+            case 49: val *= 0.9748811356849042; break;
+            case 50: val *= 0.9800473768503112; break;
+            case 51: val *= 0.9841510680753889; break;
+            case 52: val *= 0.9874107458820583; break;
+            case 53: val *= 0.99; break;
+            case 54: val *= 0.9920567176527572; break;
+            case 55: val *= 0.993690426555198; break;
+            case 56: val *= 0.9949881276637272; break;
+            case 57: val *= 0.996018928294465; break;
+            case 58: val *= 0.9968377223398316; break;
+            case 59: val *= 0.9974881135684904; break;
+            case 60: val *= 0.9980047376850312; break;
+            case 61: val *= 0.9984151068075389; break;
+            case 62: val *= 0.9987410745882058; break;
+            case 63: val *= 0.999; break;
+            case 64: val *= 0.9992056717652757; break;
+            case 65: val *= 0.9993690426555198; break;
+            case 66: val *= 0.9994988127663728; break;
+            case 67: val *= 0.9996018928294464; break;
+            case 68: val *= 0.9996837722339832; break;
+            default: ;
+        }
+    }
+    return val;
+}
+
+double PgSAHelpers::qualityScore2correctProb(string quality) {
+    double val = 1;
+    for (char q : quality) {
+        switch (q) {
+            case 33: return 0;
+            case 34: val *= 0.2056717652757185; break;
+            case 35: val *= 0.36904265551980675; break;
+            case 36: val *= 0.49881276637272776; break;
+            case 37: val *= 0.6018928294465028; break;
+            case 38: val *= 0.683772233983162; break;
+            case 39: val *= 0.748811356849042; break;
+            case 40: val *= 0.800473768503112; break;
+            case 41: val *= 0.8415106807538887; break;
+            case 42: val *= 0.8741074588205833; break;
+            case 43: val *= 0.9; break;
+            case 44: val *= 0.9205671765275718; break;
+            case 45: val *= 0.9369042655519807; break;
+            case 46: val *= 0.9498812766372727; break;
+            case 47: val *= 0.9601892829446502; break;
+            case 48: val *= 0.9683772233983162; break;
+            case 49: val *= 0.9748811356849042; break;
+            case 50: val *= 0.9800473768503112; break;
+            case 51: val *= 0.9841510680753889; break;
+            case 52: val *= 0.9874107458820583; break;
+            case 53: val *= 0.99; break;
+            case 54: val *= 0.9920567176527572; break;
+            case 55: val *= 0.993690426555198; break;
+            case 56: val *= 0.9949881276637272; break;
+            case 57: val *= 0.996018928294465; break;
+            case 58: val *= 0.9968377223398316; break;
+            case 59: val *= 0.9974881135684904; break;
+            case 60: val *= 0.9980047376850312; break;
+            case 61: val *= 0.9984151068075389; break;
+            case 62: val *= 0.9987410745882058; break;
+            case 63: val *= 0.999; break;
+            case 64: val *= 0.9992056717652757; break;
+            case 65: val *= 0.9993690426555198; break;
+            case 66: val *= 0.9994988127663728; break;
+            case 67: val *= 0.9996018928294464; break;
+            case 68: val *= 0.9996837722339832; break;
+            case 69: val *= 0.999748811356849; break;
+            case 70: val *= 0.9998004737685031; break;
+            case 71: val *= 0.9998415106807539; break;
+            case 72: val *= 0.9998741074588205; break;
+            case 73: val *= 0.9999; break;
+            default: val *= 1;
+        }
+    }
+    return val;
 }
 
 int PgSAHelpers::readsSufPreCmp(const char* suffixPart, const char* prefixRead) {
