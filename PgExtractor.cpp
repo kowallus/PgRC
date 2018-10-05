@@ -1,8 +1,8 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#include "helper.h"
-#include "pghelper.h"
+#include "utils/helper.h"
+#include "pseudogenome/persistence/PseudoGenomePersistence.h"
 
 using namespace std;
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     string pgFile(argv[optind++]);
     string outPrefix(argv[optind++]);
 
-    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
+    PseudoGenomeBase* pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(pgFile);
     string pg = pgb->getPseudoGenomeVirtual();
     delete pgb;
 

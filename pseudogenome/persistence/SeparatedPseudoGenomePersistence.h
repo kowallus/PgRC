@@ -3,7 +3,7 @@
 
 #include "../DefaultPseudoGenome.h"
 #include "../PackedPseudoGenome.h"
-#include "../../helper.h"
+#include "../../utils/helper.h"
 
 namespace PgTools {
 

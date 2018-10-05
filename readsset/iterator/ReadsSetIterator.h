@@ -3,7 +3,7 @@
 
 #include <ctype.h>
 #include <iostream>
-#include "../../helper.h"
+#include "../../utils/helper.h"
 #include "../../pgsaconfig.h"
 
 namespace PgSAReadsSet {

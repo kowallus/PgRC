@@ -1,7 +1,7 @@
 #ifndef READSSETINTERFACE_H_INCLUDED
 #define READSSETINTERFACE_H_INCLUDED
 
-#include "../helper.h"
+#include "../utils/helper.h"
 #include "../pgsaconfig.h"
 
 using namespace PgSAReadsSet;

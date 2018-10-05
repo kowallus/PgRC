@@ -1,7 +1,7 @@
 #ifndef READSSETBASE_H_INCLUDED
 #define READSSETBASE_H_INCLUDED
 
-#include "../helper.h"
+#include "../utils/helper.h"
 #include "../pseudogenome/readslist/ReadsListInterface.h"
 #include "iterator/ReadsSetIterator.h"
 

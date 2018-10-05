@@ -4,7 +4,7 @@
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "readsset/iterator/DivisionReadsSetDecorators.h"
 
-#include "helper.h"
+#include "utils/helper.h"
 #include <stdlib.h>    /* for exit */
 #include <unistd.h>
 

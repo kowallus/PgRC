@@ -1,4 +1,4 @@
-#include "helper.h"
+#include "utils/helper.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "readsset/iterator/DivisionReadsSetDecorators.h"
 #include <stdlib.h>    /* for exit */

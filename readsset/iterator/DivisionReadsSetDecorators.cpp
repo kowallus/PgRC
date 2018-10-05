@@ -1,6 +1,6 @@
 #include "DivisionReadsSetDecorators.h"
 
-#include "../../helper.h"
+#include "../../utils/helper.h"
 
 using namespace PgSAHelpers;
 

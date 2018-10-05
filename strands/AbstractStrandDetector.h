@@ -5,7 +5,7 @@
 
 #include "StrandDetectorBase.h"
 #include "../pseudogenome/readslist/ReadsListInterface.h"
-#include "../helper.h"
+#include "../utils/helper.h"
 
 using namespace PgSAIndex;
 

@@ -2,9 +2,9 @@
 #include <unistd.h>
 
 #include "matching/matcher.h"
-#include "pghelper.h"
 #include "matching/DefaultPgMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
+#include "pseudogenome/persistence/PseudoGenomePersistence.h"
 
 using namespace std;
 
@@ -22,7 +22,7 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
         exit(EXIT_FAILURE);
     }
     readsSrc.close();
-    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
+    PseudoGenomeBase* pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(pgFile);
     string pg = pgb->getPseudoGenomeVirtual();
     delete pgb;
     string offsetsFile = outPrefix + OFFSETS_SUFFIX;
@@ -64,7 +64,7 @@ void matchReadsInPgFile(const string &pgFile, const string &readsFile, const str
 void matchPgInPgFile(const string &pgFile, const string &pgReadsFile, const string &outPrefix,
         bool revComplPg = false) {
     bool samePg = pgFile == pgReadsFile;
-    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
+    PseudoGenomeBase* pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(pgFile);
     if (samePg)
         cout << "Reading pseudogenome..." << endl;
     else
@@ -86,7 +86,7 @@ void matchPgInPgFile(const string &pgFile, const string &pgReadsFile, const stri
         samePg = false;
     }
 
-    pgb = PgTools::openPg(pgReadsFile);
+    pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(pgReadsFile);
     if (pgFile != pgReadsFile) {
         cout << "Reading pattern pseudogenome..." << endl;
         cout << "Pseudogenome length: " << pgb->getPseudoGenomeLength() << endl;

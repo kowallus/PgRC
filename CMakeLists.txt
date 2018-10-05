@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 
 set(HELPER_FILES
-        byteswap.h helper.cpp helper.h)
+        utils/byteswap.h utils/helper.cpp utils/helper.h)
 
 set(READSSET_FILES
         ${HELPER_FILES}
@@ -26,7 +26,6 @@ set(READSSET_FILES
 
 set(PG_FILES
         ${READSSET_FILES}
-        pghelper.cpp pghelper.h
         pgsaconfig.cpp pgsaconfig.h
         pseudogenome/DefaultPseudoGenome.cpp
         pseudogenome/DefaultPseudoGenome.h

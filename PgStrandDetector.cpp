@@ -1,10 +1,10 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#include "helper.h"
-#include "pghelper.h"
+#include "utils/helper.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "strands/DefaultStrandDetector.h"
+#include "pseudogenome/persistence/PseudoGenomePersistence.h"
 
 using namespace std;
 using namespace PgTools;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     }
     string outPrefix(argv[optind++]);
 
-    PseudoGenomeBase* pgb = PgTools::openPg(pgFile);
+    PseudoGenomeBase* pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(pgFile);
     pgb->getReadsSetProperties()->printout();
 
     StrandDetectorBase* sdb = TemplateUserGenerator::generateReadsListUser<DefaultStrandDetector, StrandDetectorBase>(pgb);

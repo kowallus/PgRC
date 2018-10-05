@@ -8,7 +8,7 @@
 #ifndef SYMBOLSPACKINGFACILITY_H
 #define	SYMBOLSPACKINGFACILITY_H
 
-#include "../../helper.h"
+#include "../../utils/helper.h"
 #include "../../pgsaconfig.h"
 #include "../ReadsSetBase.h"
 

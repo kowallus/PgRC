@@ -9,7 +9,7 @@
 #define	READSLISTITERATORINTERFACE_H
 
 #include "../../../pgsaconfig.h"
-#include "../../../helper.h"
+#include "../../../utils/helper.h"
 #include <vector>
 
 using namespace std;

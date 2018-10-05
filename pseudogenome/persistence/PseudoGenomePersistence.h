@@ -3,7 +3,7 @@
 
 #include "../DefaultPseudoGenome.h"
 #include "../PackedPseudoGenome.h"
-#include "../../helper.h"
+#include "../../utils/helper.h"
 
 using namespace PgSAReadsSet;
 
@@ -31,6 +31,8 @@ namespace PgSAIndex {
             static PseudoGenomeBase* readPseudoGenome(string pseudoGenomeFile);
 
             static void writePseudoGenomeHeader(PseudoGenomeBase *pgb, std::ostream &dest);
+
+            static PseudoGenomeBase* checkAndReadPseudoGenome(string pgFile);
     };
 
 }

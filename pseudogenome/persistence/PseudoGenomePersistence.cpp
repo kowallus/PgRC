@@ -88,7 +88,22 @@ namespace PgSAIndex {
         cout << "ERROR: unsupported PGTYPE " << pgh.getType() << " with " << (pgh.isReadLengthConstant()?"constant":"variable") << " read length\n";
         return 0;
     }
-    
+
+    PseudoGenomeBase* PseudoGenomePersistence::checkAndReadPseudoGenome(string pgFile) {
+        PseudoGenomeBase* pgb = 0;
+
+        if (PseudoGenomePersistence::isValidPseudoGenome(pgFile))
+            pgb = PseudoGenomePersistence::readPseudoGenome(pgFile);
+
+        if (pgb == 0) {
+            fprintf(stderr, "Failed loading Pg\n");
+            exit(EXIT_FAILURE);
+        }
+
+        return pgb;
+    }
+
+
     template PseudoGenomeBase* PseudoGenomePersistence::readPseudoGenomeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std>(std::istream& src, PseudoGenomeHeader& pgh);
     template PseudoGenomeBase* PseudoGenomePersistence::readPseudoGenomeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max>(std::istream& src, PseudoGenomeHeader& pgh);
     template PseudoGenomeBase* PseudoGenomePersistence::readPseudoGenomeTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std>(std::istream& src, PseudoGenomeHeader& pgh);
