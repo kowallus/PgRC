@@ -121,6 +121,7 @@ namespace PgSAReadsSet {
             pairSource->clear();
             pairSource->seekg(0);
         }
+        pair = false;
     }
 
     template<typename uint_read_len>
@@ -201,6 +202,7 @@ namespace PgSAReadsSet {
             pairSource->clear();
             pairSource->seekg(0);
         }
+        pair = false;
     }
     
     template<typename uint_read_len>
