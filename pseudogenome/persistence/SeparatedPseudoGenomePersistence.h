@@ -9,7 +9,7 @@ namespace PgTools {
 
     class SeparatedPseudoGenomePersistence {
     public:
-        static void writePseudoGenome(PseudoGenomeBase* pgb, string pseudoGenomePrefix);
+        static void writePseudoGenome(PseudoGenomeBase* pgb, string pseudoGenomePrefix, string divisionFile = "", bool divisionComplement = false);
 
         const static string PSEUDOGENOME_FILE_SUFFIX;
         const static string READSLIST_OFFSETS_FILE_SUFFIX;
@@ -22,7 +22,7 @@ namespace PgTools {
     public:
         virtual ~SeparatedReadsListWriterBase() {};
 
-        virtual void writeReadsList(string pseudoGenomePrefix) = 0;
+        virtual void writeReadsList(string pseudoGenomePrefix, vector<uint_reads_cnt_max> &orgIndexesMapping) = 0;
     };
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
@@ -35,12 +35,13 @@ namespace PgTools {
                 readsList) {}
 
     public:
-        void writeReadsList(string pseudoGenomePrefix) {
+        void writeReadsList(string pseudoGenomePrefix, vector<uint_reads_cnt_max> &orgIndexesMapping) {
             std::ofstream destRlOffsets(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX, std::ios::out | std::ios::binary);
             std::ofstream destRlIndexes(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX, std::ios::out | std::ios::binary);
+            // TODO: Write whole arrays in binary mode (for performance)
             for (uint_reads_cnt i = 0; i < readsList->getReadsCount(); i++) {
                 PgSAHelpers::writeValue<uint_pg_len_max>(destRlOffsets, readsList->getReadPosition(i));
-                PgSAHelpers::writeValue<uint_reads_cnt_std>(destRlIndexes, readsList->getReadOriginalIndex(i));
+                PgSAHelpers::writeValue<uint_reads_cnt_std>(destRlIndexes, orgIndexesMapping[readsList->getReadOriginalIndex(i)]);
             }
             destRlOffsets.close();
             destRlIndexes.close();

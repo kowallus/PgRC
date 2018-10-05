@@ -79,6 +79,7 @@ namespace PgTools {
                 }
             }
         }
+        counter++;
         return false;
     }
 
