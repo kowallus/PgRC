@@ -11,7 +11,8 @@ namespace PgTools {
                                        ofstream &suffixesDest) {
         clock_checkpoint();
         cout << "Reading reads set\n";
-        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(readsFile);
+        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                readsFile);
         PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
         delete(readsIterator);
         readsSet->printout();
@@ -108,7 +109,8 @@ namespace PgTools {
 
         clock_checkpoint();
         cout << "Reading reads set\n";
-        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(readsFile);
+        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                readsFile);
         PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
         delete(readsIterator);
         readsSet->printout();

@@ -9,7 +9,8 @@ using namespace PgTools;
 
 void divideReads(string srcFastqFile, string pairFastqFile, string outputFile, double error_limit) {
     clock_checkpoint();
-    ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(srcFastqFile, pairFastqFile);
+    ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
+            srcFastqFile, pairFastqFile);
     QualityDividingReadsSetIterator<uint_read_len_max> *badReadsIterator = new QualityDividingReadsSetIterator<uint_read_len_max>(readsIterator, error_limit, false);
     std::ofstream filteredIndexesDest(outputFile, std::ios::out | std::ios::binary);
     if (filteredIndexesDest.fail()) {
@@ -22,8 +23,9 @@ void divideReads(string srcFastqFile, string pairFastqFile, string outputFile, d
         hitCounter++;
         writeValue(filteredIndexesDest, badReadsIterator->getReadIndex());
     }
+    writeValue(filteredIndexesDest, (uint_read_len_max) -1);
     filteredIndexesDest.close();
-    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadIndex() + 1) << ") in " << clock_millis() << " msec." << endl;
+    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadIndex()) << ") in " << clock_millis() << " msec." << endl;
     delete(badReadsIterator);
     delete(readsIterator);
 }

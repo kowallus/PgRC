@@ -235,14 +235,12 @@ namespace PgSAIndex {
         return 0;
     }
 
-    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(string readsFile, string pairFile) {
+    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) {
 
         cout << "Reading reads set\n";
-        
-        // readsSet will be freed during generator destruction.        
-        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createReadsIterator(readsFile, pairFile);
+
+        // readsSet will be freed during generator destruction.
         PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
-        delete(readsIterator);
           
         readsSet->printout();
 

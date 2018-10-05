@@ -78,7 +78,7 @@ namespace PgSAIndex {
 
             GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory() {};
 
-            PseudoGenomeGeneratorBase* getGenerator(string readsFile, string pairFile);
+            PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
 
     };
 

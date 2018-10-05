@@ -11,7 +11,7 @@ namespace PgTools {
         ReadsSourceIteratorTemplate< uint_read_len >* coreIterator;
         int64_t counter = -1;
         double error_level;
-        bool visitGoodReads = true;
+        bool visitGoodReads;
         bool isQualityGood();
 
     public:
@@ -33,11 +33,16 @@ namespace PgTools {
     template < typename uint_read_len >
     class DividedReadsSetIterator: public ReadsSourceIteratorTemplate< uint_read_len > {
     private:
-        ReadsSourceIteratorTemplate< uint_read_len > coreIterator;
-        int counter = 0;
-        double error_level;
+        ReadsSourceIteratorTemplate<uint_read_len>* coreIterator;
+        int64_t counter = -1;
+        uint64_t currentDivIdx;
+        std::istream* divSource;
+        bool visitComplement;
 
     public:
+        DividedReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream* divSource,
+                bool visitComplement = false);
+
         bool moveNextVirtual();
         string getReadVirtual();
         string getQualityInfoVirtual();

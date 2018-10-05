@@ -25,7 +25,7 @@ namespace PgSAIndex {
         public:
             virtual ~PseudoGenomeGeneratorFactory() {};
             
-            virtual PseudoGenomeGeneratorBase* getGenerator(string readsFile, string pairFile = std::string()) = 0;
+            virtual PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) = 0;
 
     };
     
