@@ -4,7 +4,7 @@
 
 namespace PgTools {
 
-    void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, string pseudoGenomePrefix, string divisionFile, bool divisionComplement) {
+    void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix, string divisionFile, bool divisionComplement) {
         clock_checkpoint();
 
         std::ofstream destPgProp(pseudoGenomePrefix + PSEUDOGENOME_PROPERTIES_SUFFIX, std::ios::out | std::ios::binary);
@@ -13,41 +13,30 @@ namespace PgTools {
         std::ofstream destPg(pseudoGenomePrefix + PSEUDOGENOME_FILE_SUFFIX, std::ios::out | std::ios::binary);
         destPg << pgb->getPseudoGenomeVirtual();
         destPg.close();
+
         SeparatedReadsListWriterBase* srlwb = TemplateUserGenerator::generateReadsListUser<SeparatedReadsListWriter, SeparatedReadsListWriterBase>(pgb);
-        const uint_reads_cnt_max readsCount = pgb->getReadsSetProperties()->readsCount;
-
-        vector<uint_reads_cnt_max> orgIndexesMapping(readsCount);
-        if (divisionFile == "") { 
-            for(uint64_t i = 0; i < readsCount; i++)
-                orgIndexesMapping[i] = i;
-        } else {
-            std::ifstream divSource(divisionFile, std::ios::in | std::ios::binary);
-            if (divSource.fail()) {
-                fprintf(stderr, "cannot open reads division file %s\n", divisionFile.c_str());
-                exit(EXIT_FAILURE);
-            }
-            uint64_t i = 0;
-            uint64_t counter = 0;
-            uint64_t currentDivIdx = 0;
-            readValue(divSource, currentDivIdx);
-            while (i < readsCount) {
-                if (divisionComplement) {
-                    while (counter == currentDivIdx) {
-                        readValue(divSource, currentDivIdx);
-                        counter++;
-                    }
-                    orgIndexesMapping[i++] = counter++;
-                } else {
-                    while (counter != currentDivIdx)
-                        counter++;
-                    orgIndexesMapping[i++] = counter++;
-                    readValue(divSource, currentDivIdx);
-                }
-            }
-        }
-
-        srlwb->writeReadsList(pseudoGenomePrefix, orgIndexesMapping);
+        srlwb->writeReadsList(pseudoGenomePrefix, divisionFile, divisionComplement);
         cout << "Writing pseudo genome files in " << clock_millis() << " msec." << endl;
+    }
+
+    std::ifstream SeparatedPseudoGenomePersistence::getPseudoGenomeSrc(const string &pseudoGenomePrefix) {
+        const string pgFile = pseudoGenomePrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX;
+        std::ifstream pgSrc(pgFile, std::ios::in | std::ios::binary);
+        if (pgSrc.fail()) {
+            fprintf(stderr, "cannot open pseudogenome file %s\n", pgFile.c_str());
+            exit(EXIT_FAILURE);
+        }
+        return pgSrc;
+    }
+
+    string SeparatedPseudoGenomePersistence::getPseudoGenome(const string &pseudoGenomePrefix) {
+        std::ifstream pgSrc = getPseudoGenomeSrc(pseudoGenomePrefix);
+        pgSrc.seekg(0, std::ios::end);
+        size_t size = pgSrc.tellg();
+        std::string buffer(size, ' ');
+        pgSrc.seekg(0);
+        pgSrc.read(&buffer[0], size);
+        return buffer;
     }
 
     const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX = ".pg";

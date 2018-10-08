@@ -37,6 +37,9 @@ namespace PgSAReadsSet {
                                                                                           string divisionFile = "",
                                                                                           bool divisionComplement = false);
 
+        static vector<uint_reads_cnt_max> getReadsOriginalIndexes(string divisionFile = "",
+                                                                  bool divisionComplement = false,
+                                                                  uint64_t readsCount = 0);
 
 
     };

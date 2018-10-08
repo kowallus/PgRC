@@ -44,7 +44,8 @@ set(PG_FILES
         pseudogenome/readslist/ReadsListInterface.h
         pseudogenome/readslist/ReadsListTypes.h
         pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
-        pseudogenome/TemplateUserGenerator.h)
+        pseudogenome/TemplateUserGenerator.h
+        pseudogenome/persistence/SeparatedPseudoGenomePersistence.cpp pseudogenome/persistence/SeparatedPseudoGenomePersistence.h)
 
 set(PG_GEN_FILES
         ${PG_FILES}
@@ -54,7 +55,7 @@ set(PG_GEN_FILES
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
         pseudogenome/generator/PseudoGenomeGeneratorBase.h
-        pseudogenome/persistence/SeparatedPseudoGenomePersistence.cpp pseudogenome/persistence/SeparatedPseudoGenomePersistence.h)
+        )
 
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}

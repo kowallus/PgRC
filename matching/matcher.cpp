@@ -6,15 +6,11 @@
 
 namespace PgTools {
 
-    void exactMatchConstantLengthReads(const string& text, string readsFile, ofstream &offsetsDest,
-                                       uint32_t matchPrefixLength, ofstream &missedPatternsDest,
-                                       ofstream &suffixesDest) {
+    void exactMatchConstantLengthReads(const string& text, ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator,
+            ofstream &offsetsDest, uint32_t matchPrefixLength, ofstream &missedPatternsDest, ofstream &suffixesDest) {
         clock_checkpoint();
         cout << "Reading reads set\n";
-        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                readsFile);
         PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
-        delete(readsIterator);
         readsSet->printout();
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Feeding patterns...\n" << endl;
@@ -102,17 +98,14 @@ namespace PgTools {
         } while (++pos < length);
     }
 
-    void approxMatchConstantLengthReads(const string& text, string readsFile, ofstream &offsetsDest, uint8_t maxMismatches,
-                                        uint32_t matchPrefixLength, ofstream &missedPatternsDest,
+    void approxMatchConstantLengthReads(const string& text, ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator,
+            ofstream &offsetsDest, uint8_t maxMismatches, uint32_t matchPrefixLength, ofstream &missedPatternsDest,
                                         ofstream &suffixesDest) {
         uint8_t min_mismatches = 0;
 
         clock_checkpoint();
         cout << "Reading reads set\n";
-        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                readsFile);
         PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
-        delete(readsIterator);
         readsSet->printout();
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Feeding patterns...\n" << endl;

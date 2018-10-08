@@ -4,6 +4,42 @@
 
 namespace PgSAReadsSet {
 
+    vector<uint_reads_cnt_max>
+    ReadsSetPersistence::getReadsOriginalIndexes(string divisionFile, bool divisionComplement,
+                                                 uint64_t readsCount) {
+        vector<uint_reads_cnt_max> mapping(readsCount);
+        if (divisionFile == "") {
+            for(uint64_t i = 0; i < readsCount; i++)
+                mapping[i] = i;
+        } else {
+            std::ifstream divSource(divisionFile, std::ios::in | std::ios::binary);
+            if (divSource.fail()) {
+                fprintf(stderr, "cannot open reads division file %s\n", divisionFile.c_str());
+                exit(EXIT_FAILURE);
+            }
+            uint64_t i = 0;
+            uint64_t counter = 0;
+            uint64_t currentDivIdx = 0;
+            readValue(divSource, currentDivIdx);
+            while (i < readsCount) {
+                if (divisionComplement) {
+                    while (counter == currentDivIdx) {
+                        readValue(divSource, currentDivIdx);
+                        counter++;
+                    }
+                    mapping[i++] = counter++;
+                } else {
+                    while (counter != currentDivIdx)
+                        counter++;
+                    mapping[i++] = counter++;
+                    readValue(divSource, currentDivIdx);
+                }
+            }
+        }
+        return mapping;
+    }
+
+
     ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(string srcFile,
                                                                                                     string pairFile,
                                                                                                     string divisionFile,

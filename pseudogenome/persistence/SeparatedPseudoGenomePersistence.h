@@ -4,12 +4,17 @@
 #include "../DefaultPseudoGenome.h"
 #include "../PackedPseudoGenome.h"
 #include "../../utils/helper.h"
+#include "../../readsset/persistance/ReadsSetPersistence.h"
 
 namespace PgTools {
 
     class SeparatedPseudoGenomePersistence {
     public:
-        static void writePseudoGenome(PseudoGenomeBase* pgb, string pseudoGenomePrefix, string divisionFile = "", bool divisionComplement = false);
+        static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix, string divisionFile = "", bool divisionComplement = false);
+
+        static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
+        static string getPseudoGenome(const string &pseudoGenomePrefix);
+
 
         const static string PSEUDOGENOME_FILE_SUFFIX;
         const static string READSLIST_OFFSETS_FILE_SUFFIX;
@@ -22,7 +27,7 @@ namespace PgTools {
     public:
         virtual ~SeparatedReadsListWriterBase() {};
 
-        virtual void writeReadsList(string pseudoGenomePrefix, vector<uint_reads_cnt_max> &orgIndexesMapping) = 0;
+        virtual void writeReadsList(const string &pseudoGenomePrefix, string divisionFile = "", bool divisionComplement = false) = 0;
     };
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
@@ -35,7 +40,9 @@ namespace PgTools {
                 readsList) {}
 
     public:
-        void writeReadsList(string pseudoGenomePrefix, vector<uint_reads_cnt_max> &orgIndexesMapping) {
+        void writeReadsList(const string &pseudoGenomePrefix, string divisionFile, bool divisionComplement) {
+            const uint_reads_cnt_max readsCount = readsList->getReadsCount();
+            const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile, divisionComplement, readsCount);
             std::ofstream destRlOffsets(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX, std::ios::out | std::ios::binary);
             std::ofstream destRlIndexes(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX, std::ios::out | std::ios::binary);
             // TODO: Write whole arrays in binary mode (for performance)
