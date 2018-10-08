@@ -82,8 +82,9 @@ set(READS_DIVIDER_FILES
         ${READSSET_FILES}
         )
 
-add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
 add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
 add_executable(ReadsDivider ReadsDivider.cpp ${READS_DIVIDER_FILES})
+add_executable(ReadsMatcher ReadsMatcher.cpp ${MATCHER_FILES})
+add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
