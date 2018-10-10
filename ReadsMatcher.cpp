@@ -1,58 +1,28 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#include "matching/matcher.h"
+#include "matching/DefaultReadsMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
-#include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 
 using namespace std;
 
-static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
-static const string SUFFIXES_SUFFIX = "_matched_suffixes.txt";
-static const string MISSED_READS_SUFFIX = "_missed.txt";
-
-const uint_read_len_max DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
-
 void matchReadsInPgFile(const string &pgFilePrefix, ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator, const string &outPrefix,
-        uint8_t maxMismatches, uint_read_len_max matchPrefixLength, bool revComplPg = false) {
+        uint8_t maxMismatches, uint_read_len_max matchPrefixLength, bool revComplPg = false, bool infoDump = false) {
 
-    string pg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(pgFilePrefix);
-    string offsetsFile = outPrefix + OFFSETS_SUFFIX;
-    std::ofstream offsetsDest(offsetsFile, std::ios::out | std::ios::binary);
-    if (offsetsDest.fail()) {
-        fprintf(stderr, "cannot write to offsets file %s\n", offsetsFile.c_str());
-        exit(EXIT_FAILURE);
-    }
-    string missedReadsFile = outPrefix + MISSED_READS_SUFFIX;
-    std::ofstream missedReadsDest(missedReadsFile, std::ios::out | std::ios::binary);
-    if (missedReadsDest.fail()) {
-        fprintf(stderr, "cannot write to missed reads file %s\n", missedReadsFile.c_str());
-        exit(EXIT_FAILURE);
-    }
+    cout << "Reading reads set\n";
+    PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+    readsSet->printout();
 
-    string suffixesFile = outPrefix + SUFFIXES_SUFFIX;
-    std::ofstream suffixesDest;
-    if (matchPrefixLength != DISABLED_PREFIX_MODE) {
-        suffixesDest.open(suffixesFile, std::ios::out | std::ios::binary);
-        if (suffixesDest.fail()) {
-            fprintf(stderr, "cannot write to suffixes file %s\n", suffixesFile.c_str());
-            exit(EXIT_FAILURE);
-        }
-    }
-    if (revComplPg)
-        pg = pg + "XXXXXX" + PgSAHelpers::reverseComplement(pg);
+    PgTools::DefaultReadsMatcher matcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches);
 
-    if (maxMismatches)
-        PgTools::approxMatchConstantLengthReads(pg, readsIterator, offsetsDest, maxMismatches, matchPrefixLength,
-                                                missedReadsDest, suffixesDest);
-    else
-        PgTools::exactMatchConstantLengthReads(pg, readsIterator, offsetsDest, matchPrefixLength, missedReadsDest,
-                                               suffixesDest);
+    matcher.matchConstantLengthReads();
 
-    offsetsDest.close();
-    missedReadsDest.close();
+    if (infoDump)
+        matcher.writeMatchesInfo(outPrefix);
+
+    delete (readsSet);
 }
 
 int main(int argc, char *argv[])
@@ -61,11 +31,12 @@ int main(int argc, char *argv[])
     int opt; // current option
     bool revComplPg = false;
     uint8_t maxMismatches = 0;
-    uint_read_len_max matchPrefixLength = DISABLED_PREFIX_MODE;
+    uint_read_len_max matchPrefixLength = PgTools::DefaultReadsMatcher::DISABLED_PREFIX_MODE;
     string divisionFile = "";
     bool divisionComplement = false;
+    bool infoDump = false;
 
-    while ((opt = getopt(argc, argv, "m:p:d:ctr?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:p:d:ctri?")) != -1) {
         switch (opt) {
         case 'm':
             maxMismatches = atoi(optarg);
@@ -85,6 +56,9 @@ int main(int argc, char *argv[])
         case 't':
             plainTextWriteMode = true;
             plainTextReadMode = true;
+            break;
+        case 'i':
+            infoDump = true;
             break;
         case '?':
         default: /* '?' */
@@ -112,7 +86,7 @@ int main(int argc, char *argv[])
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
             readsFile, pairFile, divisionFile, divisionComplement);
-    matchReadsInPgFile(pgFilePrefix, readsIterator, outPrefix, maxMismatches, matchPrefixLength, revComplPg);
+    matchReadsInPgFile(pgFilePrefix, readsIterator, outPrefix, maxMismatches, matchPrefixLength, revComplPg, infoDump);
     delete(readsIterator);
    
     exit(EXIT_SUCCESS);
