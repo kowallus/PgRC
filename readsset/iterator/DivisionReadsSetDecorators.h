@@ -21,7 +21,7 @@ namespace PgTools {
 
         virtual ~QualityDividingReadsSetIterator();
 
-        uint64_t getReadIndex();
+        uint64_t getReadOriginalIndex();
 
         bool moveNextVirtual();
         string getReadVirtual();

@@ -52,7 +52,7 @@ namespace PgTools {
     }
 
     template<typename uint_read_len>
-    uint64_t QualityDividingReadsSetIterator<uint_read_len>::getReadIndex() {
+    uint64_t QualityDividingReadsSetIterator<uint_read_len>::getReadOriginalIndex() {
         return counter;
     }
 

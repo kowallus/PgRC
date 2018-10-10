@@ -21,11 +21,11 @@ void divideReads(string srcFastqFile, string pairFastqFile, string outputFile, d
     uint64_t hitCounter = 0;
     while (badReadsIterator->moveNextVirtual()) {
         hitCounter++;
-        writeValue(filteredIndexesDest, badReadsIterator->getReadIndex());
+        writeValue(filteredIndexesDest, badReadsIterator->getReadOriginalIndex());
     }
     writeValue(filteredIndexesDest, UINT64_MAX);
     filteredIndexesDest.close();
-    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadIndex()) << ") in " << clock_millis() << " msec." << endl;
+    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl;
     delete(badReadsIterator);
     delete(readsIterator);
 }

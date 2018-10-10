@@ -26,7 +26,10 @@ namespace PgTools {
 
         string text;
         vector<uint32_t> readMatchPos;
+
         vector<uint8_t> readMismatches;
+        uint_reads_cnt_max matchedReadsCount = 0;
+
         uint_reads_cnt_max readsCount;
         uint_read_len_max readLength;
         uint_read_len_max matchingLength;
@@ -39,7 +42,8 @@ namespace PgTools {
         void writeApproxMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
     public:
-        static const uint_read_len_max DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
+        static const uint_read_len_max DISABLED_PREFIX_MODE;
+        static const uint32_t NOT_MATCHED_VALUE;
 
         DefaultReadsMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                             uint32_t matchPrefixLength, uint8_t maxMismatches);
@@ -51,6 +55,10 @@ namespace PgTools {
         static const string MISSED_READS_SUFFIX;
 
         void writeMatchesInfo(const string &outPrefix);
+
+        const vector<uint_reads_cnt_max> getMatchedReadsIndexes() const;
+        const vector<uint32_t> &getReadMatchPos() const;
+
     };
 
 }

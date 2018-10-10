@@ -8,23 +8,6 @@
 
 using namespace std;
 
-void matchReadsInPgFile(const string &pgFilePrefix, ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator, const string &outPrefix,
-        uint8_t maxMismatches, uint_read_len_max matchPrefixLength, bool revComplPg = false, bool infoDump = false) {
-
-    cout << "Reading reads set\n";
-    PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
-    readsSet->printout();
-
-    PgTools::DefaultReadsMatcher matcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches);
-
-    matcher.matchConstantLengthReads();
-
-    if (infoDump)
-        matcher.writeMatchesInfo(outPrefix);
-
-    delete (readsSet);
-}
-
 int main(int argc, char *argv[])
 {
 
@@ -34,9 +17,10 @@ int main(int argc, char *argv[])
     uint_read_len_max matchPrefixLength = PgTools::DefaultReadsMatcher::DISABLED_PREFIX_MODE;
     string divisionFile = "";
     bool divisionComplement = false;
-    bool infoDump = false;
+    string infoPrefix = "";
 
-    while ((opt = getopt(argc, argv, "m:p:d:ctri?")) != -1) {
+
+    while ((opt = getopt(argc, argv, "m:p:i:d:ctr?")) != -1) {
         switch (opt) {
         case 'm':
             maxMismatches = atoi(optarg);
@@ -58,7 +42,7 @@ int main(int argc, char *argv[])
             plainTextReadMode = true;
             break;
         case 'i':
-            infoDump = true;
+            infoPrefix = optarg;
             break;
         case '?':
         default: /* '?' */
@@ -82,11 +66,26 @@ int main(int argc, char *argv[])
     if (optind == argc - 3)
         pairFile = argv[optind++];
     string pgFilePrefix(argv[optind++]);
-    string outPrefix(argv[optind++]);
+    string outDivisionFile(argv[optind++]);
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
             readsFile, pairFile, divisionFile, divisionComplement);
-    matchReadsInPgFile(pgFilePrefix, readsIterator, outPrefix, maxMismatches, matchPrefixLength, revComplPg, infoDump);
+    cout << "Reading reads set\n";
+    PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+    readsSet->printout();
+    PgTools::DefaultReadsMatcher matcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches);
+    matcher.matchConstantLengthReads();
+    if (infoPrefix != "")
+        matcher.writeMatchesInfo(infoPrefix);
+
+    const std::vector<uint32_t> &matchedReads = matcher.getReadMatchPos();
+    const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile,
+            divisionComplement, readsSet->getReadsSetProperties()->readsCount);
+
+    ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, matchedReads,
+            PgTools::DefaultReadsMatcher::NOT_MATCHED_VALUE , outDivisionFile, divisionComplement);
+
+    delete(readsSet);
     delete(readsIterator);
    
     exit(EXIT_SUCCESS);

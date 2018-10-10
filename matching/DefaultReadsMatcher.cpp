@@ -28,6 +28,9 @@ namespace PgTools {
         } while (++pos < length);
     }
 
+    const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
+    const uint32_t DefaultReadsMatcher::NOT_MATCHED_VALUE = UINT32_MAX;
+
     DefaultReadsMatcher::DefaultReadsMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                                              uint32_t matchPrefixLength, uint8_t maxMismatches) :
                                              pgFilePrefix(pgFilePrefix), revComplPg(revComplPg), readsSet(readsSet),
@@ -63,10 +66,10 @@ namespace PgTools {
         hashMatcher.iterateOver(text.data(), text.length());
 
         readMatchPos.clear();
-        readMatchPos.insert(readMatchPos.begin(), readsCount, UINT32_MAX);
+        readMatchPos.insert(readMatchPos.begin(), readsCount, NOT_MATCHED_VALUE);
+        matchedReadsCount = 0;
 
         int i = 0;
-        uint32_t matchCount = 0;
         uint64_t multiMatchCount = 0;
         uint64_t falseMatchCount = 0;
         while (hashMatcher.moveNext()) {
@@ -76,9 +79,9 @@ namespace PgTools {
 
             bool exactMatch = strncmp(text.data() + matchPosition, matchedRead.data(), matchingLength) == 0;
             if (exactMatch) {
-                if (readMatchPos[matchReadIndex] == UINT32_MAX) {
+                if (readMatchPos[matchReadIndex] == NOT_MATCHED_VALUE) {
                     readMatchPos[matchReadIndex] = matchPosition;
-                    matchCount++;
+                    matchedReadsCount++;
                 } else
                     multiMatchCount++;
             } else
@@ -93,7 +96,7 @@ namespace PgTools {
             }
         }
         cout << "... exact matching procedure completed in " << clock_millis() << " msec. " << endl;
-        cout << "Exact matched " << matchCount << " reads (" << (readsCount - matchCount)
+        cout << "Exact matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
              << " left; " << multiMatchCount << " multi-matches). False matches reported: " << falseMatchCount << "."
              << endl;
     }
@@ -117,12 +120,12 @@ namespace PgTools {
         hashMatcher.iterateOver(text.data(), text.length());
 
         readMatchPos.clear();
-        readMatchPos.insert(readMatchPos.end(), readsCount, UINT32_MAX);
+        readMatchPos.insert(readMatchPos.end(), readsCount, NOT_MATCHED_VALUE);
         readMismatches.clear();
         readMismatches.insert(readMismatches.end(), readsCount, UINT8_MAX);
+        matchedReadsCount = 0;
 
         int i = 0;
-        uint32_t matchedReadsCount = 0;
         uint64_t falseMatchCount = 0;
         uint64_t multiMatchCount = 0;
         while (hashMatcher.moveNext()) {
@@ -177,7 +180,7 @@ namespace PgTools {
 
         cout << "Writing output files...\n" << endl;
         for (uint_reads_cnt_max i = 0; i < readMatchPos.size(); i++) {
-            if (readMatchPos[i] == UINT32_MAX)
+            if (readMatchPos[i] == NOT_MATCHED_VALUE)
                 missedPatternsDest << readsSet->getRead(i) << "\n";
             else {
                 offsetsDest << i << "\t" << readMatchPos[i] << "\n";
@@ -196,7 +199,7 @@ namespace PgTools {
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
             const string &read = readsSet->getRead(i);
-            if (readMatchPos[i] == UINT32_MAX)
+            if (readMatchPos[i] == NOT_MATCHED_VALUE)
                 missedPatternsDest << read << "\n";
             else {
                 offsetsDest << i << "\t" << readMatchPos[i];
@@ -246,6 +249,19 @@ namespace PgTools {
         offsetsDest.close();
         missedReadsDest.close();
 
+    }
+
+    const vector<uint_reads_cnt_max> DefaultReadsMatcher::getMatchedReadsIndexes() const {
+        vector<uint_reads_cnt_max> matchedReads(matchedReadsCount);
+        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            if (readMatchPos[i] != NOT_MATCHED_VALUE)
+                matchedReads.push_back(i);
+        }
+        return matchedReads;
+    }
+
+    const vector<uint32_t> &DefaultReadsMatcher::getReadMatchPos() const {
+        return readMatchPos;
     }
 
 }

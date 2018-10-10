@@ -42,6 +42,8 @@ namespace PgSAReadsSet {
                                                                   uint64_t readsCount = 0);
 
 
+        static void writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping, const vector<uint32_t> &readsFilterResult,
+                        const uint32_t readNotMatchedValue, string divisionFile, bool divisionComplement);
     };
 
 }
