@@ -3,7 +3,6 @@
 
 #include "matching/DefaultReadsMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
-#include "pseudogenome/persistence/PseudoGenomePersistence.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 
 using namespace std;
@@ -18,7 +17,6 @@ int main(int argc, char *argv[])
     string divisionFile = "";
     bool divisionComplement = false;
     string infoPrefix = "";
-
 
     while ((opt = getopt(argc, argv, "m:p:i:d:ctr?")) != -1) {
         switch (opt) {
@@ -73,18 +71,28 @@ int main(int argc, char *argv[])
     cout << "Reading reads set\n";
     PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
     readsSet->printout();
-    PgTools::DefaultReadsMatcher matcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches);
-    matcher.matchConstantLengthReads();
-    if (infoPrefix != "")
-        matcher.writeMatchesInfo(infoPrefix);
+    PgTools::DefaultReadsMatcher* matcher;
+    if (maxMismatches == 0)
+        matcher = new PgTools::DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
+    else
+        matcher = new PgTools::DefaultReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches);
 
-    const std::vector<uint32_t> &matchedReads = matcher.getReadMatchPos();
+    matcher->matchConstantLengthReads();
+    if (infoPrefix != "")
+        matcher->writeMatchesInfo(infoPrefix);
+
+    const std::vector<uint32_t> &readsMatchPos = matcher->getReadMatchPos();
+    const vector<uint8_t> &readsMismatches = matcher->getReadMismatches();
     const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile,
             divisionComplement, readsSet->getReadsSetProperties()->readsCount);
 
-    ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, matchedReads,
-            PgTools::DefaultReadsMatcher::NOT_MATCHED_VALUE , outDivisionFile, divisionComplement);
+    ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, readsMatchPos,
+            PgTools::DefaultReadsMatcher::NOT_MATCHED_VALUE, outDivisionFile, divisionComplement);
 
+    if (matchPrefixLength == PgTools::DefaultReadsMatcher::DISABLED_PREFIX_MODE)
+        matcher->writeIntoPseudoGenome(orgIndexesMapping);
+
+    delete(matcher);
     delete(readsSet);
     delete(readsIterator);
    
