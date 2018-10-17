@@ -16,14 +16,12 @@ namespace PgTools {
         uint_pg_len pos;
         uint_read_len offset;
         uint_reads_cnt idx;
-        uint_read_len length;
         bool revComp = false;
         uint8_t mismatchesCount = 0;
         uint8_t mismatchCode[maxMismatches];
         uint_read_len mismatchOffset[maxMismatches];
 
-        ReadsListEntry(uint_read_len length, uint_pg_len pos = 0, bool revComp = false) : pos(pos), length(length),
-                                                                                revComp(revComp) {
+        ReadsListEntry(uint_pg_len pos = 0, bool revComp = false) : pos(pos), revComp(revComp) {
             offset = 0;
         }
 

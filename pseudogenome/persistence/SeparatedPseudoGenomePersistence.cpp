@@ -8,7 +8,7 @@ namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix, string divisionFile, bool divisionComplement) {
         clock_checkpoint();
-        SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix);
+        SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix, true, true);
         builder.writePseudoGenome(pgb, divisionFile, divisionComplement);
         builder.build();
         cout << "Writing pseudo genome files in " << clock_millis() << " msec." << endl;
@@ -91,39 +91,26 @@ namespace PgTools {
 
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 
-    SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix)
-            : pseudoGenomePrefix(pseudoGenomePrefix) {}
-
-    std::ofstream* SeparatedPseudoGenomeOutputBuilder::getSingletonDest(ofstream *&dest, const string &fileSuffix) {
-        if (dest == 0) {
-            dest = new ofstream(SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(pseudoGenomePrefix, fileSuffix, true));
-        }
-        return dest;
+    SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix,
+            bool disableRevComp, bool disableMismatches) : pseudoGenomePrefix(pseudoGenomePrefix),
+            disableRevComp(disableRevComp), disableMismatches(disableMismatches) {
+        initReadsListDests();
     }
 
-    std::ofstream* SeparatedPseudoGenomeOutputBuilder::getPseudoGenomeElementDest(const string &fileSuffix) {
-        if (fileSuffix == SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX)
-            return getSingletonDest(pgDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX)
-            return getSingletonDest(pgPropDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX)
-            return getSingletonDest(rlPosDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX)
-            return getSingletonDest(rlOrgIdxDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX)
-            return getSingletonDest(rlRevCompDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESCOUNT_FILE_SUFFIX)
-            return getSingletonDest(rlMisCntDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::READSLIST_MISMATCHEDSYMBOLS_FILE_SUFFIX)
-            return getSingletonDest(rlMisSymDest, fileSuffix);
-        else if (fileSuffix == SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESOFFSETS_FILE_SUFFIX)
-            return getSingletonDest(rlMisOffDest, fileSuffix);
+    void SeparatedPseudoGenomeOutputBuilder::initDest(ofstream *&dest, const string &fileSuffix) { if (dest == 0)
+        dest = new ofstream(SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(pseudoGenomePrefix, fileSuffix, true));
+    }
 
-        fprintf(stderr, "Unsupported pseudogenome element file suffix: %s\n",
-                fileSuffix.c_str());
-        exit(EXIT_FAILURE);
-
-        return 0;
+    void SeparatedPseudoGenomeOutputBuilder::initReadsListDests() {
+        initDest(rlPosDest, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
+        initDest(rlOrgIdxDest, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
+        if (!disableRevComp)
+            initDest(rlRevCompDest, SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX);
+        if (!disableMismatches) {
+        initDest(rlMisCntDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESCOUNT_FILE_SUFFIX);
+        initDest(rlMisSymDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHEDSYMBOLS_FILE_SUFFIX);
+        initDest(rlMisOffDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESOFFSETS_FILE_SUFFIX);
+        }
     }
 
     void SeparatedPseudoGenomeOutputBuilder::freeDest(ofstream* &dest) {
@@ -148,28 +135,40 @@ namespace PgTools {
     void SeparatedPseudoGenomeOutputBuilder::build() {
         if (pgh != 0) {
             pgh->setReadsCount(readsCounter);
-            pgh->write(*getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX));
+            initDest(pgPropDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX);
+            pgh->write(*pgPropDest);
         }
 
         freeDests();
         SeparatedPseudoGenomePersistence::acceptTemporaryPseudoGenomeElements(pseudoGenomePrefix);
     }
 
+    void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
+        PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
+        PgSAHelpers::writeValue<uint_reads_cnt_std>(*rlOrgIdxDest, rlEntry.idx);
+        if (!disableRevComp)
+            PgSAHelpers::writeValue<uint8_t>(*rlRevCompDest, rlEntry.revComp?1:0);
+        if (!disableMismatches) {
+            PgSAHelpers::writeValue<uint8_t>(*rlMisCntDest, rlEntry.mismatchesCount);
+            for(uint8_t i = 0; i < rlEntry.mismatchesCount; i++) {
+                PgSAHelpers::writeValue<uint8_t>(*rlMisSymDest, rlEntry.mismatchCode[i]);
+                PgSAHelpers::writeValue<uint8_t>(*rlMisOffDest, rlEntry.mismatchOffset[i]);
+            }
+        }
+        readsCounter++;
+    }
+
     void SeparatedPseudoGenomeOutputBuilder::writeReads(DefaultReadsListIteratorInterface *rlIt, uint_pg_len_max stopPos) {
         do {
             if (rlIt->peekReadEntry().pos >= stopPos)
                 break;
-            PgSAHelpers::writeValue<uint_pg_len_max>(*getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX),
-                    rlIt->peekReadEntry().pos);
-            PgSAHelpers::writeValue<uint_reads_cnt_std>(*getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX),
-                    rlIt->peekReadEntry().idx);
-            readsCounter++;
+            writeReadEntry(rlIt->peekReadEntry());
         } while (rlIt->moveNext());
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, string divisionFile, bool divisionComplement) {
 
-        getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
+        initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
         (*pgDest) << pgb->getPseudoGenomeVirtual();
 
         ReadsListIteratorExtendedWrapperBase* rlIt =
@@ -189,4 +188,5 @@ namespace PgTools {
 
         delete(rlIt);
     }
+
 }

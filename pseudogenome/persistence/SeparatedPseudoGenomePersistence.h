@@ -50,8 +50,11 @@ namespace PgTools {
         ofstream* rlMisSymDest = 0;
         ofstream* rlMisOffDest = 0;
 
-        std::ofstream* getSingletonDest(ofstream* &dest, const string &fileSuffix);
-        std::ofstream* getPseudoGenomeElementDest(const string &fileSuffix);
+        bool disableRevComp = false;
+        bool disableMismatches = false;
+
+        void initDest(ofstream* &dest, const string &fileSuffix);
+        void initReadsListDests();
 
         uint_reads_cnt_max readsCounter = 0;
 
@@ -61,7 +64,9 @@ namespace PgTools {
         void freeDests();
     public:
 
-        SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix);
+        SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix, bool disableRevComp = false, bool disableMismatches = false);
+
+        void writeReadEntry(const DefaultReadsListEntry &rlEntry);
 
         void writeReads(DefaultReadsListIteratorInterface* rlIt, uint_pg_len_max stopPos = (uint_pg_len_max) -1);
 
