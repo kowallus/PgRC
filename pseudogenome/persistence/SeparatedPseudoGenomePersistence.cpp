@@ -8,19 +8,8 @@ namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix, string divisionFile, bool divisionComplement) {
         clock_checkpoint();
-
         SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix);
-        std::ofstream* destPgProp = builder.getPseudoGenomeElementDest(PSEUDOGENOME_PROPERTIES_SUFFIX);
-        PgSAIndex::PseudoGenomePersistence::writePseudoGenomeHeader(pgb, *destPgProp);
-
-        std::ofstream* destPg = builder.getPseudoGenomeElementDest(PSEUDOGENOME_FILE_SUFFIX);
-        (*destPg) << pgb->getPseudoGenomeVirtual();
-        destPg->close();
-
-        SeparatedReadsListWriterBase* srlwb = TemplateUserGenerator::generateReadsListUser<SeparatedReadsListWriter, SeparatedReadsListWriterBase>(pgb);
-        srlwb->writeReadsList(builder.getPseudoGenomeElementDest(READSLIST_POSITIONS_FILE_SUFFIX),
-                builder.getPseudoGenomeElementDest(READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX), divisionFile, divisionComplement);
-
+        builder.writePseudoGenome(pgb, divisionFile, divisionComplement);
         builder.build();
         cout << "Writing pseudo genome files in " << clock_millis() << " msec." << endl;
     }
@@ -157,8 +146,47 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::build() {
+        if (pgh != 0) {
+            pgh->setReadsCount(readsCounter);
+            pgh->write(*getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX));
+        }
+
         freeDests();
         SeparatedPseudoGenomePersistence::acceptTemporaryPseudoGenomeElements(pseudoGenomePrefix);
     }
 
+    void SeparatedPseudoGenomeOutputBuilder::writeReads(DefaultReadsListIteratorInterface *rlIt, uint_pg_len_max stopPos) {
+        do {
+            if (rlIt->peekReadEntry().pos >= stopPos)
+                break;
+            PgSAHelpers::writeValue<uint_pg_len_max>(*getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX),
+                    rlIt->peekReadEntry().pos);
+            PgSAHelpers::writeValue<uint_reads_cnt_std>(*getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX),
+                    rlIt->peekReadEntry().idx);
+            readsCounter++;
+        } while (rlIt->moveNext());
+    }
+
+    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, string divisionFile, bool divisionComplement) {
+
+        getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
+        (*pgDest) << pgb->getPseudoGenomeVirtual();
+
+        ReadsListIteratorExtendedWrapperBase* rlIt =
+                TemplateUserGenerator::generateReadsListUser<ReadsListIteratorExtendedWrapper, ReadsListIteratorExtendedWrapperBase>(pgb);
+        if (divisionFile != "")
+            rlIt->applyDivision(divisionFile, divisionComplement);
+
+        rlIt->moveNext();
+        writeReads(rlIt);
+
+        pgh = new PseudoGenomeHeader(pgb);
+        if (pgh->getReadsCount() != readsCounter) {
+            fprintf(stderr, "Incorrect reads count validation while building separated Pg (%llu instead of %llu).\n",
+                    readsCounter, pgh->getReadsCount());
+            exit(EXIT_FAILURE);
+        }
+
+        delete(rlIt);
+    }
 }

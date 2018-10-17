@@ -118,8 +118,10 @@ namespace PgSAReadsSet {
         delete(readsIterator);
         delete(coreIterator);
         srcSource->close();
-        pairSource->close();
-        divSource->close();
+        if (pairSource)
+            pairSource->close();
+        if (divSource)
+            divSource->close();
         delete(srcSource);
         delete(pairSource);
         delete(divSource);

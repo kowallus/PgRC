@@ -5,6 +5,7 @@
 #include "../PackedPseudoGenome.h"
 #include "../../utils/helper.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
+#include "../readslist/iterator/ExtendedReadsListIterators.h"
 
 namespace PgTools {
 
@@ -37,45 +38,6 @@ namespace PgTools {
 
     };
 
-    class SeparatedReadsListWriterBase {
-    public:
-        virtual ~SeparatedReadsListWriterBase() {};
-
-        virtual void writeReadsList(const string &pseudoGenomePrefix, string divisionFile = "", bool divisionComplement = false) = 0;
-        virtual void writeReadsList(std::ofstream* destRlPositions, std::ofstream* destRlIndexes, string divisionFile = "", bool divisionComplement = false) = 0;
-    };
-
-    template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
-    class SeparatedReadsListWriter: public SeparatedReadsListWriterBase {
-    private:
-        ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass> *readsList;
-    public:
-        SeparatedReadsListWriter(
-                ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass> *readsList) : readsList(
-                readsList) {}
-
-    public:
-
-        void writeReadsList(std::ofstream *destRlPositions, std::ofstream *destRlIndexes, string divisionFile,
-                            bool divisionComplement) override {
-            // TODO: Write whole arrays in binary mode (for performance)
-            const uint_reads_cnt_max readsCount = readsList->getReadsCount();
-            const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile, divisionComplement, readsCount);
-            for (uint_reads_cnt i = 0; i < readsList->getReadsCount(); i++) {
-                PgSAHelpers::writeValue<uint_pg_len_max>(*destRlPositions, readsList->getReadPosition(i));
-                PgSAHelpers::writeValue<uint_reads_cnt_std>(*destRlIndexes, orgIndexesMapping[readsList->getReadOriginalIndex(i)]);
-            }
-        }
-
-        void writeReadsList(const string &pseudoGenomePrefix, string divisionFile, bool divisionComplement) {
-            std::ofstream destRlPositions(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX, std::ios::out | std::ios::binary);
-            std::ofstream destRlIndexes(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX, std::ios::out | std::ios::binary);
-            writeReadsList(&destRlPositions, &destRlIndexes, divisionFile, divisionComplement);
-            destRlPositions.close();
-            destRlIndexes.close();
-        };
-    };
-
     class SeparatedPseudoGenomeOutputBuilder {
     private:
         const string &pseudoGenomePrefix;
@@ -89,6 +51,11 @@ namespace PgTools {
         ofstream* rlMisOffDest = 0;
 
         std::ofstream* getSingletonDest(ofstream* &dest, const string &fileSuffix);
+        std::ofstream* getPseudoGenomeElementDest(const string &fileSuffix);
+
+        uint_reads_cnt_max readsCounter = 0;
+
+        PseudoGenomeHeader* pgh = 0;
 
         void freeDest(ofstream* &dest);
         void freeDests();
@@ -96,7 +63,9 @@ namespace PgTools {
 
         SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix);
 
-        std::ofstream* getPseudoGenomeElementDest(const string &fileSuffix);
+        void writeReads(DefaultReadsListIteratorInterface* rlIt, uint_pg_len_max stopPos = (uint_pg_len_max) -1);
+
+        void writePseudoGenome(PseudoGenomeBase* pgb, string divisionFile, bool divisionComplement);
 
         void build();
     };

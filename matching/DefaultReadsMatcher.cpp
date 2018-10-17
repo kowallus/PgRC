@@ -83,30 +83,6 @@ namespace PgTools {
         offsetsDest.close();
         missedReadsDest.close();
     }
-
-    void DefaultReadsMatcher::writeIntoPseudoGenome(const vector<uint_reads_cnt_max> &orgIndexesMapping) {
-        vector<uint_reads_cnt_max> idxs(matchedReadsCount);
-        uint64_t counter = 0;
-        for(uint_reads_cnt_max i = 0; i < readsCount; i++)
-            if (readMatchPos[i] != NOT_MATCHED_VALUE)
-                idxs[i] = counter++;
-
-        std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
-        { return readMatchPos[idx1] < readMatchPos[idx2]; });
-
-        SeparatedPseudoGenomeOutputBuilder builder(pgFilePrefix);
-
-        ofstream *const rlPosDest = builder.getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
-
-        ifstream pgPropSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(pgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX);
-        PseudoGenomeHeader header(pgPropSrc);
-
-        uint_reads_cnt_max newReadsCount = header.getReadsCount() + matchedReadsCount;
-        header.setReadsCount(newReadsCount);
-        header.write(*builder.getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX));
-        builder.build();
-    }
-
     void DefaultReadsMatcher::matchConstantLengthReads() {
         initMatching();
 
@@ -315,6 +291,23 @@ namespace PgTools {
 
     const vector<uint8_t> &DefaultReadsMatcher::getReadMismatches() const {
         return readMismatches;
+    }
+
+    void DefaultReadsMatcher::writeIntoPseudoGenome(const vector<uint_reads_cnt_max> &orgIndexesMapping) {
+        vector<uint_reads_cnt_max> idxs(matchedReadsCount);
+        uint64_t counter = 0;
+        for(uint_reads_cnt_max i = 0; i < readsCount; i++)
+            if (readMatchPos[i] != NOT_MATCHED_VALUE)
+                idxs[i] = counter++;
+
+        std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
+        { return readMatchPos[idx1] < readMatchPos[idx2]; });
+
+        SeparatedPseudoGenomeOutputBuilder builder(pgFilePrefix);
+
+        //TODO:
+
+        builder.build();
     }
 
 }

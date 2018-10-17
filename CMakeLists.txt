@@ -55,7 +55,7 @@ set(PG_GEN_FILES
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
         pseudogenome/generator/PseudoGenomeGeneratorBase.h
-        )
+        pseudogenome/readslist/iterator/ExtendedReadsListIterators.cpp pseudogenome/readslist/iterator/ExtendedReadsListIterators.h)
 
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
