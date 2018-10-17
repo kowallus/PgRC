@@ -45,7 +45,8 @@ set(PG_FILES
         pseudogenome/readslist/ReadsListTypes.h
         pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
         pseudogenome/TemplateUserGenerator.h
-        pseudogenome/persistence/SeparatedPseudoGenomePersistence.cpp pseudogenome/persistence/SeparatedPseudoGenomePersistence.h)
+        pseudogenome/persistence/SeparatedPseudoGenomePersistence.cpp pseudogenome/persistence/SeparatedPseudoGenomePersistence.h
+        pseudogenome/persistence/SeparatedExtendedReadsListIterator.cpp pseudogenome/persistence/SeparatedExtendedReadsListIterator.h)
 
 set(PG_GEN_FILES
         ${PG_FILES}
@@ -55,11 +56,12 @@ set(PG_GEN_FILES
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
         pseudogenome/generator/PseudoGenomeGeneratorBase.h
-        pseudogenome/readslist/iterator/ExtendedReadsListIterators.cpp pseudogenome/readslist/iterator/ExtendedReadsListIterators.h)
+        pseudogenome/readslist/iterator/ReadsListIteratorExtendedWrapper.h)
 
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
-        strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h)
+        strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h
+        strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h)
 
 set(ROLLING_HASH_FILES
         rollinghash/characterhash.h
@@ -76,7 +78,8 @@ set(MATCHER_FILES
         matching/DefaultReadsMatcher.cpp matching/DefaultReadsMatcher.h
         matching/ConstantLengthPatternsOnTextHashMatcher.cpp
         matching/ConstantLengthPatternsOnTextHashMatcher.h
-        matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h pseudogenome/readslist/iterator/ExtendedReadsListIteratorInterface.h)
+        matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h
+        pseudogenome/readslist/iterator/ExtendedReadsListIteratorInterface.h)
 
 set(READS_DIVIDER_FILES
         ${READSSET_FILES}

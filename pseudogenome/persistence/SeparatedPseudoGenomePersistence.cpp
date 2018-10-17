@@ -97,8 +97,9 @@ namespace PgTools {
         initReadsListDests();
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::initDest(ofstream *&dest, const string &fileSuffix) { if (dest == 0)
-        dest = new ofstream(SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(pseudoGenomePrefix, fileSuffix, true));
+    void SeparatedPseudoGenomeOutputBuilder::initDest(ofstream *&dest, const string &fileSuffix) {
+        if (dest == 0)
+            dest = new ofstream(SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(pseudoGenomePrefix, fileSuffix, true));
     }
 
     void SeparatedPseudoGenomeOutputBuilder::initReadsListDests() {

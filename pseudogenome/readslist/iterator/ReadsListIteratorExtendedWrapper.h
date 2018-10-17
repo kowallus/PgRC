@@ -1,5 +1,5 @@
-#ifndef PGTOOLS_EXTENDEDREADSLISTITERATORS_H
-#define PGTOOLS_EXTENDEDREADSLISTITERATORS_H
+#ifndef PGTOOLS_READSLISTITERATOREXTENDEDWRAPPER_H
+#define PGTOOLS_READSLISTITERATOREXTENDEDWRAPPER_H
 
 #include "../ReadsListInterface.h"
 
@@ -49,31 +49,6 @@ namespace PgTools {
         }
     };
 
-    class SeparatedExtendedReadsListIterator: public DefaultReadsListIteratorInterface {
-    private:
-        const string &pseudoGenomePrefix;
-        ifstream* rlPosSrc = 0;
-        ifstream* rlOrgIdxSrc = 0;
-        ifstream* rlRevCompSrc = 0;
-        ifstream* rlMisCntSrc = 0;
-        ifstream* rlMisSymSrc = 0;
-        ifstream* rlMisOffSrc = 0;
-
-        DefaultReadsListEntry entry;
-
-        void initSrc(ifstream* &src);
-        void initSrcs();
-        void freeSrc(ifstream* &src);
-        void freeSrcs();
-    public:
-        SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix);
-
-        ~SeparatedExtendedReadsListIterator() override;
-
-        bool moveNext() override;
-
-        const ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &peekReadEntry() override;
-    };
 }
 
-#endif //PGTOOLS_EXTENDEDREADSLISTITERATORS_H
+#endif //PGTOOLS_READSLISTITERATOREXTENDEDWRAPPER_H

@@ -5,7 +5,7 @@
 #include "../PackedPseudoGenome.h"
 #include "../../utils/helper.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
-#include "../readslist/iterator/ExtendedReadsListIterators.h"
+#include "../readslist/iterator/ReadsListIteratorExtendedWrapper.h"
 
 namespace PgTools {
 
