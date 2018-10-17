@@ -4,6 +4,7 @@
 #include "../readsset/persistance/ReadsSetPersistence.h"
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
+#include "../pseudogenome/persistence/SeparatedExtendedReadsListIterator.h"
 
 namespace PgTools {
 
@@ -138,7 +139,7 @@ namespace PgTools {
                 falseMatchCount++;
             if (i++ < 1) {
                 cout << "Matched: " << matchReadIndex << "; " << matchPosition
-                    << "; " << (exactMatch?"positive":"false") << "; " << (revCompMode?"pair strand (rc)":"") << endl;
+                    << "; " << (exactMatch?"positive":"false") << "; " << (revCompMode?"pair strand (RC)":"") << endl;
                 cout << matchedRead << endl;
                 const string pgPart(txt + (matchPosition), matchingLength);
                 cout << pgPart << endl;
@@ -235,7 +236,6 @@ namespace PgTools {
     void DefaultReadsExactMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
         clock_checkpoint();
 
-        cout << "Writing output files...\n" << endl;
         for (uint_reads_cnt_max i = 0; i < readMatchPos.size(); i++) {
             if (readMatchPos[i] == NOT_MATCHED_VALUE)
                 missedPatternsDest << readsSet->getRead(i) << "\n";
@@ -246,13 +246,12 @@ namespace PgTools {
             }
         }
 
-        cout << "... writing output files completed in  " << clock_millis() << " msec. " << endl;
+        cout << "... writing info dump files completed in  " << clock_millis() << " msec. " << endl;
     }
 
     void DefaultReadsApproxMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
         clock_checkpoint();
 
-        cout << "Writing output files...\n" << endl;
         string text = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(pgFilePrefix);
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
@@ -273,7 +272,7 @@ namespace PgTools {
         for (uint8_t i = 0; i <= maxMismatches; i++)
             cout << "Matched " << mismatchedReadsCount[i] << " reads with " << (int) i << " mismatches." << endl;
 
-        cout << "... writing output files completed in  " << clock_millis() << " msec. " << endl;
+        cout << "... writing info dump files completed in  " << clock_millis() << " msec. " << endl;
     }
 
     const vector<uint_reads_cnt_max> DefaultReadsMatcher::getMatchedReadsIndexes() const {
@@ -294,6 +293,7 @@ namespace PgTools {
     }
 
     void DefaultReadsMatcher::writeIntoPseudoGenome(const vector<uint_reads_cnt_max> &orgIndexesMapping) {
+        clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
         for(uint_reads_cnt_max i = 0; i < readsCount; i++)
@@ -303,11 +303,22 @@ namespace PgTools {
         std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
+        DefaultReadsListEntry entry;
         SeparatedPseudoGenomeOutputBuilder builder(pgFilePrefix);
-
-        //TODO:
-
+        builder.copyPseudoGenomeHeader(pgFilePrefix);
+        SeparatedExtendedReadsListIterator* rlIt = new SeparatedExtendedReadsListIterator(pgFilePrefix);
+        rlIt->moveNext();
+        for(uint_reads_cnt_max i = 0; i < matchedReadsCount; i++) {
+            uint_reads_cnt_max idx = idxs[i];
+            entry.advanceEntryByPosition(readMatchPos[idx], orgIndexesMapping[idx], revComplPg);
+            //TODO: hanlde mismatches in DefaultReadsApproxMatcher
+            builder.writeReads(rlIt, entry.pos);
+            builder.writeReadEntry(entry);
+        }
+        delete(rlIt);
         builder.build();
+
+        cout << "... writing output files completed in  " << clock_millis() << " msec. " << endl;
     }
 
 }

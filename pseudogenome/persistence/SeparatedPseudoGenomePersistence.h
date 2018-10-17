@@ -58,6 +58,7 @@ namespace PgTools {
 
         uint_reads_cnt_max readsCounter = 0;
 
+    private:
         PseudoGenomeHeader* pgh = 0;
 
         void freeDest(ofstream* &dest);
@@ -65,6 +66,8 @@ namespace PgTools {
     public:
 
         SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix, bool disableRevComp = false, bool disableMismatches = false);
+
+        void copyPseudoGenomeHeader(const string &pseudoGenomePrefix);
 
         void writeReadEntry(const DefaultReadsListEntry &rlEntry);
 

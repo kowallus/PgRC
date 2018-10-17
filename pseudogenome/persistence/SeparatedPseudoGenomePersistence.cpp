@@ -153,7 +153,7 @@ namespace PgTools {
             PgSAHelpers::writeValue<uint8_t>(*rlMisCntDest, rlEntry.mismatchesCount);
             for(uint8_t i = 0; i < rlEntry.mismatchesCount; i++) {
                 PgSAHelpers::writeValue<uint8_t>(*rlMisSymDest, rlEntry.mismatchCode[i]);
-                PgSAHelpers::writeValue<uint8_t>(*rlMisOffDest, rlEntry.mismatchOffset[i]);
+                PgSAHelpers::writeValue<uint_read_len_max>(*rlMisOffDest, rlEntry.mismatchOffset[i]);
             }
         }
         readsCounter++;
@@ -188,6 +188,18 @@ namespace PgTools {
         }
 
         delete(rlIt);
+    }
+
+    void SeparatedPseudoGenomeOutputBuilder::copyPseudoGenomeHeader(const string &pseudoGenomePrefix) {
+        ifstream pgPropSrc(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX,
+                           ios_base::in | ios_base::binary);
+        if (pgPropSrc.fail()) {
+            fprintf(stderr, "Cannot read pseudogenome properties (%s does not open).\n",
+                    pseudoGenomePrefix.c_str());
+            exit(EXIT_FAILURE);
+        }
+        this->pgh = new PseudoGenomeHeader(pgPropSrc);
+        pgPropSrc.close();
     }
 
 }

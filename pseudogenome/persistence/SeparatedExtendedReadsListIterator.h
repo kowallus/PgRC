@@ -16,14 +16,14 @@ namespace PgTools {
         ifstream *rlMisSymSrc = 0;
         ifstream *rlMisOffSrc = 0;
 
+        PseudoGenomeHeader* pgh = 0;
+        int64_t current = -1;
+
         PgTools::DefaultReadsListEntry entry;
 
         void initSrc(ifstream *&src, const string &fileSuffix);
-
         void initSrcs();
-
         void freeSrc(ifstream *&src);
-
         void freeSrcs();
 
     public:
