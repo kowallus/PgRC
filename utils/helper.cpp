@@ -141,6 +141,39 @@ unsigned long long int PgSAHelpers::powuint(unsigned long long int base, int exp
         else return base * tmp * tmp;
 }
 
+uint8_t PgSAHelpers::symbol2value(char symbol) {
+    switch (symbol) {
+        case 'A': return 0;
+        case 'C': return 1;
+        case 'G': return 2;
+        case 'T': return 3;
+        case 'N': return 4;
+    }
+    return -1;
+}
+
+char PgSAHelpers::value2symbol(uint8_t value) {
+    switch (value) {
+        case 0: return 'A';
+        case 1: return 'C';
+        case 2: return 'G';
+        case 3: return 'T';
+        case 4: return 'N';
+    }
+    return '?';
+}
+
+uint8_t PgSAHelpers::mismatch2code(char actual, char mismatch) {
+    uint8_t actualValue = symbol2value(actual);
+    uint8_t mismatchValue = symbol2value(mismatch);
+    return mismatchValue > actualValue?(mismatchValue - 1):mismatchValue;
+}
+
+char PgSAHelpers::code2mismatch(char actual, uint8_t code) {
+    uint8_t actualValue = symbol2value(actual);
+    return value2symbol(code < actualValue?code:(code+1));
+}
+
 string PgSAHelpers::reverseComplement(string kmer) {
     size_t kmer_length = kmer.size();
     string revcomp;

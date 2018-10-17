@@ -107,6 +107,20 @@ namespace PgSAIndex {
             bool isPGLengthStd() { return PgSAIndex::isPGLengthStd(pgLength); };
             bool isPGLengthMax() { return PgSAIndex::isPGLengthMax(pgLength); };
 
+
+            uint_reads_cnt_max getReadsCount() const {
+                return readsCount;
+            }
+
+            void setReadsCount(uint_reads_cnt_max readsCount) {
+                PseudoGenomeHeader::readsCount = readsCount;
+            }
+
+            void setPseudoGenomeLength(uint_pg_len_max pgLength) {
+                PseudoGenomeHeader::pgLength = pgLength;
+            }
+
+
             uint_pg_len_max getPseudoGenomeLength() { return this->pgLength; };
     };
 

@@ -1,5 +1,5 @@
 /* 
- * File:   ReadsListIteratorInterface.h
+ * File:   ExtendedReadsListIteratorInterface.h
  * Author: Tomek
  *
  * Created on 4 luty 2014, 12:06
@@ -27,9 +27,9 @@ namespace PgSAIndex {
             
             inline uint_reads_cnt getReadOriginalIndex() { return static_cast<ReadsIteratorClass*>(this)->getReadOriginalIndexImpl(); };
             inline uint_read_len getOccurrenceOffset() { return static_cast<ReadsIteratorClass*>(this)->getOccurrenceOffsetImpl(); };
-            
+
             inline uint_flatten_occurrence_max getFlattenOccurrence() { return static_cast<ReadsIteratorClass*>(this)->getFlattenOccurrenceImpl(); };
-            
+
             inline uint_reads_cnt getReadIndex() { return static_cast<ReadsIteratorClass*>(this)->getReadIndexImpl(); };
             
             //true if read does not contain duplicate kmers (of filter kmer length)

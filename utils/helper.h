@@ -23,6 +23,11 @@ namespace PgSAHelpers {
     double qualityScore2approxCorrectProb(string quality);
     double qualityScore2correctProb(string quality);
 
+    inline uint8_t symbol2value(char symbol);
+    inline char value2symbol(uint8_t value);
+    uint8_t mismatch2code(char actual, char mismatch);
+    char code2mismatch(char actual, uint8_t code);
+
     // time routines
 
     void clock_checkpoint();

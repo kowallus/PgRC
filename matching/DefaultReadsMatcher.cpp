@@ -94,8 +94,17 @@ namespace PgTools {
         std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
-        //SeparatedPseudoGenomePersistence::
+        SeparatedPseudoGenomeOutputBuilder builder(pgFilePrefix);
 
+        ofstream *const rlPosDest = builder.getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
+
+        ifstream pgPropSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(pgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX);
+        PseudoGenomeHeader header(pgPropSrc);
+
+        uint_reads_cnt_max newReadsCount = header.getReadsCount() + matchedReadsCount;
+        header.setReadsCount(newReadsCount);
+        header.write(*builder.getPseudoGenomeElementDest(SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX));
+        builder.build();
     }
 
     void DefaultReadsMatcher::matchConstantLengthReads() {

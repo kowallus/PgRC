@@ -76,7 +76,7 @@ set(MATCHER_FILES
         matching/DefaultReadsMatcher.cpp matching/DefaultReadsMatcher.h
         matching/ConstantLengthPatternsOnTextHashMatcher.cpp
         matching/ConstantLengthPatternsOnTextHashMatcher.h
-        matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h)
+        matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h pseudogenome/readslist/iterator/ExtendedReadsListIteratorInterface.h)
 
 set(READS_DIVIDER_FILES
         ${READSSET_FILES}
