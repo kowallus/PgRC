@@ -159,12 +159,24 @@ namespace PgTools {
         readsCounter++;
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::writeReads(DefaultReadsListIteratorInterface *rlIt, uint_pg_len_max stopPos) {
-        do {
+    void SeparatedPseudoGenomeOutputBuilder::setReadsSourceIterator(DefaultReadsListIteratorInterface *rlIt) {
+        this->rlIt = rlIt;
+    }
+
+    void SeparatedPseudoGenomeOutputBuilder::writeReadsFromIterator(uint_pg_len_max stopPos) {
+        if (iterationPaused) {
             if (rlIt->peekReadEntry().pos >= stopPos)
-                break;
+                return;
             writeReadEntry(rlIt->peekReadEntry());
-        } while (rlIt->moveNext());
+            iterationPaused = false;
+        }
+        while (rlIt->moveNext()) {
+            if (rlIt->peekReadEntry().pos >= stopPos) {
+                iterationPaused = true;
+                break;
+            }
+            writeReadEntry(rlIt->peekReadEntry());
+        }
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, string divisionFile, bool divisionComplement) {
@@ -177,8 +189,8 @@ namespace PgTools {
         if (divisionFile != "")
             rlIt->applyDivision(divisionFile, divisionComplement);
 
-        rlIt->moveNext();
-        writeReads(rlIt);
+        setReadsSourceIterator(rlIt);
+        writeReadsFromIterator();
 
         pgh = new PseudoGenomeHeader(pgb);
         if (pgh->getReadsCount() != readsCounter) {

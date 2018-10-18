@@ -28,6 +28,20 @@ namespace PgTools {
         } while (++pos < length);
     }
 
+    void fillEntryWithMismatches(const char *read, const char *pgPart,
+            const uint8_t mismatchesCount, DefaultReadsListEntry &entry) {
+        uint64_t pos = 0;
+        uint8_t count = 0;
+        while (true) {
+            if (read[pos] != pgPart[pos]) {
+                entry.addMismatch(mismatch2code(pgPart[pos], read[pos]), pos);
+                if (++count == mismatchesCount)
+                    return;
+            }
+            pos++;
+        };
+    }
+
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
     const uint32_t DefaultReadsMatcher::NOT_MATCHED_VALUE = UINT32_MAX;
 
@@ -176,8 +190,8 @@ namespace PgTools {
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         DefaultReadsMatcher::initMatching();
-        readMismatches.clear();
-        readMismatches.insert(readMismatches.end(), readsCount, UINT8_MAX);
+        readMismatchesCount.clear();
+        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, UINT8_MAX);
     }
 
     void DefaultReadsApproxMatcher::matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode) {
@@ -189,7 +203,7 @@ namespace PgTools {
         while (hashMatcher->moveNext()) {
             const uint32_t matchPatternIndex = hashMatcher->getHashMatchPatternIndex();
             uint32_t matchReadIndex = matchPatternIndex / (maxMismatches + 1);
-            if (readMismatches[matchReadIndex] <= minMismatches)
+            if (readMismatchesCount[matchReadIndex] <= minMismatches)
                 continue;
             const string &matchedRead = readsSet->getRead(matchReadIndex);
             uint64_t matchPosition = hashMatcher->getHashMatchTextPosition();
@@ -203,14 +217,14 @@ namespace PgTools {
                 continue;
             const uint8_t mismatchesCount = countMismatches(matchedRead.data(), txt + matchPosition,
                                                             matchingLength, maxMismatches);
-            if (mismatchesCount < readMismatches[matchReadIndex]) {
-                if (readMismatches[matchReadIndex] == UINT8_MAX)
+            if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
+                if (readMismatchesCount[matchReadIndex] == UINT8_MAX)
                     matchedReadsCount++;
                 else
                     multiMatchCount++;
                 readMatchPos[matchReadIndex] = revCompMode?length-(matchPosition+matchingLength):matchPosition;
                 if (revCompMode) readMatchRC[matchReadIndex] = true;
-                readMismatches[matchReadIndex] = mismatchesCount;
+                readMismatchesCount[matchReadIndex] = mismatchesCount;
             } else if (mismatchesCount == UINT8_MAX)
                 falseMatchCount++;
             else
@@ -259,13 +273,12 @@ namespace PgTools {
                 missedPatternsDest << readsSet->getRead(i) << "\n";
             else {
                 offsetsDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"");
-                const string pgPart = text.substr(readMatchPos[i], matchingLength);
                 const string read = readMatchRC[i]?reverseComplement(readsSet->getRead(i)):readsSet->getRead(i);
-                reportMismatches(read.data(), pgPart.data(), matchingLength, offsetsDest);
+                reportMismatches(read.data(), text.data() + readMatchPos[i], matchingLength, offsetsDest);
                 offsetsDest << "\n";
                 if (matchingLength < readLength)
                     suffixesDest << readsSet->getRead(i).substr(matchingLength);
-                mismatchedReadsCount[readMismatches[i]]++;
+                mismatchedReadsCount[readMismatchesCount[i]]++;
             }
         }
 
@@ -289,7 +302,32 @@ namespace PgTools {
     }
 
     const vector<uint8_t> &DefaultReadsMatcher::getReadMismatches() const {
-        return readMismatches;
+        return readMismatchesCount;
+    }
+
+    SeparatedPseudoGenomeOutputBuilder *DefaultReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
+            bool enableRevComp, bool enableMismatches) {
+        return new SeparatedPseudoGenomeOutputBuilder(this->pgFilePrefix,
+                !enableRevComp && !this->revComplPg, !enableMismatches && this->maxMismatches == 0);
+    }
+
+    SeparatedPseudoGenomeOutputBuilder *DefaultReadsExactMatcher::createSeparatedPseudoGenomeOutputBuilder(
+            bool enableRevComp, bool enableMismatches){
+        return new SeparatedPseudoGenomeOutputBuilder(this->pgFilePrefix,
+                !enableRevComp && !this->revComplPg, !enableMismatches);
+    }
+
+    void DefaultReadsApproxMatcher::initEntryUpdating() {
+        pg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(pgFilePrefix);
+    }
+
+    void DefaultReadsApproxMatcher::updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) {
+        const string read = readMatchRC[matchIdx]?reverseComplement(readsSet->getRead(matchIdx)):readsSet->getRead(matchIdx);
+        fillEntryWithMismatches(read.data(), pg.data() + entry.pos, readMismatchesCount[matchIdx], entry);
+    }
+
+    void DefaultReadsApproxMatcher::closeEntryUpdating() {
+        pg.clear();
     }
 
     void DefaultReadsMatcher::writeIntoPseudoGenome(const vector<uint_reads_cnt_max> &orgIndexesMapping) {
@@ -298,26 +336,30 @@ namespace PgTools {
         uint64_t counter = 0;
         for(uint_reads_cnt_max i = 0; i < readsCount; i++)
             if (readMatchPos[i] != NOT_MATCHED_VALUE)
-                idxs[i] = counter++;
+                idxs[counter++] = i;
 
         std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
         DefaultReadsListEntry entry;
-        SeparatedPseudoGenomeOutputBuilder builder(pgFilePrefix);
-        builder.copyPseudoGenomeHeader(pgFilePrefix);
+        initEntryUpdating();
         SeparatedExtendedReadsListIterator* rlIt = new SeparatedExtendedReadsListIterator(pgFilePrefix);
-        rlIt->moveNext();
+        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(
+                rlIt->isRevCompEnabled(), rlIt->areMismatchesEnabled());
+        builder->setReadsSourceIterator(rlIt);
+        builder->copyPseudoGenomeHeader(pgFilePrefix);
         for(uint_reads_cnt_max i = 0; i < matchedReadsCount; i++) {
-            uint_reads_cnt_max idx = idxs[i];
-            entry.advanceEntryByPosition(readMatchPos[idx], orgIndexesMapping[idx], revComplPg);
-            //TODO: hanlde mismatches in DefaultReadsApproxMatcher
-            builder.writeReads(rlIt, entry.pos);
-            builder.writeReadEntry(entry);
+            uint_reads_cnt_max matchIdx = idxs[i];
+            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIndexesMapping[matchIdx], readMatchRC[matchIdx]);
+            this->updateEntry(entry, matchIdx);
+            builder->writeReadsFromIterator(entry.pos);
+            builder->writeReadEntry(entry);
         }
+        builder->writeReadsFromIterator();
         delete(rlIt);
-        builder.build();
-
+        builder->build();
+        delete(builder);
+        closeEntryUpdating();
         cout << "... writing output files completed in  " << clock_millis() << " msec. " << endl;
     }
 

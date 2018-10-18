@@ -7,6 +7,7 @@
 
 #include "../readsset/PackedReadsSet.h"
 #include "ConstantLengthPatternsOnTextHashMatcher.h"
+#include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
 using namespace std;
 
@@ -27,7 +28,7 @@ namespace PgTools {
         vector<uint32_t> readMatchPos;
         vector<bool> readMatchRC;
 
-        vector<uint8_t> readMismatches;
+        vector<uint8_t> readMismatchesCount;
         uint_reads_cnt_max matchedReadsCount = 0;
 
         uint_reads_cnt_max readsCount;
@@ -42,6 +43,11 @@ namespace PgTools {
         virtual void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false) = 0;
         virtual void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) = 0;
 
+        virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(bool enableRevComp, bool enableMismatches) = 0;
+
+        virtual void initEntryUpdating() = 0;
+        virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) = 0;
+        virtual void closeEntryUpdating() = 0;
 
     public:
         static const uint_read_len_max DISABLED_PREFIX_MODE;
@@ -69,17 +75,19 @@ namespace PgTools {
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
     protected:
-
-    public:
-        DefaultReadsExactMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                                 uint32_t matchPrefixLength);
-
-    protected:
         void initMatching();
         void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
+        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(bool enableRevComp, bool enableMismatches) override;
+
+        void initEntryUpdating() override {};
+        void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override {};
+        void closeEntryUpdating() override {};
     public:
+        DefaultReadsExactMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+                                 uint32_t matchPrefixLength);
+
     };
 
     class DefaultReadsApproxMatcher: public DefaultReadsMatcher {
@@ -89,16 +97,21 @@ namespace PgTools {
         uint8_t minMismatches = 0;
         uint_read_len_max partLength;
 
-    public:
-        DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint8_t maxMismatches);
-
-    protected:
         void initMatching();
         void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
+        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(bool enableRevComp, bool enableMismatches) override;
+
+        string pg;
+        void initEntryUpdating() override;
+        void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override;
+        void closeEntryUpdating() override;
+
     public:
+        DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+                                  uint32_t matchPrefixLength, uint8_t maxMismatches);
+
     };
 
 }

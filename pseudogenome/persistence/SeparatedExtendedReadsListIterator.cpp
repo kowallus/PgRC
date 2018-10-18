@@ -85,4 +85,12 @@ namespace PgTools {
     SeparatedExtendedReadsListIterator::peekReadEntry() {
         return entry;
     }
+
+    bool SeparatedExtendedReadsListIterator::isRevCompEnabled() {
+        return rlRevCompSrc;
+    }
+
+    bool SeparatedExtendedReadsListIterator::areMismatchesEnabled() {
+        return rlMisCntSrc;
+    }
 }
