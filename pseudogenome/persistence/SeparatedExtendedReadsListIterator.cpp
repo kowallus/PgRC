@@ -33,9 +33,9 @@ namespace PgTools {
         initSrc(rlPosSrc, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
         initSrc(rlOrgIdxSrc, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         initSrc(rlRevCompSrc, SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX);
-        initSrc(rlMisCntSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESCOUNT_FILE_SUFFIX);
-        initSrc(rlMisSymSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHEDSYMBOLS_FILE_SUFFIX);
-        initSrc(rlMisOffSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESOFFSETS_FILE_SUFFIX);
+        initSrc(rlMisCntSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX);
+        initSrc(rlMisSymSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX);
+        initSrc(rlMisOffSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
     }
 
     void SeparatedExtendedReadsListIterator::freeSrc(ifstream *&src) {
@@ -73,7 +73,7 @@ namespace PgTools {
                     uint_read_len_max mismatchOffset;
                     PgSAHelpers::readValue<uint8_t>(*rlMisSymSrc, mismatchCode);
                     PgSAHelpers::readValue<uint_read_len_max>(*rlMisOffSrc, mismatchOffset);
-                    entry.addMismatch(mismatchOffset, mismatchCode);
+                    entry.addMismatch(mismatchCode, mismatchOffset);
                 }
             }
             return true;

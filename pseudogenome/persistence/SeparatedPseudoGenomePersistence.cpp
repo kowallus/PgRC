@@ -75,9 +75,12 @@ namespace PgTools {
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_POSITIONS_FILE_SUFFIX);
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_REVERSECOMPL_FILE_SUFFIX);
-        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHESCOUNT_FILE_SUFFIX);
-        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHEDSYMBOLS_FILE_SUFFIX);
-        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHESOFFSETS_FILE_SUFFIX);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHES_COUNT_FILE_SUFFIX);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
+
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_OFFSETS_FILE_SUFFIX);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX);
     }
 
     const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX = ".pg";
@@ -85,11 +88,18 @@ namespace PgTools {
     const string SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX = ".pg.rl.pos";
     const string SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX = ".pg.rl.idx";
     const string SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX = ".pg.rl.rc";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESCOUNT_FILE_SUFFIX = ".pg.rl.mis.cnt";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHEDSYMBOLS_FILE_SUFFIX = ".pg.rl.mis.sym";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESOFFSETS_FILE_SUFFIX = ".pg.rl.mis.off";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX = ".pg.rl.mis.cnt";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX = ".pg.rl.mis.sym";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX = ".pg.rl.mis.pos";
+
+
+    const string SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX = ".pg.rl.off";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX = ".pg.rl.mis.roff";
 
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
+
+    bool SeparatedPseudoGenomePersistence::enableReadOffsetsRepresentation = false;
+    bool SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix,
             bool disableRevComp, bool disableMismatches) : pseudoGenomePrefix(pseudoGenomePrefix),
@@ -103,14 +113,20 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::initReadsListDests() {
-        initDest(rlPosDest, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
+        if (SeparatedPseudoGenomePersistence::enableReadOffsetsRepresentation)
+            initDest(rlOffDest, SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX);
+        else
+            initDest(rlPosDest, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
         initDest(rlOrgIdxDest, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         if (!disableRevComp)
             initDest(rlRevCompDest, SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX);
         if (!disableMismatches) {
-        initDest(rlMisCntDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESCOUNT_FILE_SUFFIX);
-        initDest(rlMisSymDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHEDSYMBOLS_FILE_SUFFIX);
-        initDest(rlMisOffDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHESOFFSETS_FILE_SUFFIX);
+            initDest(rlMisCntDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX);
+            initDest(rlMisSymDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX);
+            if (SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation)
+                initDest(rlMisRevOffDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX);
+            else
+                initDest(rlMisPosDest, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
         }
     }
 
@@ -130,7 +146,10 @@ namespace PgTools {
         freeDest(rlRevCompDest);
         freeDest(rlMisCntDest);
         freeDest(rlMisSymDest);
-        freeDest(rlMisOffDest);
+        freeDest(rlMisPosDest);
+
+        freeDest(rlOffDest);
+        freeDest(rlMisRevOffDest);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::build() {
@@ -145,15 +164,29 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
-        PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
+        if (SeparatedPseudoGenomePersistence::enableReadOffsetsRepresentation)
+            PgSAHelpers::writeValue<uint_read_len_max>(*rlOffDest, rlEntry.offset);
+        else
+            PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
         PgSAHelpers::writeValue<uint_reads_cnt_std>(*rlOrgIdxDest, rlEntry.idx);
         if (!disableRevComp)
             PgSAHelpers::writeValue<uint8_t>(*rlRevCompDest, rlEntry.revComp?1:0);
         if (!disableMismatches) {
             PgSAHelpers::writeValue<uint8_t>(*rlMisCntDest, rlEntry.mismatchesCount);
-            for(uint8_t i = 0; i < rlEntry.mismatchesCount; i++) {
-                PgSAHelpers::writeValue<uint8_t>(*rlMisSymDest, rlEntry.mismatchCode[i]);
-                PgSAHelpers::writeValue<uint_read_len_max>(*rlMisOffDest, rlEntry.mismatchOffset[i]);
+            if (rlEntry.mismatchesCount) {
+                for (uint8_t i = 0; i < rlEntry.mismatchesCount; i++)
+                    PgSAHelpers::writeValue<uint8_t>(*rlMisSymDest, rlEntry.mismatchCode[i]);
+                if (SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation) {
+                    uint8_t currentPos = pgh->getMaxReadLength() - 1;
+                    for (int16_t i = rlEntry.mismatchesCount - 1; i >= 0; i--) {
+                        PgSAHelpers::writeValue<uint_read_len_max>(*rlMisRevOffDest,
+                                                                   currentPos - rlEntry.mismatchOffset[i]);
+                        currentPos = rlEntry.mismatchOffset[i] - 1;
+                    }
+                } else {
+                    for (uint8_t i = 0; i < rlEntry.mismatchesCount; i++)
+                        PgSAHelpers::writeValue<uint_read_len_max>(*rlMisPosDest, rlEntry.mismatchOffset[i]);
+                }
             }
         }
         readsCounter++;

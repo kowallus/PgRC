@@ -46,7 +46,9 @@ set(PG_FILES
         pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
         pseudogenome/TemplateUserGenerator.h
         pseudogenome/persistence/SeparatedPseudoGenomePersistence.cpp pseudogenome/persistence/SeparatedPseudoGenomePersistence.h
-        pseudogenome/persistence/SeparatedExtendedReadsListIterator.cpp pseudogenome/persistence/SeparatedExtendedReadsListIterator.h)
+        pseudogenome/persistence/SeparatedExtendedReadsListIterator.cpp pseudogenome/persistence/SeparatedExtendedReadsListIterator.h
+        pseudogenome/readslist/iterator/ExtendedReadsListIteratorInterface.h
+        pseudogenome/readslist/iterator/ReadsListIteratorExtendedWrapper.h)
 
 set(PG_GEN_FILES
         ${PG_FILES}
@@ -55,8 +57,7 @@ set(PG_GEN_FILES
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.cpp
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
-        pseudogenome/generator/PseudoGenomeGeneratorBase.h
-        pseudogenome/readslist/iterator/ReadsListIteratorExtendedWrapper.h)
+        pseudogenome/generator/PseudoGenomeGeneratorBase.h)
 
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
@@ -78,12 +79,10 @@ set(MATCHER_FILES
         matching/DefaultReadsMatcher.cpp matching/DefaultReadsMatcher.h
         matching/ConstantLengthPatternsOnTextHashMatcher.cpp
         matching/ConstantLengthPatternsOnTextHashMatcher.h
-        matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h
-        pseudogenome/readslist/iterator/ExtendedReadsListIteratorInterface.h)
+        matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h)
 
 set(READS_DIVIDER_FILES
-        ${READSSET_FILES}
-        )
+        ${READSSET_FILES})
 
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
@@ -91,3 +90,4 @@ add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
 add_executable(ReadsDivider ReadsDivider.cpp ${READS_DIVIDER_FILES})
 add_executable(ReadsMatcher ReadsMatcher.cpp ${MATCHER_FILES})
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
+add_executable(PgRewriter PgRewriter.cpp ${PG_FILES})

@@ -285,7 +285,7 @@ namespace PgTools {
         for (uint8_t i = 0; i <= maxMismatches; i++)
             cout << "Matched " << mismatchedReadsCount[i] << " reads with " << (int) i << " mismatches." << endl;
 
-        cout << "... writing info dump files completed in  " << clock_millis() << " msec. " << endl;
+        cout << "... writing info dump files completed in " << clock_millis() << " msec. " << endl;
     }
 
     const vector<uint_reads_cnt_max> DefaultReadsMatcher::getMatchedReadsIndexes() const {
@@ -360,7 +360,7 @@ namespace PgTools {
         builder->build();
         delete(builder);
         closeEntryUpdating();
-        cout << "... writing output files completed in  " << clock_millis() << " msec. " << endl;
+        cout << "... writing output files completed in " << clock_millis() << " msec. " << endl;
     }
 
 }

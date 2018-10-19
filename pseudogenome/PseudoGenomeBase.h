@@ -120,6 +120,9 @@ namespace PgSAIndex {
                 PseudoGenomeHeader::pgLength = pgLength;
             }
 
+            uint_read_len_max getMaxReadLength() const {
+                return maxReadLength;
+            };
 
             uint_pg_len_max getPseudoGenomeLength() { return this->pgLength; };
     };
