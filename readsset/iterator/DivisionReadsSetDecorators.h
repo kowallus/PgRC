@@ -38,6 +38,7 @@ namespace PgTools {
         uint64_t currentDivIdx;
         std::istream* divSource;
         bool visitComplement;
+        bool plainTextReadMode = false;
 
     public:
         DividedReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream* divSource,

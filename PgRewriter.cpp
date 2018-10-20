@@ -26,12 +26,9 @@ int main(int argc, char *argv[])
     int opt; // current option
     bool compactBytes = false;
 
-    while ((opt = getopt(argc, argv, "rwcoe?")) != -1) {
+    while ((opt = getopt(argc, argv, "tcoe?")) != -1) {
         switch (opt) {
-        case 'r':
-            plainTextReadMode = true;
-            break;
-        case 'w':
+        case 't':
             plainTextWriteMode = true;
             break;
         case 'c':
@@ -45,10 +42,10 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-r] [-w] [-c] [-o] [-e] pgsrcfileprefix [pgdestfileprefix]\n\n",
+            fprintf(stderr, "Usage: %s [-t] [-c] [-o] [-e] pgsrcfileprefix [pgdestfileprefix]\n\n",
                     argv[0]);
-                fprintf(stderr, "-r/-w read/write numbers in text mode\n-c compact output (minimal bytes used)\n");
-                fprintf(stderr, "-o write read position as offsets\n-e write mismatches as offsets from end\n");
+            fprintf(stderr, "-t write numbers in text mode\n-c compact output (minimal bytes used)\n");
+            fprintf(stderr, "-o write read position as offsets\n-e write mismatches as offsets from end\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
         }

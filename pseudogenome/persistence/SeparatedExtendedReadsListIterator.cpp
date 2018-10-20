@@ -12,6 +12,7 @@ namespace PgTools {
             exit(EXIT_FAILURE);
         }
         pgh = new PseudoGenomeHeader(pgPropSrc);
+        plainTextReadMode = readReadMode(pgPropSrc);
         pgPropSrc.close();
         initSrcs();
     }
@@ -60,19 +61,19 @@ namespace PgTools {
             uint_pg_len_max pos;
             uint_reads_cnt_std idx;
             uint8_t revComp = 0;
-            PgSAHelpers::readValue<uint_pg_len_max>(*rlPosSrc, pos);
-            PgSAHelpers::readValue<uint_reads_cnt_std>(*rlOrgIdxSrc, idx);
+            PgSAHelpers::readValue<uint_pg_len_max>(*rlPosSrc, pos, plainTextReadMode);
+            PgSAHelpers::readValue<uint_reads_cnt_std>(*rlOrgIdxSrc, idx, plainTextReadMode);
             if (rlRevCompSrc)
-                PgSAHelpers::readValue<uint8_t>(*rlRevCompSrc, revComp);
+                PgSAHelpers::readValue<uint8_t>(*rlRevCompSrc, revComp, plainTextReadMode);
             entry.advanceEntryByPosition(pos, idx, revComp==1);
             if (rlMisCntSrc) {
                 uint8_t mismatchesCount;
-                PgSAHelpers::readValue<uint8_t>(*rlMisCntSrc, mismatchesCount);
+                PgSAHelpers::readValue<uint8_t>(*rlMisCntSrc, mismatchesCount, plainTextReadMode);
                 for(uint8_t i = 0; i < mismatchesCount; i++) {
                     uint8_t mismatchCode;
                     uint_read_len_max mismatchOffset;
-                    PgSAHelpers::readValue<uint8_t>(*rlMisSymSrc, mismatchCode);
-                    PgSAHelpers::readValue<uint_read_len_max>(*rlMisOffSrc, mismatchOffset);
+                    PgSAHelpers::readValue<uint8_t>(*rlMisSymSrc, mismatchCode, plainTextReadMode);
+                    PgSAHelpers::readValue<uint_read_len_max>(*rlMisOffSrc, mismatchOffset, plainTextReadMode);
                     entry.addMismatch(mismatchCode, mismatchOffset);
                 }
             }

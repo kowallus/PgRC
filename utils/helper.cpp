@@ -6,9 +6,6 @@
 
 clock_t checkpoint;
 
-bool PgSAHelpers::plainTextWriteMode = false;
-bool PgSAHelpers::plainTextReadMode = false;
-
 void PgSAHelpers::clock_checkpoint() {
     checkpoint = clock();
 //    cout << "Clock reset!\n";
@@ -97,6 +94,23 @@ void PgSAHelpers::writeArrayToFile(string destFile, void* srcArray, size_t array
     PgSAHelpers::writeArray(out, srcArray, arraySize);
 
     cout << "Write " << arraySize << " bytes to " << destFile << " in " << clock_millis() << " msec \n";
+}
+
+bool PgSAHelpers::plainTextWriteMode = false;
+
+void PgSAHelpers::writeReadMode(std::ostream &dest, bool plainTextWriteMode) {
+    dest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << "\n";
+}
+
+bool PgSAHelpers::readReadMode(std::istream &src) {
+    string readMode;
+    src >> readMode;
+    if (readMode != TEXT_MODE_ID && readMode != BINARY_MODE_ID) {
+        fprintf(stderr, "Expected READ MODE id (not: %s)\n", readMode.c_str());
+        exit(EXIT_FAILURE);
+    }
+    src.get();
+    return readMode == TEXT_MODE_ID;
 }
 
 string PgSAHelpers::toString(unsigned long long value) {

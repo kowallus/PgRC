@@ -18,6 +18,7 @@ void divideReads(string srcFastqFile, string pairFastqFile, string outputFile, d
         exit(EXIT_FAILURE);
     }
     cout << "Starting division... " << endl;
+    writeReadMode(filteredIndexesDest, plainTextWriteMode);
     uint64_t hitCounter = 0;
     while (badReadsIterator->moveNextVirtual()) {
         hitCounter++;
@@ -39,7 +40,6 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 't':
                 plainTextWriteMode = true;
-                plainTextReadMode = true;
                 break;
             case '?':
             default: /* '?' */

@@ -17,6 +17,8 @@ namespace PgTools {
         ifstream *rlMisOffSrc = 0;
 
         PseudoGenomeHeader* pgh = 0;
+        bool plainTextReadMode = false;
+
         int64_t current = -1;
 
         PgTools::DefaultReadsListEntry entry;

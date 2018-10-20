@@ -55,7 +55,6 @@ int main(int argc, char *argv[]) {
                 break;
             case 't':
                 plainTextWriteMode = true;
-                plainTextReadMode = true;
                 break;
             case '?':
             default: /* '?' */

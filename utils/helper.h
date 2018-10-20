@@ -86,7 +86,11 @@ namespace PgSAHelpers {
     void writeArrayToFile(string destFile, void* srcArray, size_t arraySize);
 
     extern bool plainTextWriteMode;
-    extern bool plainTextReadMode;
+    const static string TEXT_MODE_ID = "TXT";
+    const static string BINARY_MODE_ID = "BIN";
+
+    void writeReadMode(std::ostream &dest, bool plainTextWriteMode);
+    bool readReadMode(std::istream &src);
 
     template<typename t_val>
     void writeValue(std::ostream &dest, const t_val value, bool plainTextWriteMode) {
@@ -107,12 +111,6 @@ namespace PgSAHelpers {
     void writeValue(std::ostream &dest, const t_val value) {
         writeValue(dest, value, plainTextWriteMode);
     }
-
-    template<typename t_val>
-    void readValue(std::istream &src, t_val& value) {
-        readValue(src, value, plainTextReadMode);
-    }
-
 
     class BufferedFileIStream : public istream {
 

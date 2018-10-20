@@ -153,11 +153,15 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::build() {
-        if (pgh != 0) {
-            pgh->setReadsCount(readsCounter);
-            initDest(pgPropDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX);
-            pgh->write(*pgPropDest);
+        if (pgh == 0) {
+            fprintf(stderr, "Pseudo genome header not initialized in separated Pg builder.\n");
+            exit(EXIT_FAILURE);
+
         }
+        pgh->setReadsCount(readsCounter);
+        initDest(pgPropDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX);
+        pgh->write(*pgPropDest);
+        writeReadMode(*pgPropDest, plainTextWriteMode);
 
         freeDests();
         SeparatedPseudoGenomePersistence::acceptTemporaryPseudoGenomeElements(pseudoGenomePrefix);

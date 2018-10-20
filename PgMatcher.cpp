@@ -57,7 +57,6 @@ void matchPgInPgFile(const string &destPgFile, const string &srcPgFile, bool rev
 
 int main(int argc, char *argv[])
 {
-
     int opt; // current option
     bool revComplPg = false;
     uint8_t maxMismatches = 0;
@@ -72,7 +71,6 @@ int main(int argc, char *argv[])
             break;
         case 't':
             plainTextWriteMode = true;
-            plainTextReadMode = true;
             break;
         case '?':
         default: /* '?' */

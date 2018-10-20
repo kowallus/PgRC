@@ -53,14 +53,15 @@ namespace PgTools {
 
     template<typename uint_read_len>
     uint64_t QualityDividingReadsSetIterator<uint_read_len>::getReadOriginalIndex() {
-        return counter;
+        return (uint64_t) counter;
     }
 
     template<typename uint_read_len>
     DividedReadsSetIterator<uint_read_len>::DividedReadsSetIterator(
             ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream *divSource, bool visitComplement)
             :coreIterator(coreIterator), divSource(divSource), visitComplement(visitComplement) {
-        readValue(*divSource, currentDivIdx);
+        plainTextReadMode = readReadMode(*divSource);
+        readValue(*divSource, currentDivIdx, plainTextReadMode);
     }
 
     template<typename uint_read_len>
@@ -71,10 +72,10 @@ namespace PgTools {
                 if (counter != currentDivIdx)
                     return true;
                 else
-                    readValue(*divSource, currentDivIdx);
+                    readValue(*divSource, currentDivIdx, plainTextReadMode);
             } else {
                 if (counter == currentDivIdx) {
-                    readValue(*divSource, currentDivIdx);
+                    readValue(*divSource, currentDivIdx, plainTextReadMode);
                     return true;
                 }
             }
@@ -103,7 +104,8 @@ namespace PgTools {
         counter = -1;
         divSource->clear();
         divSource->seekg(0);
-        readValue(*divSource, currentDivIdx);
+        readReadMode(*divSource);
+        readValue(*divSource, currentDivIdx, plainTextReadMode);
         coreIterator->rewindVirtual();
     }
 

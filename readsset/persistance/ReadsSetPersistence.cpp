@@ -5,7 +5,7 @@
 namespace PgSAReadsSet {
 
     vector<uint_reads_cnt_max>
-    ReadsSetPersistence::getReadsOriginalIndexes(string divisionFile, bool divisionComplement,
+    ReadsSetPersistence::getReadsOriginalIndexes(const string &divisionFile, bool divisionComplement,
                                                  uint64_t readsCount) {
         vector<uint_reads_cnt_max> mapping(readsCount);
         if (divisionFile == "") {
@@ -20,11 +20,12 @@ namespace PgSAReadsSet {
             uint64_t i = 0;
             uint64_t counter = 0;
             uint64_t currentDivIdx = 0;
-            readValue(divSource, currentDivIdx);
+            bool plainTextReadMode = readReadMode(divSource);
+            readValue(divSource, currentDivIdx, plainTextReadMode);
             while (i < readsCount) {
                 if (divisionComplement) {
                     while (counter == currentDivIdx) {
-                        readValue(divSource, currentDivIdx);
+                        readValue(divSource, currentDivIdx, plainTextReadMode);
                         counter++;
                     }
                     mapping[i++] = counter++;
@@ -32,7 +33,7 @@ namespace PgSAReadsSet {
                     while (counter != currentDivIdx)
                         counter++;
                     mapping[i++] = counter++;
-                    readValue(divSource, currentDivIdx);
+                    readValue(divSource, currentDivIdx, plainTextReadMode);
                 }
             }
         }
@@ -48,6 +49,7 @@ namespace PgSAReadsSet {
             fprintf(stderr, "cannot write to division file %s\n", divisionFile.c_str());
             exit(EXIT_FAILURE);
         }
+        divDest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << endl;
 
         int64_t i = -1;
         uint64_t readsCount = orgIndexesMapping.size();
@@ -72,17 +74,17 @@ namespace PgSAReadsSet {
         divDest.close();
     }
 
-    ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(string srcFile,
-                                                                                                    string pairFile,
-                                                                                                    string divisionFile,
+    ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(const string &srcFile,
+                                                                                                    const string &pairFile,
+                                                                                                    const string &divisionFile,
                                                                                                     bool divisionComplement) {
         return new ManagedReadsSetIterator(srcFile, pairFile, divisionFile, divisionComplement);
     }
 
     using namespace PgTools;
 
-    ReadsSetPersistence::ManagedReadsSetIterator::ManagedReadsSetIterator(string srcFile, string pairFile,
-                                                                          string divisionFile, bool divisionComplement) {
+    ReadsSetPersistence::ManagedReadsSetIterator::ManagedReadsSetIterator(const string &srcFile, const string &pairFile,
+                                                                          const string &divisionFile, bool divisionComplement) {
         srcSource = new ifstream(srcFile, ios_base::in | ios_base::binary);
         if (srcSource->fail()) {
             fprintf(stderr, "cannot open reads file %s\n", srcFile.c_str());
