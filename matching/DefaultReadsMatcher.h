@@ -110,7 +110,7 @@ namespace PgTools {
 
     public:
         DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint8_t maxMismatches);
+                                  uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
     };
 

@@ -168,11 +168,9 @@ namespace PgTools {
 
     DefaultReadsApproxMatcher::DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
                                                          PackedReadsSet *readsSet, uint32_t matchPrefixLength,
-                                                         uint8_t maxMismatches) : DefaultReadsMatcher(pgFilePrefix,
-                                                                                                      revComplPg,
-                                                                                                      readsSet,
-                                                                                                      matchPrefixLength),
-                                                                                  maxMismatches(maxMismatches) {}
+                                                         uint8_t maxMismatches, uint8_t minMismatches)
+                                                         : DefaultReadsMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength),
+                                                         maxMismatches(maxMismatches), minMismatches(minMismatches) {}
 
     void DefaultReadsApproxMatcher::initMatching() {
         clock_checkpoint();

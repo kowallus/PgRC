@@ -12,15 +12,19 @@ int main(int argc, char *argv[])
     int opt; // current option
     bool revComplPg = false;
     uint8_t maxMismatches = 0;
+    uint8_t minMismatches = 0;
     uint_read_len_max matchPrefixLength = PgTools::DefaultReadsMatcher::DISABLED_PREFIX_MODE;
     string divisionFile = "";
     bool divisionComplement = false;
     string infoPrefix = "";
 
-    while ((opt = getopt(argc, argv, "m:p:i:d:ctr?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:n:p:i:d:ctr?")) != -1) {
         switch (opt) {
         case 'm':
             maxMismatches = atoi(optarg);
+            break;
+        case 'n':
+            minMismatches = atoi(optarg);
             break;
         case 'p':
             matchPrefixLength = atoi(optarg);
@@ -42,12 +46,18 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-r] [-m maxMismatches] [-p match_prefix_length] [-t] [-c] [-d divisionfile] readssrcfile [pairsrcfile] pgfileprefix outputdivisionfile\n\n",
+            fprintf(stderr, "Usage: %s [-r] [-m maxMismatches] [-n expectedMinMismatches] [-p match_prefix_length] [-t] [-c] [-d divisionfile] readssrcfile [pairsrcfile] pgfileprefix outputdivisionfile\n\n",
                     argv[0]);
                 fprintf(stderr, "-r match reverse compliment of pseudogenome\n-c use complement of reads division\n-t write numbers in text mode\n\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
         }
+    }
+
+    if (minMismatches > maxMismatches) {
+        fprintf(stderr, "Min mismatches (%d) should not be higher than max mismatches (%d)\n", minMismatches, maxMismatches);
+
+        exit(EXIT_FAILURE);
     }
 
     if (optind > (argc - 3) || optind < (argc - 4)) {
@@ -73,7 +83,7 @@ int main(int argc, char *argv[])
     if (maxMismatches == 0)
         matcher = new PgTools::DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
     else
-        matcher = new PgTools::DefaultReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches);
+        matcher = new PgTools::DefaultReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches);
 
     matcher->matchConstantLengthReads();
     if (infoPrefix != "")
