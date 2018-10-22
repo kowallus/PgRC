@@ -37,6 +37,9 @@ namespace PgTools {
         initSrc(rlMisCntSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX);
         initSrc(rlMisSymSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX);
         initSrc(rlMisOffSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
+
+        initSrc(rlOffSrc, SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX);
+        initSrc(rlMisRevOffSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX);
     }
 
     void SeparatedExtendedReadsListIterator::freeSrc(ifstream *&src) {
@@ -54,18 +57,27 @@ namespace PgTools {
         freeSrc(rlMisCntSrc);
         freeSrc(rlMisSymSrc);
         freeSrc(rlMisOffSrc);
+
+        freeSrc(rlOffSrc);
+        freeSrc(rlMisRevOffSrc);
     }
 
     bool SeparatedExtendedReadsListIterator::moveNext() {
         if (++current < pgh->getReadsCount()) {
-            uint_pg_len_max pos;
             uint_reads_cnt_std idx;
             uint8_t revComp = 0;
-            PgSAHelpers::readValue<uint_pg_len_max>(*rlPosSrc, pos, plainTextReadMode);
             PgSAHelpers::readValue<uint_reads_cnt_std>(*rlOrgIdxSrc, idx, plainTextReadMode);
             if (rlRevCompSrc)
                 PgSAHelpers::readValue<uint8_t>(*rlRevCompSrc, revComp, plainTextReadMode);
-            entry.advanceEntryByPosition(pos, idx, revComp==1);
+            if (rlOffSrc) {
+                uint_read_len_max offset;
+                PgSAHelpers::readValue<uint_read_len_max>(*rlOffSrc, offset, plainTextReadMode);
+                entry.advanceEntryByOffset(offset, idx, revComp == 1);
+            } else {
+                uint_pg_len_max pos;
+                PgSAHelpers::readValue<uint_pg_len_max>(*rlPosSrc, pos, plainTextReadMode);
+                entry.advanceEntryByPosition(pos, idx, revComp == 1);
+            }
             if (rlMisCntSrc) {
                 uint8_t mismatchesCount;
                 PgSAHelpers::readValue<uint8_t>(*rlMisCntSrc, mismatchesCount, plainTextReadMode);
@@ -73,9 +85,14 @@ namespace PgTools {
                     uint8_t mismatchCode;
                     uint_read_len_max mismatchOffset;
                     PgSAHelpers::readValue<uint8_t>(*rlMisSymSrc, mismatchCode, plainTextReadMode);
-                    PgSAHelpers::readValue<uint_read_len_max>(*rlMisOffSrc, mismatchOffset, plainTextReadMode);
+                    if (rlMisOffSrc)
+                        PgSAHelpers::readValue<uint_read_len_max>(*rlMisOffSrc, mismatchOffset, plainTextReadMode);
+                    else
+                        PgSAHelpers::readValue<uint_read_len_max>(*rlMisRevOffSrc, mismatchOffset, plainTextReadMode);
                     entry.addMismatch(mismatchCode, mismatchOffset);
                 }
+                if (!rlMisOffSrc)
+                    convertMisOffsets2RevOffsets(entry.mismatchOffset, entry.mismatchesCount, pgh->getMaxReadLength());
             }
             return true;
         }

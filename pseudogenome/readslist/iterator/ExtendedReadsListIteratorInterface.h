@@ -30,7 +30,7 @@ namespace PgTools {
             mismatchOffset[mismatchesCount++] = offset;
         }
 
-        void advanceEntryByPosition(uint_pg_len pos, uint_reads_cnt idx = 0, bool revComp = false) {
+        void advanceEntryByPosition(uint_pg_len pos, uint_reads_cnt idx, bool revComp = false) {
             this->offset = pos - this->pos;
             this->pos = pos;
             this->idx = idx;
@@ -38,7 +38,7 @@ namespace PgTools {
             this->mismatchesCount = 0;
         }
 
-        void recedeEntryByPosition(uint_pg_len pos, uint_reads_cnt idx = 0, bool revComp = false) {
+        void recedeEntryByPosition(uint_pg_len pos, uint_reads_cnt idx, bool revComp = false) {
             this->offset = this->pos - pos;
             this->pos = pos;
             this->idx = idx;
@@ -46,12 +46,12 @@ namespace PgTools {
             this->mismatchesCount = 0;
         }
 
-        void advanceEntryByOffset(uint_read_len offset, uint_reads_cnt idx = 0, bool revComp = false) {
-            this->advanceEntryByPosition(this->pos + offset, revComp);
+        void advanceEntryByOffset(uint_read_len offset, uint_reads_cnt idx, bool revComp = false) {
+            this->advanceEntryByPosition(this->pos + offset, idx, revComp);
         }
 
-        void recedeEntryByOffset(uint_read_len offset, uint_reads_cnt idx = 0, bool revComp = false) {
-            this->recedeEntryByPosition(this->pos - offset, revComp);
+        void recedeEntryByOffset(uint_read_len offset, uint_reads_cnt idx, bool revComp = false) {
+            this->recedeEntryByPosition(this->pos - offset, idx, revComp);
         }
     };
 

@@ -43,7 +43,8 @@ namespace PgTools {
         virtual void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false) = 0;
         virtual void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) = 0;
 
-        virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(bool enableRevComp, bool enableMismatches) = 0;
+        virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
+                bool enableRevComp, bool enableMismatches) = 0;
 
         virtual void initEntryUpdating() = 0;
         virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) = 0;
@@ -70,7 +71,7 @@ namespace PgTools {
         const vector<uint32_t> &getReadMatchPos() const;
         const vector<uint8_t> &getReadMismatches() const;
 
-        void writeIntoPseudoGenome(const vector<uint_reads_cnt_max> &orgIndexesMapping);
+        void writeIntoPseudoGenome(const string &outPgPrefix, const vector<uint_reads_cnt_max> &orgIndexesMapping);
     };
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
@@ -79,7 +80,8 @@ namespace PgTools {
         void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
-        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(bool enableRevComp, bool enableMismatches) override;
+        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
+                bool enableRevComp, bool enableMismatches) override;
 
         void initEntryUpdating() override {};
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override {};
@@ -101,7 +103,8 @@ namespace PgTools {
         void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
-        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(bool enableRevComp, bool enableMismatches) override;
+        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
+                bool enableRevComp, bool enableMismatches) override;
 
         string pg;
         void initEntryUpdating() override;

@@ -113,6 +113,19 @@ bool PgSAHelpers::readReadMode(std::istream &src) {
     return readMode == TEXT_MODE_ID;
 }
 
+void
+PgSAHelpers::convertMisOffsets2RevOffsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength) {
+    uint pos = readLength;
+    for(uint8_t i = 0; i < mismatchesCount; i++)
+        pos -= mismatchOffsets[i] + 1;
+    for(uint8_t i = 0; i < mismatchesCount; i++) {
+        uint8_t temp = mismatchOffsets[i] + 1;
+        mismatchOffsets[i] = pos;
+        pos += temp;
+    }
+}
+
+
 string PgSAHelpers::toString(unsigned long long value) {
         std::ostringstream oss;
         oss << value;

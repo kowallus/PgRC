@@ -16,6 +16,9 @@ namespace PgTools {
         ifstream *rlMisSymSrc = 0;
         ifstream *rlMisOffSrc = 0;
 
+        ifstream* rlOffSrc = 0;
+        ifstream* rlMisRevOffSrc = 0;
+
         PseudoGenomeHeader* pgh = 0;
         bool plainTextReadMode = false;
 

@@ -39,7 +39,7 @@ namespace PgTools {
 
         const static string TEMPORARY_FILE_SUFFIX;
 
-        static bool enableReadOffsetsRepresentation;
+        static bool enableReadPositionRepresentation;
         static bool enableRevOffsetMismatchesRepresentation;
 
     };

@@ -98,7 +98,7 @@ namespace PgTools {
 
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 
-    bool SeparatedPseudoGenomePersistence::enableReadOffsetsRepresentation = false;
+    bool SeparatedPseudoGenomePersistence::enableReadPositionRepresentation = false;
     bool SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix,
@@ -113,10 +113,10 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::initReadsListDests() {
-        if (SeparatedPseudoGenomePersistence::enableReadOffsetsRepresentation)
-            initDest(rlOffDest, SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX);
-        else
+        if (SeparatedPseudoGenomePersistence::enableReadPositionRepresentation)
             initDest(rlPosDest, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
+        else
+            initDest(rlOffDest, SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX);
         initDest(rlOrgIdxDest, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         if (!disableRevComp)
             initDest(rlRevCompDest, SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX);
@@ -168,10 +168,10 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
-        if (SeparatedPseudoGenomePersistence::enableReadOffsetsRepresentation)
-            PgSAHelpers::writeValue<uint_read_len_max>(*rlOffDest, rlEntry.offset);
-        else
+        if (SeparatedPseudoGenomePersistence::enableReadPositionRepresentation)
             PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
+        else
+            PgSAHelpers::writeValue<uint_read_len_max>(*rlOffDest, rlEntry.offset);
         PgSAHelpers::writeValue<uint_reads_cnt_std>(*rlOrgIdxDest, rlEntry.idx);
         if (!disableRevComp)
             PgSAHelpers::writeValue<uint8_t>(*rlRevCompDest, rlEntry.revComp?1:0);

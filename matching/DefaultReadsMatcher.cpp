@@ -304,14 +304,14 @@ namespace PgTools {
     }
 
     SeparatedPseudoGenomeOutputBuilder *DefaultReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            bool enableRevComp, bool enableMismatches) {
-        return new SeparatedPseudoGenomeOutputBuilder(this->pgFilePrefix,
+            const string &outPgPrefix, bool enableRevComp, bool enableMismatches) {
+        return new SeparatedPseudoGenomeOutputBuilder(outPgPrefix,
                 !enableRevComp && !this->revComplPg, !enableMismatches && this->maxMismatches == 0);
     }
 
     SeparatedPseudoGenomeOutputBuilder *DefaultReadsExactMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            bool enableRevComp, bool enableMismatches){
-        return new SeparatedPseudoGenomeOutputBuilder(this->pgFilePrefix,
+            const string &outPgPrefix, bool enableRevComp, bool enableMismatches){
+        return new SeparatedPseudoGenomeOutputBuilder(outPgPrefix,
                 !enableRevComp && !this->revComplPg, !enableMismatches);
     }
 
@@ -328,7 +328,7 @@ namespace PgTools {
         pg.clear();
     }
 
-    void DefaultReadsMatcher::writeIntoPseudoGenome(const vector<uint_reads_cnt_max> &orgIndexesMapping) {
+    void DefaultReadsMatcher::writeIntoPseudoGenome(const string &outPgPrefix, const vector<uint_reads_cnt_max> &orgIndexesMapping) {
         clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
@@ -342,7 +342,7 @@ namespace PgTools {
         DefaultReadsListEntry entry;
         initEntryUpdating();
         SeparatedExtendedReadsListIterator* rlIt = new SeparatedExtendedReadsListIterator(pgFilePrefix);
-        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(
+        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(outPgPrefix,
                 rlIt->isRevCompEnabled(), rlIt->areMismatchesEnabled());
         builder->setReadsSourceIterator(rlIt);
         builder->copyPseudoGenomeHeader(pgFilePrefix);

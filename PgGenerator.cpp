@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     string divisionFile = "";
     bool divisionComplement = false;
 
-    while ((opt = getopt(argc, argv, "d:ct?")) != -1) {
+    while ((opt = getopt(argc, argv, "d:cta?")) != -1) {
         switch (opt) {
             case 'c':
                 divisionComplement = true;
@@ -56,11 +56,16 @@ int main(int argc, char *argv[]) {
             case 't':
                 plainTextWriteMode = true;
                 break;
+            case 'a':
+                SeparatedPseudoGenomePersistence::enableReadPositionRepresentation = true;
+                break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-t] [-c] [-d divisionfile] readssrcfile [pairsrcfile] pgprefix\n\n",
+                fprintf(stderr, "Usage: %s [-t] [-c] [-a] [-e] [-d divisionfile] readssrcfile [pairsrcfile] pgprefix\n\n",
                         argv[0]);
-                fprintf(stderr, "-c use complement of reads division\n-t write numbers in text mode\n\n");
+                fprintf(stderr, "-c use complement of reads division\n-t write numbers in text mode\n");
+                fprintf(stderr, "-a write absolute read position \n");
+                fprintf(stderr, "\n\n");
                 exit(EXIT_FAILURE);
         }
     }
