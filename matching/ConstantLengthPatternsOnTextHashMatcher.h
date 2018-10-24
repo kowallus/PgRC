@@ -2,11 +2,12 @@
 #define PGTOOLS_CONSTANTLENGTHPATTERNSONTEXTHASHMATCHER_H
 
 #include <unordered_map>
+#include <vector>
 #include "../rollinghash/cyclichash.h"
 
 using namespace std;
 
-class ConstantLengthPatternsOnTextHashMatcher {
+class DefaultConstantLengthPatternsOnTextHashMatcher {
 private:
     unordered_multimap<uint32_t, uint32_t> hashToIndexMap;
     const uint32_t patternLength;
@@ -21,9 +22,9 @@ private:
     unordered_multimap<uint32_t, uint32_t>::iterator indexIter, indexIterEnd;
 
 public:
-    ConstantLengthPatternsOnTextHashMatcher(uint32_t patternLength);
+    DefaultConstantLengthPatternsOnTextHashMatcher(uint32_t patternLength);
 
-    virtual ~ConstantLengthPatternsOnTextHashMatcher();
+    virtual ~DefaultConstantLengthPatternsOnTextHashMatcher();
 
     void addPattern(const char* pattern, uint32_t idx);
 
@@ -35,7 +36,7 @@ public:
 };
 
 
-void ConstantLengthPatternsOnTextHashMatcher::iterateOver(const char *txt, uint64_t length) {
+void DefaultConstantLengthPatternsOnTextHashMatcher::iterateOver(const char *txt, uint64_t length) {
     this->txt = txt;
     this->txtSize = length;
     hf.reset();
@@ -46,7 +47,7 @@ void ConstantLengthPatternsOnTextHashMatcher::iterateOver(const char *txt, uint6
     indexIterEnd = hashToIndexMap.end();
 }
 
-bool ConstantLengthPatternsOnTextHashMatcher::moveNext() {
+bool DefaultConstantLengthPatternsOnTextHashMatcher::moveNext() {
     if (indexIter != indexIterEnd) {
         indexIter++;
         if (indexIter != indexIterEnd)
@@ -55,6 +56,72 @@ bool ConstantLengthPatternsOnTextHashMatcher::moveNext() {
     while(++this->txtPos <= txtSize - patternLength) {
         auto indexIterRange = hashToIndexMap.equal_range(hf.hashvalue);
         hf.update(this->txt[this->txtPos], this->txt[this->txtPos + patternLength]);
+        indexIter = indexIterRange.first;
+        indexIterEnd = indexIterRange.second;
+        if (indexIter != indexIterEnd)
+            return true;
+    }
+    return false;
+}
+
+class InterleavedConstantLengthPatternsOnTextHashMatcher {
+private:
+    unordered_multimap<uint32_t, uint32_t> hashToIndexMap;
+    const uint32_t patternLength;
+    const uint8_t patternParts;
+    const uint32_t patternSpan;
+
+    std::vector<CyclicHash<uint32_t>> hf;
+    uint8_t currentHF = 0;
+
+    const  char* txt = 0;
+    uint64_t txtSize = 0;
+
+    //iterator fields
+    int64_t txtPos = -1;
+    unordered_multimap<uint32_t, uint32_t>::iterator indexIter, indexIterEnd;
+
+public:
+    InterleavedConstantLengthPatternsOnTextHashMatcher(uint32_t patternLength, const uint8_t patternParts);
+
+    virtual ~InterleavedConstantLengthPatternsOnTextHashMatcher();
+
+    void addPattern(const char* pattern, uint32_t idx);
+
+    //iterator routines
+    inline void iterateOver(const char* txt, uint64_t length);
+    inline bool moveNext();
+    uint32_t getHashMatchPatternIndex();
+    uint64_t getHashMatchTextPosition();
+};
+
+
+void InterleavedConstantLengthPatternsOnTextHashMatcher::iterateOver(const char *txt, uint64_t length) {
+    this->txt = txt;
+    this->txtSize = length;
+    for(uint8_t h = 0; h < patternParts; h++) {
+        hf[h].reset();
+        const uint32_t patternGuard = patternSpan + h;
+        for (uint32_t i = h; i < txtSize && i < patternGuard; i += patternParts)
+            hf[h].eat(this->txt[i]);
+    }
+    this->txtPos = -1;
+    indexIter = hashToIndexMap.end();
+    indexIterEnd = hashToIndexMap.end();
+    currentHF = 0;
+}
+
+bool InterleavedConstantLengthPatternsOnTextHashMatcher::moveNext() {
+    if (indexIter != indexIterEnd) {
+        indexIter++;
+        if (indexIter != indexIterEnd)
+            return true;
+    }
+    while(++this->txtPos <= txtSize - patternSpan) {
+        auto indexIterRange = hashToIndexMap.equal_range(hf[currentHF].hashvalue);
+        hf[currentHF++].update(this->txt[this->txtPos], this->txt[this->txtPos + patternSpan]);
+        if (currentHF == patternParts)
+            currentHF = 0;
         indexIter = indexIterRange.first;
         indexIterEnd = indexIterRange.second;
         if (indexIter != indexIterEnd)

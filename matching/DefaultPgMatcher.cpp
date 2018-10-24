@@ -69,7 +69,7 @@ namespace PgTools {
 
         cout << "Feeding pattern pseudogenome parts...\n" << endl;
         const uint_pg_len_max matchingLength = minMatchLength / 2;
-        ConstantLengthPatternsOnTextHashMatcher hashMatcher(matchingLength);
+        DefaultConstantLengthPatternsOnTextHashMatcher hashMatcher(matchingLength);
         string pgPattern = pg->getPseudoGenomeVirtual();
         const char* pgPtr = pgPattern.data();
         uint32_t partsCount = pg->getLength() / matchingLength;

@@ -23,8 +23,6 @@ namespace PgTools {
         PackedReadsSet *readsSet;
         uint32_t matchPrefixLength;
 
-        ConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
-
         vector<uint32_t> readMatchPos;
         vector<bool> readMatchRC;
 
@@ -75,6 +73,9 @@ namespace PgTools {
     };
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
+    private:
+        DefaultConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
+
     protected:
         void initMatching();
         void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
@@ -90,32 +91,67 @@ namespace PgTools {
         DefaultReadsExactMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                                  uint32_t matchPrefixLength);
 
+        virtual ~DefaultReadsExactMatcher();
+
     };
 
-    class DefaultReadsApproxMatcher: public DefaultReadsMatcher {
+    class AbstractReadsApproxMatcher: public DefaultReadsMatcher {
     protected:
         uint8_t maxMismatches;
-
         uint8_t minMismatches = 0;
-        uint_read_len_max partLength;
 
-        void initMatching();
-        void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
+        string pg;
+
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
-                bool enableRevComp, bool enableMismatches) override;
-
-        string pg;
+                                                                                     bool enableRevComp, bool enableMismatches) override;
         void initEntryUpdating() override;
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override;
         void closeEntryUpdating() override;
 
     public:
+        AbstractReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+                                   uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
+
+        virtual ~AbstractReadsApproxMatcher();
+    };
+
+    class DefaultReadsApproxMatcher: public AbstractReadsApproxMatcher {
+    private:
+        DefaultConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
+
+    protected:
+        uint_read_len_max partLength;
+
+        void initMatching();
+        void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
+
+    public:
         DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                                   uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
+        virtual ~DefaultReadsApproxMatcher();
     };
+
+    class InterleavedReadsApproxMatcher: public AbstractReadsApproxMatcher {
+    private:
+        InterleavedConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
+
+    protected:
+        uint_read_len_max partLength;
+
+        void initMatching();
+        void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
+
+    public:
+        InterleavedReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+                                  uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
+
+        virtual ~InterleavedReadsApproxMatcher();
+    };
+
+
 
 }
 

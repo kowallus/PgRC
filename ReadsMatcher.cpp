@@ -95,8 +95,7 @@ int main(int argc, char *argv[])
     if (maxMismatches == 0)
         matcher = new DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
     else
-        matcher = new DefaultReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches);
-
+        matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches);
     matcher->matchConstantLengthReads();
     if (dumpInfo)
         matcher->writeMatchesInfo(pgDestFilePrefix);
