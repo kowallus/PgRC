@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-t] [-c] [-a] [-e] [-d divisionfile] readssrcfile [pairsrcfile] pgprefix\n\n",
+                fprintf(stderr, "Usage: %s [-t] [-c] [-a] [-d divisionfile] readssrcfile [pairsrcfile] pgprefix\n\n",
                         argv[0]);
                 fprintf(stderr, "-c use complement of reads division\n-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n");

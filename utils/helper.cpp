@@ -115,7 +115,7 @@ bool PgSAHelpers::readReadMode(std::istream &src) {
 
 void
 PgSAHelpers::convertMisOffsets2RevOffsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength) {
-    uint pos = readLength;
+    uint16_t pos = readLength;
     for(uint8_t i = 0; i < mismatchesCount; i++)
         pos -= mismatchOffsets[i] + 1;
     for(uint8_t i = 0; i < mismatchesCount; i++) {
