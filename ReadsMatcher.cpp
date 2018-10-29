@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#include "matching/DefaultReadsMatcher.h"
+#include "matching/ReadsMatchers.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 
@@ -91,27 +91,12 @@ int main(int argc, char *argv[])
     cout << "Reading reads set\n";
     PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
     readsSet->printout();
-    DefaultReadsMatcher* matcher;
-    if (maxMismatches == 0)
-        matcher = new DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
-    else
-        matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches);
-    matcher->matchConstantLengthReads();
-    if (dumpInfo)
-        matcher->writeMatchesInfo(pgDestFilePrefix);
 
-    const std::vector<uint32_t> &readsMatchPos = matcher->getReadMatchPos();
-    const vector<uint8_t> &readsMismatches = matcher->getReadMismatches();
-    const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile,
-            divisionComplement, readsSet->getReadsSetProperties()->readsCount);
+    mapReadsIntoPg(
+            pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches, dumpInfo,
+            pgDestFilePrefix, divisionFile, divisionComplement,
+            outDivisionFile);
 
-    ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, readsMatchPos,
-            DefaultReadsMatcher::NOT_MATCHED_VALUE, outDivisionFile, divisionComplement);
-
-    if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
-        matcher->writeIntoPseudoGenome(pgDestFilePrefix, orgIndexesMapping);
-
-    delete(matcher);
     delete(readsSet);
     delete(readsIterator);
    

@@ -11,7 +11,7 @@ namespace PgTools {
         SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix, true, true);
         builder.writePseudoGenome(pgb, divisionFile, divisionComplement);
         builder.build();
-        cout << "Writing pseudo genome files in " << clock_millis() << " msec." << endl;
+        cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << clock_millis() << " msec." << endl << endl;
     }
 
     std::ifstream SeparatedPseudoGenomePersistence::getPseudoGenomeSrc(const string &pseudoGenomePrefix) {

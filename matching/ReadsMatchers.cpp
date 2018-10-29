@@ -1,4 +1,4 @@
-#include "DefaultReadsMatcher.h"
+#include "ReadsMatchers.h"
 
 #include "../readsset/PackedReadsSet.h"
 #include "../readsset/persistance/ReadsSetPersistence.h"
@@ -458,6 +458,34 @@ namespace PgTools {
         builder->build();
         delete(builder);
         closeEntryUpdating();
-        cout << "... writing output files completed in " << clock_millis() << " msec. " << endl;
+        cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
     }
+
+    void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+                        uint_read_len_max matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
+                        const string &pgDestFilePrefix, const string &divisionFile, bool divisionComplement,
+                        const string &outDivisionFile) {
+        DefaultReadsMatcher* matcher;
+        if (maxMismatches == 0)
+            matcher = new DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
+        else
+            matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches);
+        matcher->matchConstantLengthReads();
+        if (dumpInfo)
+            matcher->writeMatchesInfo(pgDestFilePrefix);
+
+        const vector<uint32_t> &readsMatchPos = matcher->getReadMatchPos();
+        const vector<uint8_t> &readsMismatches = matcher->getReadMismatches();
+        const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile,
+                                                                                                          divisionComplement, readsSet->getReadsSetProperties()->readsCount);
+
+        ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, readsMatchPos,
+                                                 DefaultReadsMatcher::NOT_MATCHED_VALUE, outDivisionFile, divisionComplement);
+
+        if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
+            matcher->writeIntoPseudoGenome(pgDestFilePrefix, orgIndexesMapping);
+
+        delete(matcher);
+    }
+
 }

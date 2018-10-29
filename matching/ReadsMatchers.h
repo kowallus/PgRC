@@ -1,5 +1,5 @@
-#ifndef PGTOOLS_DEFAULTREADSMATCHER_H
-#define PGTOOLS_DEFAULTREADSMATCHER_H
+#ifndef PGTOOLS_READSMATCHERS_H
+#define PGTOOLS_READSMATCHERS_H
 
 #include <iostream>
 #include <fstream>
@@ -151,8 +151,10 @@ namespace PgTools {
         virtual ~InterleavedReadsApproxMatcher();
     };
 
-
-
+    void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+                        uint_read_len_max matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
+                        const string &pgDestFilePrefix, const string &divisionFile, bool divisionComplement,
+                        const string &outDivisionFile);
 }
 
-#endif //PGTOOLS_DEFAULTREADSMATCHER_H
+#endif //PGTOOLS_READSMATCHERS_H

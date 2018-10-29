@@ -76,7 +76,7 @@ set(ROLLING_HASH_FILES
 set(MATCHER_FILES
         ${PG_FILES}
         ${ROLLING_HASH_FILES}
-        matching/DefaultReadsMatcher.cpp matching/DefaultReadsMatcher.h
+        matching/ReadsMatchers.cpp matching/ReadsMatchers.h
         matching/ConstantLengthPatternsOnTextHashMatcher.cpp
         matching/ConstantLengthPatternsOnTextHashMatcher.h
         matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h)

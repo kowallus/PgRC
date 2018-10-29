@@ -21,6 +21,6 @@ void PgTools::divideReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsI
     }
     writeValue(filteredIndexesDest, UINT64_MAX);
     filteredIndexesDest.close();
-    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl;
+    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl << endl;
     delete(badReadsIterator);
 }

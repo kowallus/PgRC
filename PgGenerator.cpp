@@ -20,21 +20,10 @@ PseudoGenomeBase *preparePg(string srcFile, string pairFile, string divisionFile
         return pgb;
     }
 
-    PseudoGenomeGeneratorFactory* pggf = new GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory();
     ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFile, pairFile, divisionFile, divisionComplement);
-
-    PseudoGenomeGeneratorBase* pggb = pggf->getGenerator(readsIterator);
-    pgb = pggb->generatePseudoGenomeBase();
-    delete(pggb);
+    pgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(readsIterator);
     delete(readsIterator);
-    delete(pggf);
-    
-    if (pgb == 0) {
-        fprintf(stderr, "Failed generating Pg\n");
-        exit(EXIT_FAILURE);    
-    }
-    
     return pgb;
 }
 

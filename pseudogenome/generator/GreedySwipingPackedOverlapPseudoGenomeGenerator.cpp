@@ -254,7 +254,21 @@ namespace PgSAIndex {
         
         return generatorBase;
     }
-    
-    
-    
+
+    PseudoGenomeBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+            ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) {
+        PseudoGenomeGeneratorFactory* pggf = new GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory();
+        PseudoGenomeGeneratorBase* pggb = pggf->getGenerator(readsIterator);
+        PseudoGenomeBase* pgb = pggb->generatePseudoGenomeBase();
+        delete(pggb);
+        delete(pggf);
+
+        if (pgb == 0) {
+            fprintf(stderr, "Failed generating Pg\n");
+            exit(EXIT_FAILURE);
+        }
+
+        return pgb;
+    }
+
 }
