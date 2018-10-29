@@ -1,6 +1,6 @@
 #include "utils/helper.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
-#include "readsset/iterator/DivisionReadsSetDecorators.h"
+#include "readsset/tools/division.h"
 #include <stdlib.h>    /* for exit */
 #include <unistd.h>
 
@@ -8,26 +8,11 @@ using namespace PgSAHelpers;
 using namespace PgTools;
 
 void divideReads(string srcFastqFile, string pairFastqFile, string outputFile, double error_limit) {
-    clock_checkpoint();
     ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile, pairFastqFile);
-    QualityDividingReadsSetIterator<uint_read_len_max> *badReadsIterator = new QualityDividingReadsSetIterator<uint_read_len_max>(readsIterator, error_limit, false);
-    std::ofstream filteredIndexesDest(outputFile, std::ios::out | std::ios::binary);
-    if (filteredIndexesDest.fail()) {
-        fprintf(stderr, "cannot write to filtered indexes file %s\n", outputFile.c_str());
-        exit(EXIT_FAILURE);
-    }
-    cout << "Starting division... " << endl;
-    writeReadMode(filteredIndexesDest, plainTextWriteMode);
-    uint64_t hitCounter = 0;
-    while (badReadsIterator->moveNextVirtual()) {
-        hitCounter++;
-        writeValue(filteredIndexesDest, badReadsIterator->getReadOriginalIndex());
-    }
-    writeValue(filteredIndexesDest, UINT64_MAX);
-    filteredIndexesDest.close();
-    cout << "Filtered " << hitCounter << " reads (out of " << (badReadsIterator->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl;
-    delete(badReadsIterator);
+
+    divideReads(readsIterator, outputFile, error_limit);
+
     delete(readsIterator);
 }
 

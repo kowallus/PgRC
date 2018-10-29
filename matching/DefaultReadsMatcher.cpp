@@ -326,7 +326,8 @@ namespace PgTools {
                 falseMatchCount++;
             else
                 multiMatchCount++;
-            if (mismatchesCount < UINT8_MAX && i++ < 2) {
+            //if (mismatchesCount < UINT8_MAX && i++ < 2) {
+            if (mismatchesCount < UINT8_MAX && mismatchesCount > 8) {
                 cout << "Matched: " << matchReadIndex << " (" << matchPatternIndex << "); "
                      << matchPosition << "; " << (int) mismatchesCount << "; " << (revCompMode?"pair strand (RC)":"") << endl;
                 cout << matchedRead << endl;

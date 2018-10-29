@@ -9,9 +9,9 @@ set(HELPER_FILES
 
 set(READSSET_FILES
         ${HELPER_FILES}
-        readsset/packing
-        readsset/packing/SymbolsPackingFacility.cpp
-        readsset/packing/SymbolsPackingFacility.h
+        readsset/tools
+        readsset/tools/SymbolsPackingFacility.cpp
+        readsset/tools/SymbolsPackingFacility.h
         readsset/DefaultReadsSet.cpp
         readsset/DefaultReadsSet.h
         readsset/iterator
@@ -22,7 +22,7 @@ set(READSSET_FILES
         readsset/iterator/ReadsSetIterator.cpp
         readsset/iterator/ReadsSetIterator.h
         readsset/iterator/DivisionReadsSetDecorators.cpp readsset/iterator/DivisionReadsSetDecorators.h
-        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h)
+        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h readsset/tools/division.cpp readsset/tools/division.h)
 
 set(PG_FILES
         ${READSSET_FILES}
@@ -81,13 +81,11 @@ set(MATCHER_FILES
         matching/ConstantLengthPatternsOnTextHashMatcher.h
         matching/PgMatcherBase.h matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h)
 
-set(READS_DIVIDER_FILES
-        ${READSSET_FILES})
-
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
 add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
-add_executable(ReadsDivider ReadsDivider.cpp ${READS_DIVIDER_FILES})
+add_executable(ReadsDivider ReadsDivider.cpp ${READSSET_FILES})
 add_executable(ReadsMatcher ReadsMatcher.cpp ${MATCHER_FILES})
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgRewriter PgRewriter.cpp ${PG_FILES})
+add_executable(PgRC PgRC.cpp ${MATCHER_FILES} ${PG_GEN_FILES})
