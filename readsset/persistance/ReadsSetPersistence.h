@@ -12,14 +12,15 @@ namespace PgSAReadsSet {
 
         class ManagedReadsSetIterator: public ReadsSourceIteratorTemplate<uint_read_len_max> {
         private:
-            ReadsSourceIteratorTemplate< uint_read_len_max>* coreIterator = 0;
+            vector<ReadsSourceIteratorTemplate< uint_read_len_max>*> coreIterators;
             ReadsSourceIteratorTemplate< uint_read_len_max>* readsIterator = 0;
 
             ifstream* srcSource = 0;
             ifstream* pairSource = 0;
             ifstream* divSource = 0;
         public:
-            ManagedReadsSetIterator(const string &srcFile, const string &pairFile = "", const string &divisionFile = "", bool divisionComplement = false);
+            ManagedReadsSetIterator(const string &srcFile, const string &pairFile = "", const string &divisionFile = "",
+                    bool divisionComplement = false, bool revComplPairFile = false);
 
         public:
             bool moveNextVirtual();
@@ -35,7 +36,8 @@ namespace PgSAReadsSet {
         static ReadsSourceIteratorTemplate<uint_read_len_max>* createManagedReadsIterator(const string &srcFile,
                                                                                           const string &pairFile = "",
                                                                                           const string &divisionFile = "",
-                                                                                          bool divisionComplement = false);
+                                                                                          bool divisionComplement = false,
+                                                                                          bool revComplPairFile = false);
 
         static vector<uint_reads_cnt_max> getReadsOriginalIndexes(const string &divisionFile = "",
                                                                   bool divisionComplement = false,

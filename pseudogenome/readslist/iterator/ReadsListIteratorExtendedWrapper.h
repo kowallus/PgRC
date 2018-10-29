@@ -13,6 +13,8 @@ namespace PgTools {
     class ReadsListIteratorExtendedWrapperBase: public DefaultReadsListIteratorInterface {
     public:
         virtual void applyDivision(string divisionFile, bool divisionComplement) = 0;
+
+        virtual void applyRevComplPairFileFlag() = 0;
     };
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass>
@@ -22,6 +24,7 @@ namespace PgTools {
         uint_reads_cnt currentIdx = 0;
         DefaultReadsListEntry entry;
         bool mapping = false;
+        bool revComplPairFile = false;
         vector<uint_reads_cnt_max> orgIndexesMapping;
 
     public:
@@ -39,8 +42,13 @@ namespace PgTools {
             orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile, divisionComplement, readsList->getReadsCount());
         }
 
+        void applyRevComplPairFileFlag() {
+            revComplPairFile = true;
+        }
+
         bool moveNext() override {
-            entry.advanceEntryByPosition(readsList->getReadPosition(currentIdx), mapIndex(readsList->getReadOriginalIndex(currentIdx)));
+            const uint_reads_cnt_max orgIdx = mapIndex(readsList->getReadOriginalIndex(currentIdx));
+            entry.advanceEntryByPosition(readsList->getReadPosition(currentIdx), orgIdx, revComplPairFile?orgIdx % 2 == 1:false);
             return currentIdx++ < readsList->getReadsCount();
         }
 

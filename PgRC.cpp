@@ -17,7 +17,7 @@ using namespace std;
 using namespace PgTools;
 
 void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pairFastqFile, uint8_t maxMismatches,
-                            string pgFilesPrefixes, bool skipIntermediateOutput) {
+                            string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput) {
 
     double error_limit = atof(err_limit_str.c_str());
     pgFilesPrefixes = pgFilesPrefixes + "_q" + err_limit_str;
@@ -38,9 +38,9 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     delete(allReadsIterator);
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-            srcFastqFile, pairFastqFile, badDivisionFile, true);
+            srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile);
     PseudoGenomeBase* goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(goodReadsIterator);
-    SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, badDivisionFile, true);
+    SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, badDivisionFile, true, revComplPairFile);
     delete(goodPgb);
     delete(goodReadsIterator);
 
@@ -56,9 +56,9 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     delete(badReadsIterator);
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-            srcFastqFile, pairFastqFile, mappedBadDivisionFile, false);
-    PseudoGenomeBase* badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(goodReadsIterator);
-    SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadDivisionFile, false);
+            srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile);
+    PseudoGenomeBase* badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(mappedBadReadsIterator);
+    SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadDivisionFile, false, revComplPairFile);
     delete(badPgb);
     delete(mappedBadReadsIterator);
 }
@@ -69,9 +69,13 @@ int main(int argc, char *argv[])
     int opt; // current option
     uint8_t maxMismatches = 0;
     bool skipIntermediateOutput = false;
+    bool revComplPairFile = false;
 
-    while ((opt = getopt(argc, argv, "m:sitae?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:rsitae?")) != -1) {
         switch (opt) {
+        case 'r':
+            revComplPairFile = true;
+            break;
         case 's':
             skipIntermediateOutput = true;
             break;
@@ -89,9 +93,10 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-m maxMismatches] [-a] [-e] [-t] [-s] \n"
+            fprintf(stderr, "Usage: %s [-m maxMismatches] [-r] [-a] [-e] [-t] [-s] \n"
                             "error_probability readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                     argv[0]);
+            fprintf(stderr, "-r reverse compliment reads in a pair file\n");
             fprintf(stderr, "-t write numbers in text mode\n-c skip intermediate output files");
             fprintf(stderr, "-a write absolute read position \n-e write mismatches as offsets from end\n");
             fprintf(stderr, "\n\n");
@@ -106,6 +111,12 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    if (revComplPairFile && optind != argc - 4) {
+        fprintf(stderr, "Cannot use -r option without specifying a pair file.\n", argv[0]);
+
+        exit(EXIT_FAILURE);
+    }
+
     string error_limit = argv[optind++];
     string srcFastqFile(argv[optind++]);
     string pairFastqFile = "";
@@ -113,7 +124,8 @@ int main(int argc, char *argv[])
         pairFastqFile = argv[optind++];
     string pgFilesPrefixes(argv[optind++]);
 
-    divideGenerateAndMatch(error_limit, srcFastqFile, pairFastqFile, maxMismatches, pgFilesPrefixes, skipIntermediateOutput);
+    divideGenerateAndMatch(error_limit, srcFastqFile, pairFastqFile, maxMismatches, pgFilesPrefixes,
+            revComplPairFile, skipIntermediateOutput);
 
     exit(EXIT_SUCCESS);
 }

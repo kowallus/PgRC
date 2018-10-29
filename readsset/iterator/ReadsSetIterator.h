@@ -116,6 +116,22 @@ namespace PgSAReadsSet {
             uint_read_len getReadLengthVirtual();
             void rewindVirtual();
     };
+
+    template < typename uint_read_len >
+    class RevComplPairReadsSetIterator: public ReadsSourceIteratorTemplate< uint_read_len > {
+    private:
+        ReadsSourceIteratorTemplate<uint_read_len>* coreIterator;
+        int64_t counter = -1;
+
+    public:
+        RevComplPairReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator);
+
+        bool moveNextVirtual();
+        string getReadVirtual();
+        string getQualityInfoVirtual();
+        uint_read_len getReadLengthVirtual();
+        void rewindVirtual();
+    };
 }
 
 #endif // READSSETITERATOR_H_INCLUDED

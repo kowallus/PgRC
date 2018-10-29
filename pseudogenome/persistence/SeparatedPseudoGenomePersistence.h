@@ -15,7 +15,8 @@ namespace PgTools {
         static bool acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix, const string& fileSuffix);
 
     public:
-        static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix, string divisionFile = "", bool divisionComplement = false);
+        static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
+                string divisionFile = "", bool divisionComplement = false, bool revComplPairFile = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
         static string getPseudoGenome(const string &pseudoGenomePrefix);
@@ -85,7 +86,7 @@ namespace PgTools {
         void setReadsSourceIterator(DefaultReadsListIteratorInterface *rlIt);
         void writeReadsFromIterator(uint_pg_len_max stopPos = (uint_pg_len_max) -1);
 
-        void writePseudoGenome(PseudoGenomeBase* pgb, string divisionFile, bool divisionComplement);
+        void writePseudoGenome(PseudoGenomeBase* pgb, string divisionFile, bool divisionComplement, bool revComplPairFile = "false");
 
         void build();
     };
