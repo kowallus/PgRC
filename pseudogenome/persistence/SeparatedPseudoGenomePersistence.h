@@ -14,12 +14,17 @@ namespace PgTools {
 
         static bool acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix, const string& fileSuffix);
 
+        static void appendIndexesFromPg(string pgFilePrefix, vector<uint_reads_cnt_std> &idxs);
+        static void writePairMapping(basic_string<char> &pgFilePrefix, vector<uint_reads_cnt_std> orgIdxs);
+
     public:
         static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
                 string divisionFile = "", bool divisionComplement = false, bool revComplPairFile = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
         static string getPseudoGenome(const string &pseudoGenomePrefix);
+
+        static void getPseudoGenomePropertes(const string &pseudoGenomePrefix, PseudoGenomeHeader* &pgh, bool& plainTextReadMode);
 
         static std::ifstream getPseudoGenomeElementSrc(const string &pseudoGenomePrefix, const string& fileSuffix);
         static std::ofstream getPseudoGenomeElementDest(const string &pseudoGenomePrefix, const string &fileSuffix,
@@ -38,10 +43,15 @@ namespace PgTools {
         const static string READSLIST_OFFSETS_FILE_SUFFIX;
         const static string READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX;
 
+        const static string READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX;
+        const static string READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX;
+
         const static string TEMPORARY_FILE_SUFFIX;
 
         static bool enableReadPositionRepresentation;
         static bool enableRevOffsetMismatchesRepresentation;
+
+        static void dumpPgPairs(vector<string> pgFilePrefixes);
 
     };
 

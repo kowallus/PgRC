@@ -82,6 +82,9 @@ namespace PgTools {
 
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_OFFSETS_FILE_SUFFIX);
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX);
+
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX);
     }
 
     const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX = ".pg";
@@ -97,10 +100,77 @@ namespace PgTools {
     const string SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX = ".pg.rl.off";
     const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX = ".pg.rl.mis.roff";
 
+    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX = ".pg.rl.pr.idx";
+    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX = ".pg.rl.pr.off";
+
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 
     bool SeparatedPseudoGenomePersistence::enableReadPositionRepresentation = false;
     bool SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
+
+    void SeparatedPseudoGenomePersistence::getPseudoGenomePropertes(const string &pseudoGenomePrefix,
+                                                                    PseudoGenomeHeader* &pgh, bool &plainTextReadMode) {
+        ifstream pgPropSrc(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX,
+                           ios_base::in | ios_base::binary);
+        if (pgPropSrc.fail()) {
+            fprintf(stderr, "Cannot read pseudogenome properties (%s does not open).\n",
+                    pseudoGenomePrefix.c_str());
+            exit(EXIT_FAILURE);
+        }
+        pgh = new PseudoGenomeHeader(pgPropSrc);
+        plainTextReadMode = readReadMode(pgPropSrc);
+        pgPropSrc.close();
+    }
+
+    void SeparatedPseudoGenomePersistence::appendIndexesFromPg(string pgFilePrefix, vector<uint_reads_cnt_std> &idxs) {
+        bool plainTextReadMode;
+        PseudoGenomeHeader* pgh;
+        getPseudoGenomePropertes(pgFilePrefix, pgh, plainTextReadMode);
+        ifstream orgIdxsSrc = getPseudoGenomeElementSrc(pgFilePrefix, READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
+        const uint_reads_cnt_max readsCount = pgh->getReadsCount();
+        idxs.reserve(idxs.size() + readsCount);
+        for(uint_reads_cnt_std i = 0; i < readsCount; i++) {
+            uint_reads_cnt_std idx;
+            readValue<uint_reads_cnt_std>(orgIdxsSrc, idx, plainTextReadMode);
+            idxs.push_back(idx);
+        }
+        delete(pgh);
+    }
+
+    void SeparatedPseudoGenomePersistence::writePairMapping(string &pgFilePrefix,
+                                                            vector<uint_reads_cnt_std> orgIdxs) {
+        ofstream pair1OffsetsDest = getPseudoGenomeElementDest(pgFilePrefix, READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX, true);
+        ofstream pair1IndexesDest = getPseudoGenomeElementDest(pgFilePrefix, READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX, true);
+        writeReadMode(pair1OffsetsDest, PgSAHelpers::plainTextWriteMode);
+        writeReadMode(pair1IndexesDest, PgSAHelpers::plainTextWriteMode);
+        uint_reads_cnt_std readsCount = orgIdxs.size();
+        vector<uint_reads_cnt_std> rev(readsCount);
+        for(uint_reads_cnt_std i = 0; i < readsCount; i++)
+            rev[orgIdxs[i]] = i;
+        for(uint32_t i = 0; i < readsCount; i++) {
+            uint_reads_cnt_std idx = orgIdxs[i];
+            if ((idx % 2) == 1) {
+                uint_reads_cnt_std i1 = rev[idx - 1];
+                writeValue<uint_reads_cnt_std>(pair1OffsetsDest, i1 > i?i1 - i: readsCount - (i1 - i));
+            } else {
+                writeValue<uint_reads_cnt_std>(pair1OffsetsDest, 0);
+                writeValue<uint_reads_cnt_std>(pair1IndexesDest, idx / 2);
+            }
+        }
+        pair1IndexesDest.close();
+        pair1OffsetsDest.close();
+        acceptTemporaryPseudoGenomeElements(pgFilePrefix);
+    }
+
+    void SeparatedPseudoGenomePersistence::dumpPgPairs(vector<string> pgFilePrefixes) {
+        clock_checkpoint();
+        vector<uint_reads_cnt_std> orgIdxs;
+        for(string pgFilePrefix: pgFilePrefixes)
+            SeparatedPseudoGenomePersistence::appendIndexesFromPg(pgFilePrefix, orgIdxs);
+
+        SeparatedPseudoGenomePersistence::writePairMapping(pgFilePrefixes[0], orgIdxs);
+        cout << "... dumping pairs completed in " << clock_millis() << " msec. " << endl;
+    }
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix,
             bool disableRevComp, bool disableMismatches) : pseudoGenomePrefix(pseudoGenomePrefix),

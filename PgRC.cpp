@@ -61,6 +61,8 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadDivisionFile, false, revComplPairFile);
     delete(badPgb);
     delete(mappedBadReadsIterator);
+
+    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
 }
 
 

@@ -4,16 +4,7 @@ namespace PgTools {
 
     SeparatedExtendedReadsListIterator::SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix)
             : pseudoGenomePrefix(pseudoGenomePrefix) {
-        ifstream pgPropSrc(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX,
-                           ios_base::in | ios_base::binary);
-        if (pgPropSrc.fail()) {
-            fprintf(stderr, "Cannot read pseudogenome properties (%s does not open).\n",
-                    pseudoGenomePrefix.c_str());
-            exit(EXIT_FAILURE);
-        }
-        pgh = new PseudoGenomeHeader(pgPropSrc);
-        plainTextReadMode = readReadMode(pgPropSrc);
-        pgPropSrc.close();
+        SeparatedPseudoGenomePersistence::getPseudoGenomePropertes(pseudoGenomePrefix, pgh, plainTextReadMode);
         initSrcs();
     }
 
