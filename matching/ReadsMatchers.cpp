@@ -439,7 +439,6 @@ namespace PgTools {
         std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
-        DefaultReadsListEntry entry;
         initEntryUpdating();
         SeparatedExtendedReadsListIterator* rlIt = new SeparatedExtendedReadsListIterator(pgFilePrefix);
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(outPgPrefix,
@@ -448,10 +447,11 @@ namespace PgTools {
         builder->copyPseudoGenomeHeader(pgFilePrefix);
         for(uint_reads_cnt_max i = 0; i < matchedReadsCount; i++) {
             uint_reads_cnt_max matchIdx = idxs[i];
+            uint64_t currPos = builder->writeReadsFromIterator(readMatchPos[matchIdx]);
+            DefaultReadsListEntry entry(currPos);
             entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIndexesMapping[matchIdx], readMatchRC[matchIdx]);
             this->updateEntry(entry, matchIdx);
-            builder->writeReadsFromIterator(entry.pos);
-            builder->writeReadEntry(entry);
+            builder->writeExtraReadEntry(entry);
         }
         builder->writeReadsFromIterator();
         delete(rlIt);

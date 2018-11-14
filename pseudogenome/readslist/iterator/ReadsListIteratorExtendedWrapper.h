@@ -52,7 +52,7 @@ namespace PgTools {
             return currentIdx++ < readsList->getReadsCount();
         }
 
-        const ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &peekReadEntry() override {
+        ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &peekReadEntry() override {
             return entry;
         }
     };

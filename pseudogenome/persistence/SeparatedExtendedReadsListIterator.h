@@ -38,7 +38,7 @@ namespace PgTools {
 
         bool moveNext() override;
 
-        const PgTools::ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, PgSAIndex::uint_pg_len_max> &
+        PgTools::ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, PgSAIndex::uint_pg_len_max> &
         peekReadEntry() override;
 
         bool isRevCompEnabled();

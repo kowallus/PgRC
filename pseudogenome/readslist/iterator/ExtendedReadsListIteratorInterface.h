@@ -62,7 +62,7 @@ namespace PgTools {
 
         virtual bool moveNext() = 0;
 
-        virtual const ReadsListEntry<maxMismatches, uint_read_len, uint_reads_cnt, uint_pg_len>& peekReadEntry() = 0;
+        virtual ReadsListEntry<maxMismatches, uint_read_len, uint_reads_cnt, uint_pg_len>& peekReadEntry() = 0;
     };
 
     typedef ReadsListEntry<UINT8_MAX,  uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> DefaultReadsListEntry;

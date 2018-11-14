@@ -239,6 +239,7 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
+        lastWrittenPos = rlEntry.pos;
         if (SeparatedPseudoGenomePersistence::enableReadPositionRepresentation)
             PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
         else
@@ -267,21 +268,27 @@ namespace PgTools {
         readsCounter++;
     }
 
+    void SeparatedPseudoGenomeOutputBuilder::writeExtraReadEntry(const DefaultReadsListEntry &rlEntry) {
+        writeReadEntry(rlEntry);
+        ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &itEntry = this->rlIt->peekReadEntry();
+        itEntry.offset -= rlEntry.offset;
+    }
+
     void SeparatedPseudoGenomeOutputBuilder::setReadsSourceIterator(DefaultReadsListIteratorInterface *rlIt) {
         this->rlIt = rlIt;
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::writeReadsFromIterator(uint_pg_len_max stopPos) {
+    uint_pg_len_max SeparatedPseudoGenomeOutputBuilder::writeReadsFromIterator(uint_pg_len_max stopPos) {
         if (iterationPaused) {
             if (rlIt->peekReadEntry().pos >= stopPos)
-                return;
+                return lastWrittenPos;
             writeReadEntry(rlIt->peekReadEntry());
             iterationPaused = false;
         }
         while (rlIt->moveNext()) {
             if (rlIt->peekReadEntry().pos >= stopPos) {
                 iterationPaused = true;
-                break;
+                return lastWrittenPos;
             }
             writeReadEntry(rlIt->peekReadEntry());
         }

@@ -79,6 +79,8 @@ namespace PgTools {
         DefaultReadsListIteratorInterface *rlIt = 0;
         bool iterationPaused = false;
 
+        uint_pg_len_max lastWrittenPos = 0;
+        void writeReadEntry(const DefaultReadsListEntry &rlEntry);
         uint_reads_cnt_max readsCounter = 0;
 
         PseudoGenomeHeader* pgh = 0;
@@ -91,10 +93,9 @@ namespace PgTools {
 
         void copyPseudoGenomeHeader(const string &pseudoGenomePrefix);
 
-        void writeReadEntry(const DefaultReadsListEntry &rlEntry);
-
         void setReadsSourceIterator(DefaultReadsListIteratorInterface *rlIt);
-        void writeReadsFromIterator(uint_pg_len_max stopPos = (uint_pg_len_max) -1);
+        uint_pg_len_max writeReadsFromIterator(uint_pg_len_max stopPos = (uint_pg_len_max) -1);
+        void writeExtraReadEntry(const DefaultReadsListEntry &rlEntry);
 
         void writePseudoGenome(PseudoGenomeBase* pgb, string divisionFile, bool divisionComplement, bool revComplPairFile = "false");
 
