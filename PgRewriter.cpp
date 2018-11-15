@@ -32,6 +32,8 @@ int main(int argc, char *argv[])
             plainTextWriteMode = true;
             break;
         case 'c':
+            fprintf(stderr, "Option -c unsupported!\n");
+            exit(EXIT_FAILURE);
             compactBytes = true;
             break;
         case 'a':

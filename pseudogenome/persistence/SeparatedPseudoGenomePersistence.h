@@ -24,7 +24,8 @@ namespace PgTools {
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
         static string getPseudoGenome(const string &pseudoGenomePrefix);
 
-        static void getPseudoGenomePropertes(const string &pseudoGenomePrefix, PseudoGenomeHeader* &pgh, bool& plainTextReadMode);
+        static void getPseudoGenomeProperties(const string &pseudoGenomePrefix, PseudoGenomeHeader *&pgh,
+                                              bool &plainTextReadMode);
 
         static std::ifstream getPseudoGenomeElementSrc(const string &pseudoGenomePrefix, const string& fileSuffix);
         static std::ofstream getPseudoGenomeElementDest(const string &pseudoGenomePrefix, const string &fileSuffix,

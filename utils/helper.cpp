@@ -113,6 +113,40 @@ bool PgSAHelpers::readReadMode(std::istream &src) {
     return readMode == TEXT_MODE_ID;
 }
 
+template<>
+void PgSAHelpers::writeValue(std::ostream &dest, const uint8_t value, bool plainTextWriteMode) {
+    if (plainTextWriteMode)
+        dest << (uint16_t) value << endl;
+    else
+        dest.write((char *) &value, sizeof(uint8_t));
+}
+
+template<>
+void PgSAHelpers::readValue(std::istream &src, uint8_t &value, bool plainTextReadMode) {
+    if (plainTextReadMode) {
+        uint16_t temp;
+        src >> temp;
+        value = (uint8_t) temp;
+    } else
+        src.read((char *) &value, sizeof(uint8_t));
+}
+
+bool PgSAHelpers::bytePerReadLengthMode = false;
+
+void PgSAHelpers::readReadLengthValue(std::istream &src, uint16_t &value, bool plainTextReadMode) {
+    if (bytePerReadLengthMode)
+        readValue<uint8_t>(src, (uint8_t&) value, plainTextReadMode);
+    else
+        readValue<uint16_t>(src, value, plainTextReadMode);
+}
+
+void PgSAHelpers::writeReadLengthValue(std::ostream &dest, const uint16_t value) {
+    if (bytePerReadLengthMode)
+        writeValue<uint8_t>(dest, (uint8_t) value, plainTextWriteMode);
+    else
+        writeValue<uint16_t>(dest, value, plainTextWriteMode);
+}
+
 void
 PgSAHelpers::convertMisOffsets2RevOffsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength) {
     uint16_t pos = readLength;

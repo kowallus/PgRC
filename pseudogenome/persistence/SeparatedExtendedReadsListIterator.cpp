@@ -4,7 +4,9 @@ namespace PgTools {
 
     SeparatedExtendedReadsListIterator::SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix)
             : pseudoGenomePrefix(pseudoGenomePrefix) {
-        SeparatedPseudoGenomePersistence::getPseudoGenomePropertes(pseudoGenomePrefix, pgh, plainTextReadMode);
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pseudoGenomePrefix, pgh, plainTextReadMode);
+        if (PgSAReadsSet::isReadLengthMin(pgh->getMaxReadLength()))
+            PgSAHelpers::bytePerReadLengthMode = true;
         initSrcs();
     }
 
@@ -62,7 +64,7 @@ namespace PgTools {
                 PgSAHelpers::readValue<uint8_t>(*rlRevCompSrc, revComp, plainTextReadMode);
             if (rlOffSrc) {
                 uint_read_len_max offset;
-                PgSAHelpers::readValue<uint_read_len_max>(*rlOffSrc, offset, plainTextReadMode);
+                PgSAHelpers::readReadLengthValue(*rlOffSrc, offset, plainTextReadMode);
                 entry.advanceEntryByOffset(offset, idx, revComp == 1);
             } else {
                 uint_pg_len_max pos;
@@ -77,9 +79,9 @@ namespace PgTools {
                     uint_read_len_max mismatchOffset;
                     PgSAHelpers::readValue<uint8_t>(*rlMisSymSrc, mismatchCode, plainTextReadMode);
                     if (rlMisOffSrc)
-                        PgSAHelpers::readValue<uint_read_len_max>(*rlMisOffSrc, mismatchOffset, plainTextReadMode);
+                        PgSAHelpers::readReadLengthValue(*rlMisOffSrc, mismatchOffset, plainTextReadMode);
                     else
-                        PgSAHelpers::readValue<uint_read_len_max>(*rlMisRevOffSrc, mismatchOffset, plainTextReadMode);
+                        PgSAHelpers::readReadLengthValue(*rlMisRevOffSrc, mismatchOffset, plainTextReadMode);
                     entry.addMismatch(mismatchCode, mismatchOffset);
                 }
                 if (!rlMisOffSrc)

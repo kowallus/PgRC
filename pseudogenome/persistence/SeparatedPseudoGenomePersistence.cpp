@@ -108,8 +108,8 @@ namespace PgTools {
     bool SeparatedPseudoGenomePersistence::enableReadPositionRepresentation = false;
     bool SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
 
-    void SeparatedPseudoGenomePersistence::getPseudoGenomePropertes(const string &pseudoGenomePrefix,
-                                                                    PseudoGenomeHeader* &pgh, bool &plainTextReadMode) {
+    void SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(const string &pseudoGenomePrefix,
+                                                                     PseudoGenomeHeader *&pgh, bool &plainTextReadMode) {
         ifstream pgPropSrc(pseudoGenomePrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX,
                            ios_base::in | ios_base::binary);
         if (pgPropSrc.fail()) {
@@ -125,7 +125,7 @@ namespace PgTools {
     void SeparatedPseudoGenomePersistence::appendIndexesFromPg(string pgFilePrefix, vector<uint_reads_cnt_std> &idxs) {
         bool plainTextReadMode;
         PseudoGenomeHeader* pgh;
-        getPseudoGenomePropertes(pgFilePrefix, pgh, plainTextReadMode);
+        getPseudoGenomeProperties(pgFilePrefix, pgh, plainTextReadMode);
         ifstream orgIdxsSrc = getPseudoGenomeElementSrc(pgFilePrefix, READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         const uint_reads_cnt_max readsCount = pgh->getReadsCount();
         idxs.reserve(idxs.size() + readsCount);
@@ -243,7 +243,7 @@ namespace PgTools {
         if (SeparatedPseudoGenomePersistence::enableReadPositionRepresentation)
             PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
         else
-            PgSAHelpers::writeValue<uint_read_len_max>(*rlOffDest, rlEntry.offset);
+            PgSAHelpers::writeReadLengthValue(*rlOffDest, rlEntry.offset);
         PgSAHelpers::writeValue<uint_reads_cnt_std>(*rlOrgIdxDest, rlEntry.idx);
         if (!disableRevComp)
             PgSAHelpers::writeValue<uint8_t>(*rlRevCompDest, rlEntry.revComp?1:0);
@@ -255,13 +255,13 @@ namespace PgTools {
                 if (SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation) {
                     uint8_t currentPos = pgh->getMaxReadLength() - 1;
                     for (int16_t i = rlEntry.mismatchesCount - 1; i >= 0; i--) {
-                        PgSAHelpers::writeValue<uint_read_len_max>(*rlMisRevOffDest,
+                        PgSAHelpers::writeReadLengthValue(*rlMisRevOffDest,
                                                                    currentPos - rlEntry.mismatchOffset[i]);
                         currentPos = rlEntry.mismatchOffset[i] - 1;
                     }
                 } else {
                     for (uint8_t i = 0; i < rlEntry.mismatchesCount; i++)
-                        PgSAHelpers::writeValue<uint_read_len_max>(*rlMisPosDest, rlEntry.mismatchOffset[i]);
+                        PgSAHelpers::writeReadLengthValue(*rlMisPosDest, rlEntry.mismatchOffset[i]);
                 }
             }
         }
@@ -306,7 +306,8 @@ namespace PgTools {
             rlIt->applyDivision(divisionFile, divisionComplement);
         if (revComplPairFile)
             rlIt->applyRevComplPairFileFlag();
-
+        if (pgb->isReadLengthMin())
+            bytePerReadLengthMode = true;
         setReadsSourceIterator(rlIt);
         writeReadsFromIterator();
 

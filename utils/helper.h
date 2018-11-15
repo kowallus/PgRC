@@ -109,10 +109,21 @@ namespace PgSAHelpers {
             src.read((char *) &value, sizeof(t_val));
     }
 
+    template<>
+    void writeValue(std::ostream &dest, const uint8_t value, bool plainTextWriteMode);
+    template<>
+    void readValue(std::istream &src, uint8_t& value, bool plainTextReadMode);
+
     template<typename t_val>
     void writeValue(std::ostream &dest, const t_val value) {
         writeValue(dest, value, plainTextWriteMode);
     }
+
+    extern bool bytePerReadLengthMode;
+
+    void readReadLengthValue(std::istream &src, uint16_t& value, bool plainTextReadMode);
+
+    void writeReadLengthValue(std::ostream &dest, const uint16_t value);
 
     class BufferedFileIStream : public istream {
 
