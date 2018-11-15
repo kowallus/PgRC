@@ -12,7 +12,7 @@ namespace PgTools {
     class SeparatedPseudoGenomePersistence {
     private:
 
-        static bool acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix, const string& fileSuffix);
+        static bool acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix, const string& fileSuffix, bool removeExisting);
 
         static void appendIndexesFromPg(string pgFilePrefix, vector<uint_reads_cnt_std> &idxs);
         static void writePairMapping(basic_string<char> &pgFilePrefix, vector<uint_reads_cnt_std> orgIdxs);
@@ -30,7 +30,7 @@ namespace PgTools {
         static std::ifstream getPseudoGenomeElementSrc(const string &pseudoGenomePrefix, const string& fileSuffix);
         static std::ofstream getPseudoGenomeElementDest(const string &pseudoGenomePrefix, const string &fileSuffix,
                                                         bool temporary = false);
-        static void acceptTemporaryPseudoGenomeElements(const string &pseudoGenomePrefix);
+        static void acceptTemporaryPseudoGenomeElements(const string &pseudoGenomePrefix, bool removeAllExisting);
 
         const static string PSEUDOGENOME_FILE_SUFFIX;
         const static string READSLIST_POSITIONS_FILE_SUFFIX;
