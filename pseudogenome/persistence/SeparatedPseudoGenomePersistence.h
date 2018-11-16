@@ -30,7 +30,7 @@ namespace PgTools {
         static std::ifstream getPseudoGenomeElementSrc(const string &pseudoGenomePrefix, const string& fileSuffix);
         static std::ofstream getPseudoGenomeElementDest(const string &pseudoGenomePrefix, const string &fileSuffix,
                                                         bool temporary = false);
-        static void acceptTemporaryPseudoGenomeElements(const string &pseudoGenomePrefix, bool removeAllExisting);
+        static void acceptTemporaryPseudoGenomeElements(const string &pseudoGenomePrefix, bool clearReadsListDescriptionIfOverride);
 
         const static string PSEUDOGENOME_FILE_SUFFIX;
         const static string READSLIST_POSITIONS_FILE_SUFFIX;
