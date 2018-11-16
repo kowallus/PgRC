@@ -63,20 +63,20 @@ namespace PgTools {
             if (rlRevCompSrc)
                 PgSAHelpers::readValue<uint8_t>(*rlRevCompSrc, revComp, plainTextReadMode);
             if (rlOffSrc) {
-                uint_read_len_max offset;
+                uint_read_len_max offset = 0;
                 PgSAHelpers::readReadLengthValue(*rlOffSrc, offset, plainTextReadMode);
                 entry.advanceEntryByOffset(offset, idx, revComp == 1);
             } else {
-                uint_pg_len_max pos;
+                uint_pg_len_max pos = 0;
                 PgSAHelpers::readValue<uint_pg_len_max>(*rlPosSrc, pos, plainTextReadMode);
                 entry.advanceEntryByPosition(pos, idx, revComp == 1);
             }
             if (rlMisCntSrc) {
-                uint8_t mismatchesCount;
+                uint8_t mismatchesCount = 0;
                 PgSAHelpers::readValue<uint8_t>(*rlMisCntSrc, mismatchesCount, plainTextReadMode);
                 for(uint8_t i = 0; i < mismatchesCount; i++) {
-                    uint8_t mismatchCode;
-                    uint_read_len_max mismatchOffset;
+                    uint8_t mismatchCode = 0;
+                    uint_read_len_max mismatchOffset = 0;
                     PgSAHelpers::readValue<uint8_t>(*rlMisSymSrc, mismatchCode, plainTextReadMode);
                     if (rlMisOffSrc)
                         PgSAHelpers::readReadLengthValue(*rlMisOffSrc, mismatchOffset, plainTextReadMode);
