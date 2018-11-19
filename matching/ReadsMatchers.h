@@ -98,6 +98,7 @@ namespace PgTools {
     class AbstractReadsApproxMatcher: public DefaultReadsMatcher {
     protected:
         uint8_t maxMismatches;
+        uint8_t targetMismatches = 0;
         uint8_t minMismatches = 0;
 
         string pg;
@@ -112,7 +113,7 @@ namespace PgTools {
 
     public:
         AbstractReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                                   uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                   uint32_t matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~AbstractReadsApproxMatcher();
     };
@@ -129,7 +130,7 @@ namespace PgTools {
 
     public:
         DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                  uint32_t matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~DefaultReadsApproxMatcher();
     };
@@ -146,13 +147,13 @@ namespace PgTools {
 
     public:
         InterleavedReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                  uint32_t matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~InterleavedReadsApproxMatcher();
     };
 
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
+                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
                         const string &pgDestFilePrefix, const string &divisionFile, bool divisionComplement,
                         const string &outDivisionFile);
 }

@@ -181,23 +181,23 @@ namespace PgTools {
 
     AbstractReadsApproxMatcher::AbstractReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
                                                            PackedReadsSet *readsSet, uint32_t matchPrefixLength,
-                                                           uint8_t maxMismatches, uint8_t minMismatches)
-            : DefaultReadsMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength),
+                                                           uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches)
+            : DefaultReadsMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength), targetMismatches(targetMismatches),
             maxMismatches(maxMismatches), minMismatches(minMismatches){
 
     }
 
     InterleavedReadsApproxMatcher::InterleavedReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
                                                                  PackedReadsSet *readsSet, uint32_t matchPrefixLength,
-                                                                 uint8_t maxMismatches, uint8_t minMismatches)
-            : AbstractReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches,
-                                         minMismatches)  {}
+                                                uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches)
+            : AbstractReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches,
+                    maxMismatches, minMismatches)  {}
 
     DefaultReadsApproxMatcher::DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
                                                          PackedReadsSet *readsSet, uint32_t matchPrefixLength,
-                                                         uint8_t maxMismatches, uint8_t minMismatches)
-             :AbstractReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches,
-                                         minMismatches) {}
+                                                         uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches)
+             :AbstractReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches,
+                     maxMismatches, minMismatches) {}
 
 
 
@@ -206,14 +206,14 @@ namespace PgTools {
         clock_checkpoint();
 
         cout << "Feeding patterns...\n" << endl;
-        partLength = matchingLength / (maxMismatches + 1);
+        partLength = matchingLength / (targetMismatches + 1);
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
 
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
             const string &read = readsSet->getRead(i);
             const char *readPtr = read.data();
-            for (uint8_t j = 0; j <= maxMismatches; j++, readPtr += partLength)
-                hashMatcher->addPattern(readPtr, i * (maxMismatches + 1) + j);
+            for (uint8_t j = 0; j <= targetMismatches; j++, readPtr += partLength)
+                hashMatcher->addPattern(readPtr, i * (targetMismatches + 1) + j);
         }
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
@@ -230,12 +230,12 @@ namespace PgTools {
         int i = 0;
         while (hashMatcher->moveNext()) {
             const uint32_t matchPatternIndex = hashMatcher->getHashMatchPatternIndex();
-            uint32_t matchReadIndex = matchPatternIndex / (maxMismatches + 1);
+            uint32_t matchReadIndex = matchPatternIndex / (targetMismatches + 1);
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
                 continue;
             const string &matchedRead = readsSet->getRead(matchReadIndex);
             uint64_t matchPosition = hashMatcher->getHashMatchTextPosition();
-            const uint8_t positionShift = ((matchPatternIndex % (maxMismatches + 1)) * partLength);
+            const uint8_t positionShift = ((matchPatternIndex % (targetMismatches + 1)) * partLength);
             if (positionShift > matchPosition)
                 continue;
             matchPosition -= positionShift;
@@ -257,13 +257,13 @@ namespace PgTools {
                 falseMatchCount++;
             else
                 multiMatchCount++;
-            if (mismatchesCount < UINT8_MAX && i++ < 2) {
+/*            if (mismatchesCount < UINT8_MAX && i++ < 2) {
                 cout << "Matched: " << matchReadIndex << " (" << matchPatternIndex << "); "
                      << matchPosition << "; " << (int) mismatchesCount << "; " << (revCompMode?"pair strand (RC)":"") << endl;
                 cout << matchedRead << endl;
                 const string pgPart(txt + matchPosition, matchingLength);
                 cout << pgPart << endl;
-            }
+            }*/
         }
         cout << "... approximate matching procedure completed in " << clock_millis() << " msec. " << endl;
         cout << "Matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
@@ -275,14 +275,14 @@ namespace PgTools {
         clock_checkpoint();
 
         cout << "Feeding patterns...\n" << endl;
-        partLength = matchingLength / (maxMismatches + 1);
-        hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, maxMismatches + 1);
+        partLength = matchingLength / (targetMismatches + 1);
+        hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, targetMismatches + 1);
 
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
             const string &read = readsSet->getRead(i);
             const char *readPtr = read.data();
-            for (uint8_t j = 0; j <= maxMismatches; j++, readPtr++)
-                hashMatcher->addPattern(readPtr, i * (maxMismatches + 1) + j);
+            for (uint8_t j = 0; j <= targetMismatches; j++, readPtr++)
+                hashMatcher->addPattern(readPtr, i * (targetMismatches + 1) + j);
         }
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
@@ -299,12 +299,12 @@ namespace PgTools {
         int i = 0;
         while (hashMatcher->moveNext()) {
             const uint32_t matchPatternIndex = hashMatcher->getHashMatchPatternIndex();
-            uint32_t matchReadIndex = matchPatternIndex / (maxMismatches + 1);
+            uint32_t matchReadIndex = matchPatternIndex / (targetMismatches + 1);
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
                 continue;
             const string &matchedRead = readsSet->getRead(matchReadIndex);
             uint64_t matchPosition = hashMatcher->getHashMatchTextPosition();
-            const uint8_t positionShift = matchPatternIndex % (maxMismatches + 1);
+            const uint8_t positionShift = matchPatternIndex % (targetMismatches + 1);
             if (positionShift > matchPosition)
                 continue;
             matchPosition -= positionShift;
@@ -327,13 +327,13 @@ namespace PgTools {
             else
                 multiMatchCount++;
             //if (mismatchesCount < UINT8_MAX && i++ < 2) {
-            if (mismatchesCount < UINT8_MAX && mismatchesCount > 8) {
+/*            if (mismatchesCount < UINT8_MAX && mismatchesCount > 8) {
                 cout << "Matched: " << matchReadIndex << " (" << matchPatternIndex << "); "
                      << matchPosition << "; " << (int) mismatchesCount << "; " << (revCompMode?"pair strand (RC)":"") << endl;
                 cout << matchedRead << endl;
                 const string pgPart(txt + matchPosition, matchingLength);
                 cout << pgPart << endl;
-            }
+            }*/
         }
         cout << "... approximate matching procedure completed in " << clock_millis() << " msec. " << endl;
         cout << "Matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
@@ -406,7 +406,7 @@ namespace PgTools {
     SeparatedPseudoGenomeOutputBuilder *AbstractReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
             const string &outPgPrefix, bool enableRevComp, bool enableMismatches) {
         return new SeparatedPseudoGenomeOutputBuilder(outPgPrefix,
-                !enableRevComp && !this->revComplPg, !enableMismatches && this->maxMismatches == 0);
+                !enableRevComp && !this->revComplPg, !enableMismatches && this->targetMismatches == 0);
     }
 
     SeparatedPseudoGenomeOutputBuilder *DefaultReadsExactMatcher::createSeparatedPseudoGenomeOutputBuilder(
@@ -462,14 +462,14 @@ namespace PgTools {
     }
 
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
+                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
                         const string &pgDestFilePrefix, const string &divisionFile, bool divisionComplement,
                         const string &outDivisionFile) {
         DefaultReadsMatcher* matcher;
-        if (maxMismatches == 0)
+        if (targetMismatches == 0)
             matcher = new DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
         else
-            matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches);
+            matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches, maxMismatches, minMismatches);
         matcher->matchConstantLengthReads();
         if (dumpInfo)
             matcher->writeMatchesInfo(pgDestFilePrefix);

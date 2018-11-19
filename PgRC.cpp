@@ -16,17 +16,19 @@ static const char *const DIVISION_EXTENSION = ".div";
 using namespace std;
 using namespace PgTools;
 
-void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pairFastqFile, uint8_t maxMismatches,
+void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pairFastqFile,
+                            uint8_t targetMismatches, uint8_t maxMismatches,
                             string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput) {
 
     double error_limit = atof(err_limit_str.c_str());
     pgFilesPrefixes = pgFilesPrefixes + "_q" + err_limit_str;
     string badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
     string pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
-    string pgMappedGoodPrefix = pgFilesPrefixes + "_m" + toString(maxMismatches) + GOOD_INFIX;
-    string pgMappedBadPrefix = pgFilesPrefixes + "_m" + toString(maxMismatches) + BAD_INFIX;
-    string mappedBadFilesPrefix = pgFilesPrefixes + "_m" + toString(maxMismatches) + BAD_INFIX;
-    string mappedBadDivisionFile = mappedBadFilesPrefix + DIVISION_EXTENSION;
+    string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetMismatches)
+            + (maxMismatches>targetMismatches?("_M" + toString(maxMismatches)):"");
+    string pgMappedGoodPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
+    string pgMappedBadPrefix = pgFilesPrefixesWithM + BAD_INFIX;
+    string mappedBadDivisionFile = pgFilesPrefixesWithM + DIVISION_EXTENSION;
     if (skipIntermediateOutput) {
         pgGoodPrefix = pgMappedGoodPrefix;
         badDivisionFile = mappedBadDivisionFile;
@@ -50,8 +52,9 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     PackedReadsSet *badReadsSet = new PackedReadsSet(badReadsIterator);
     badReadsSet->printout();
     mapReadsIntoPg(
-            pgGoodPrefix, true, badReadsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE, maxMismatches, 0, false,
-            pgMappedGoodPrefix, badDivisionFile, false, mappedBadDivisionFile);
+            pgGoodPrefix, true, badReadsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
+            targetMismatches, maxMismatches, 0,
+            false, pgMappedGoodPrefix, badDivisionFile, false, mappedBadDivisionFile);
     delete(badReadsSet);
     delete(badReadsIterator);
 
@@ -70,10 +73,11 @@ int main(int argc, char *argv[])
 {
     int opt; // current option
     uint8_t maxMismatches = 0;
+    uint8_t targetMismatches = 0;
     bool skipIntermediateOutput = false;
     bool revComplPairFile = false;
 
-    while ((opt = getopt(argc, argv, "m:rsitae?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:M:rsitae?")) != -1) {
         switch (opt) {
         case 'r':
             revComplPairFile = true;
@@ -82,6 +86,9 @@ int main(int argc, char *argv[])
             skipIntermediateOutput = true;
             break;
         case 'm':
+            targetMismatches = atoi(optarg);
+            break;
+        case 'M':
             maxMismatches = atoi(optarg);
             break;
         case 't':
@@ -95,7 +102,7 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-m maxMismatches] [-r] [-a] [-e] [-t] [-s] \n"
+            fprintf(stderr, "Usage: %s [-m targetMaxMismatches] [-M allowedMaxMismatches] [-r] [-a] [-e] [-t] [-s] \n"
                             "error_probability readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                     argv[0]);
             fprintf(stderr, "-r reverse compliment reads in a pair file\n");
@@ -119,6 +126,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    if (maxMismatches < targetMismatches) {
+        fprintf(stdout, "INFO: allowedMaxMismatches set to targetMaxMismatches.\n");
+        maxMismatches = targetMismatches;
+    }
+
     string error_limit = argv[optind++];
     string srcFastqFile(argv[optind++]);
     string pairFastqFile = "";
@@ -126,7 +138,7 @@ int main(int argc, char *argv[])
         pairFastqFile = argv[optind++];
     string pgFilesPrefixes(argv[optind++]);
 
-    divideGenerateAndMatch(error_limit, srcFastqFile, pairFastqFile, maxMismatches, pgFilesPrefixes,
+    divideGenerateAndMatch(error_limit, srcFastqFile, pairFastqFile, targetMismatches, maxMismatches, pgFilesPrefixes,
             revComplPairFile, skipIntermediateOutput);
 
     exit(EXIT_SUCCESS);

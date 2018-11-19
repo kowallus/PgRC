@@ -12,6 +12,7 @@ int main(int argc, char *argv[])
 {
     int opt; // current option
     bool revComplPg = false;
+    uint8_t targetMismatches = 0;
     uint8_t maxMismatches = 0;
     uint8_t minMismatches = 0;
     uint_read_len_max matchPrefixLength = DefaultReadsMatcher::DISABLED_PREFIX_MODE;
@@ -19,9 +20,12 @@ int main(int argc, char *argv[])
     bool divisionComplement = false;
     bool dumpInfo = false;
 
-    while ((opt = getopt(argc, argv, "m:n:p:d:citaer?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:M:n:p:d:citaer?")) != -1) {
         switch (opt) {
         case 'm':
+            targetMismatches = atoi(optarg);
+            break;
+        case 'M':
             maxMismatches = atoi(optarg);
             break;
         case 'n':
@@ -53,7 +57,7 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-r] [-m maxMismatches] [-n expectedMinMismatches]\n"
+            fprintf(stderr, "Usage: %s [-r] [-m targetMaxMismatches] [-M allowedMaxMismatches] [-n expectedMinMismatches]\n"
                             "[-p match_prefix_length] [-a] [-e] [-t] [-i] [-c] [-d divisionfile]\n"
                             "readssrcfile [pairsrcfile] pgsrcfileprefix outputdivisionfile pgdestfileprefix\n\n",
                     argv[0]);
@@ -78,6 +82,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+    if (maxMismatches < targetMismatches) {
+        fprintf(stdout, "INFO: allowedMaxMismatches set to targetMaxMismatches.\n");
+        maxMismatches = targetMismatches;
+    }
+
     string readsFile(argv[optind++]);
     string pairFile = "";
     if (optind == argc - 4)
@@ -93,7 +102,7 @@ int main(int argc, char *argv[])
     readsSet->printout();
 
     mapReadsIntoPg(
-            pgFilePrefix, revComplPg, readsSet, matchPrefixLength, maxMismatches, minMismatches, dumpInfo,
+            pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches, maxMismatches, minMismatches, dumpInfo,
             pgDestFilePrefix, divisionFile, divisionComplement,
             outDivisionFile);
 
