@@ -20,8 +20,8 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
                             uint8_t targetMismatches, uint8_t maxMismatches,
                             string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput) {
 
-    double error_limit = atof(err_limit_str.c_str());
-    pgFilesPrefixes = pgFilesPrefixes + "_q" + err_limit_str;
+    double error_limit = atoi(err_limit_str.c_str()) / 100.0;
+    pgFilesPrefixes = pgFilesPrefixes + "_q" + (err_limit_str.length()==1?"0":"") + err_limit_str;
     string badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
     string pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
     string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetMismatches)
@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
         case '?':
         default: /* '?' */
             fprintf(stderr, "Usage: %s [-m targetMaxMismatches] [-M allowedMaxMismatches] [-r] [-a] [-e] [-t] [-s] \n"
-                            "error_probability readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
+                            "error_probability_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                     argv[0]);
             fprintf(stderr, "-r reverse compliment reads in a pair file\n");
             fprintf(stderr, "-t write numbers in text mode\n-c skip intermediate output files");
