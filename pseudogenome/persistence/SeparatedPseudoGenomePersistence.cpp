@@ -89,20 +89,20 @@ namespace PgTools {
     }
 
     const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX = ".pg";
-    const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX = ".pg.prop";
-    const string SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX = ".pg.rl.pos";
-    const string SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX = ".pg.rl.idx";
-    const string SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX = ".pg.rl.rc";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX = ".pg.rl.mis.cnt";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX = ".pg.rl.mis.sym";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX = ".pg.rl.mis.pos";
+    const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX = ".pg_prop";
+    const string SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX = ".pg_rl_pos";
+    const string SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX = ".pg_rl_idx";
+    const string SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX = ".pg_rl_rc";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX = ".pg_rl_mis_cnt";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX = ".pg_rl_mis_sym";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX = ".pg_rl_mis_pos";
 
 
-    const string SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX = ".pg.rl.off";
-    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX = ".pg.rl.mis.roff";
+    const string SeparatedPseudoGenomePersistence::READSLIST_OFFSETS_FILE_SUFFIX = ".pg_rl_off";
+    const string SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX = ".pg_rl_mis_roff";
 
-    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX = ".pg.rl.pr.idx";
-    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX = ".pg.rl.pr.off";
+    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX = ".pg_rl_pr_idx";
+    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX = ".pg_rl_pr_off";
 
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 
