@@ -13,12 +13,24 @@ static const char *const BAD_INFIX = "_bad";
 static const char *const GOOD_INFIX = "_good";
 static const char *const DIVISION_EXTENSION = ".div";
 
+clock_t getTimeInSec(clock_t end_t, clock_t begin_t) { return ((end_t - begin_t) / CLOCKS_PER_SEC); }
+
 using namespace std;
 using namespace PgTools;
 
 void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pairFastqFile,
                             uint8_t targetMismatches, uint8_t maxMismatches,
                             string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput) {
+
+    string outputfile = "pgrc_res.txt";
+    bool hasHeader = (bool) std::ifstream(outputfile);
+    fstream fout(outputfile, ios::out | ios::binary | ios::app);
+    if (!hasHeader)
+        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%]\tm\tM\ttotal[s]\tdiv[s]\tgood[s]\tmatch[s]\tbad[s]\tpost[s]" << endl;
+    clock_t start_t = clock();
+    fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
+        << pgFilesPrefixes << "\t" << err_limit_str << "\t"
+        << (int) targetMismatches << "\t" << (int) maxMismatches << "\t";
 
     double error_limit = atoi(err_limit_str.c_str()) / 100.0;
     pgFilesPrefixes = pgFilesPrefixes + "_q" + (err_limit_str.length()==1?"0":"") + err_limit_str;
@@ -38,6 +50,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
             srcFastqFile, pairFastqFile);
     divideReads(allReadsIterator, badDivisionFile, error_limit);
     delete(allReadsIterator);
+    clock_t div_t = clock();
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile);
@@ -45,6 +58,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, badDivisionFile, true, revComplPairFile);
     delete(goodPgb);
     delete(goodReadsIterator);
+    clock_t good_t = clock();
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile, pairFastqFile, badDivisionFile, false);
@@ -57,6 +71,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
             false, pgMappedGoodPrefix, badDivisionFile, false, mappedBadDivisionFile);
     delete(badReadsSet);
     delete(badReadsIterator);
+    clock_t match_t = clock();
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile);
@@ -64,10 +79,17 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadDivisionFile, false, revComplPairFile);
     delete(badPgb);
     delete(mappedBadReadsIterator);
+    clock_t bad_t = clock();
 
     SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
-}
 
+    fout << getTimeInSec(clock(), start_t) << "\t";
+    fout << getTimeInSec(div_t, start_t) << "\t";
+    fout << getTimeInSec(good_t, div_t) << "\t";
+    fout << getTimeInSec(match_t, good_t) << "\t";
+    fout << getTimeInSec(bad_t, match_t) << "\t";
+    fout << getTimeInSec(clock(), bad_t) << endl;
+}
 
 int main(int argc, char *argv[])
 {
