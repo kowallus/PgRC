@@ -86,6 +86,7 @@ namespace PgTools {
 
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX, clearReadsListDescriptionIfOverride);
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX, clearReadsListDescriptionIfOverride);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX, clearReadsListDescriptionIfOverride);
     }
 
     const string SeparatedPseudoGenomePersistence::PG_FILES_EXTENSION = ".pg";
@@ -105,6 +106,7 @@ namespace PgTools {
 
     const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX = "_rl_pr_idx" + PG_FILES_EXTENSION;
     const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX = "_rl_pr_off" + PG_FILES_EXTENSION;
+    const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX = "_rl_pr_sf" + PG_FILES_EXTENSION;
 
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 
@@ -143,6 +145,7 @@ namespace PgTools {
     void SeparatedPseudoGenomePersistence::writePairMapping(string &pgFilePrefix,
                                                             vector<uint_reads_cnt_std> orgIdxs) {
         ofstream pair1OffsetsDest = getPseudoGenomeElementDest(pgFilePrefix, READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX, true);
+        ofstream pair1SrcFlagDest = getPseudoGenomeElementDest(pgFilePrefix, READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX, true);
         ofstream pair1IndexesDest = getPseudoGenomeElementDest(pgFilePrefix, READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX, true);
         writeReadMode(pair1OffsetsDest, PgSAHelpers::plainTextWriteMode);
         writeReadMode(pair1IndexesDest, PgSAHelpers::plainTextWriteMode);
@@ -150,15 +153,17 @@ namespace PgTools {
         vector<uint_reads_cnt_std> rev(readsCount);
         for(uint_reads_cnt_std i = 0; i < readsCount; i++)
             rev[orgIdxs[i]] = i;
+        vector<bool> isReadDone(readsCount, false);
         for(uint32_t i = 0; i < readsCount; i++) {
+            if (isReadDone[i])
+                continue;
             uint_reads_cnt_std idx = orgIdxs[i];
-            if ((idx % 2) == 1) {
-                uint_reads_cnt_std i1 = rev[idx - 1];
-                writeValue<uint_reads_cnt_std>(pair1OffsetsDest, i1 > i?i1 - i: readsCount - (i1 - i));
-            } else {
-                writeValue<uint_reads_cnt_std>(pair1OffsetsDest, 0);
-                writeValue<uint_reads_cnt_std>(pair1IndexesDest, idx / 2);
-            }
+            uint_reads_cnt_std pairIdx = idx % 2?(idx-1):(idx+1);
+            uint_reads_cnt_std pairI = rev[pairIdx];
+            isReadDone[pairI] = true;
+            writeValue<uint_reads_cnt_std>(pair1OffsetsDest, pairI > i?pairI - i: readsCount - (i - pairI));
+            writeValue<uint8_t>(pair1SrcFlagDest, idx % 2);
+            writeValue<uint_reads_cnt_std>(pair1IndexesDest, idx);
         }
         pair1IndexesDest.close();
         pair1OffsetsDest.close();
