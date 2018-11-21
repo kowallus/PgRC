@@ -306,7 +306,8 @@ namespace PgTools {
             bool divisionComplement, bool revComplPairFile) {
 
         initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
-        (*pgDest) << pgb->getPseudoGenomeVirtual();
+        string pg = pgb->getPseudoGenomeVirtual();
+        PgSAHelpers::writeArray(*pgDest, (void*) pg.data(), pg.length());
 
         ReadsListIteratorExtendedWrapperBase* rlIt =
                 TemplateUserGenerator::generateReadsListUser<ReadsListIteratorExtendedWrapper, ReadsListIteratorExtendedWrapperBase>(pgb);

@@ -81,7 +81,8 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     delete(mappedBadReadsIterator);
     clock_t bad_t = clock();
 
-    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
+    if (pairFastqFile != "")
+        SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
 
     fout << getTimeInSec(clock(), start_t) << "\t";
     fout << getTimeInSec(div_t, start_t) << "\t";

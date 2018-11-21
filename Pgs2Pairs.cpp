@@ -10,9 +10,8 @@ using namespace PgTools;
 int main(int argc, char *argv[])
 {
     int opt; // current option
-    bool compactBytes = false;
 
-    while ((opt = getopt(argc, argv, "tcae?")) != -1) {
+    while ((opt = getopt(argc, argv, "tae?")) != -1) {
         switch (opt) {
         case 't':
             plainTextWriteMode = true;
