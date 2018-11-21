@@ -31,7 +31,7 @@ namespace PgTools {
         size_t size = pgSrc.tellg();
         std::string buffer(size, ' ');
         pgSrc.seekg(0);
-        pgSrc.read(&buffer[0], size);
+        PgSAHelpers::readArray(pgSrc, &buffer[0], size);
         return buffer;
     }
 

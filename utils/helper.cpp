@@ -20,9 +20,18 @@ const size_t chunkSize = 10000000;
 void* PgSAHelpers::readArray(std::istream& in, size_t arraySizeInBytes) {
 
     if (in) {
+        char* destArray = new char[arraySizeInBytes];
+        readArray(in, destArray, arraySizeInBytes);
+        return (void*) destArray;
+    } else
+        throw(errno);
+}
+
+void PgSAHelpers::readArray(std::istream& in, void* destArray, size_t arraySizeInBytes) {
+
+    if (in) {
         size_t length = arraySizeInBytes;
-        char* destArray = new char[length];
-        char* ptr = destArray;
+        char* ptr = (char*) destArray;
         size_t bytesLeft = length;
         while (bytesLeft > chunkSize) {
             in.read(ptr, chunkSize);
@@ -30,8 +39,6 @@ void* PgSAHelpers::readArray(std::istream& in, size_t arraySizeInBytes) {
             bytesLeft -= chunkSize;
         }
         in.read(ptr, bytesLeft);
-
-        return (void*) destArray;
     } else
         throw(errno);
 }

@@ -81,6 +81,7 @@ namespace PgSAHelpers {
     // input output routines
 
     void* readArray(std::istream&, size_t arraySizeInBytes);
+    void readArray(std::istream&, void* destArray, size_t arraySizeInBytes);
     void writeArray(std::ostream&, void* srcArray, size_t arraySize);
 
     void* readWholeArray(std::istream&, size_t& arraySizeInBytes);
