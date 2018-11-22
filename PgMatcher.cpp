@@ -13,21 +13,22 @@ static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
 
 const uint_read_len_max DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
 
-void matchPgInPgFile(const string &destPgFile, const string &srcPgFile, bool revComplPg = false) {
-    bool samePg = destPgFile == srcPgFile;
-    PseudoGenomeBase* pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(destPgFile);
+void matchPgInPgFile(const string &destPgPrefix, const string &srcPgPrefix, bool revComplPg = false) {
+    bool samePg = destPgPrefix == srcPgPrefix;
     if (samePg)
         cout << "Reading pseudogenome..." << endl;
     else
         cout << "Reading base pseudogenome..." << endl;
-    cout << "Pseudogenome length: " << pgb->getPseudoGenomeLength() << endl;
-    pgb->getReadsSetProperties()->printout();
-    string pg = pgb->getPseudoGenomeVirtual();
-    delete pgb;
-    string offsetsFile = srcPgFile + OFFSETS_SUFFIX;
+    PseudoGenomeHeader* pgh = 0;
+    bool plainTextReadMode = false;
+    PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(destPgPrefix, pgh, plainTextReadMode);
+    cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
+    string pg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(destPgPrefix);
+
+    string offsetsFile = srcPgPrefix + OFFSETS_SUFFIX;
     std::ofstream offsetsDest(offsetsFile, std::ios::out | std::ios::binary);
     if (offsetsDest.fail()) {
-        fprintf(stderr, "cannot write to offsets file %s\n", srcPgFile.c_str());
+        fprintf(stderr, "cannot write to offsets file %s\n", srcPgPrefix.c_str());
         exit(EXIT_FAILURE);
     }
 
@@ -37,20 +38,21 @@ void matchPgInPgFile(const string &destPgFile, const string &srcPgFile, bool rev
         samePg = false;
     }
 
-    pgb = PgSAIndex::PseudoGenomePersistence::checkAndReadPseudoGenome(srcPgFile);
-    if (destPgFile != srcPgFile) {
+    PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, pgh, plainTextReadMode);
+    if (destPgPrefix != srcPgPrefix) {
         cout << "Reading pattern pseudogenome..." << endl;
-        cout << "Pseudogenome length: " << pgb->getPseudoGenomeLength() << endl;
-        pgb->getReadsSetProperties()->printout();
+        cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
     }
-    uint_pg_len_max minMatchLength = pgb->getReadsSetProperties()->maxReadLength * 1.5;
+
+
+    uint_pg_len_max minMatchLength = pgh->getMaxReadLength() * 1.5;
 
     using namespace PgTools;
 
-    PgMatcherBase* pgmb = TemplateUserGenerator::generatePseudoGenomeUser<DefaultPgMatcher, PgMatcherBase>(pgb);
+    PgMatcherBase* matcher = new DefaultPgMatcher(srcPgPrefix);
 
-    pgmb->exactMatchPg(pg, offsetsDest, minMatchLength, samePg);
-    delete pgb;
+    matcher->exactMatchPg(pg, offsetsDest, minMatchLength, samePg);
+
     offsetsDest.close();
 }
 
