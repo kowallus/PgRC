@@ -61,7 +61,7 @@ namespace PgTools {
     }
 
     void DefaultPgMatcher::exactMatchPg(const string& text,
-            ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg) {
+            ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg, bool textIsRevComplOfPg) {
         clock_checkpoint();
         const uint_read_len_max readLength  = pgh->getMaxReadLength();
         const char* textPtr = text.data();
@@ -94,7 +94,7 @@ namespace PgTools {
             uint64_t matchTextPos = hashMatcher.getHashMatchTextPosition();
             const uint32_t matchPatternIndex = hashMatcher.getHashMatchPatternIndex();
             uint64_t matchPatternPos = matchPatternIndex * matchingLength;
-            if(textFromSamePg && matchTextPos >= matchPatternPos)
+            if(textFromSamePg && textIsRevComplOfPg?text.length() - matchPatternPos < matchTextPos:matchTextPos >= matchPatternPos)
                 continue;
             auto cmIt = currentMatches.begin();
             bool continueMatch = false;

@@ -11,8 +11,6 @@ using namespace std;
 
 static const string OFFSETS_SUFFIX = "_matched_offsets.txt";
 
-const uint_read_len_max DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
-
 void matchPgInPgFile(const string &destPgPrefix, const string &srcPgPrefix, bool revComplPg = false) {
     bool samePg = destPgPrefix == srcPgPrefix;
     if (samePg)
@@ -32,11 +30,8 @@ void matchPgInPgFile(const string &destPgPrefix, const string &srcPgPrefix, bool
         exit(EXIT_FAILURE);
     }
 
-    if (revComplPg) {
-        //pg = pg + "XXXXXX" + PgSAHelpers::reverseComplement(pg);
+    if (revComplPg)
         pg = PgSAHelpers::reverseComplement(pg);
-        samePg = false;
-    }
 
     PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, pgh, plainTextReadMode);
     if (destPgPrefix != srcPgPrefix) {
@@ -49,9 +44,9 @@ void matchPgInPgFile(const string &destPgPrefix, const string &srcPgPrefix, bool
 
     using namespace PgTools;
 
-    PgMatcherBase* matcher = new DefaultPgMatcher(srcPgPrefix);
+    DefaultPgMatcher matcher(srcPgPrefix);
 
-    matcher->exactMatchPg(pg, offsetsDest, minMatchLength, samePg);
+    matcher.exactMatchPg(pg, offsetsDest, minMatchLength, samePg, revComplPg);
 
     offsetsDest.close();
 }

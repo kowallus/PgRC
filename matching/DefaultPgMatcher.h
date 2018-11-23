@@ -2,13 +2,12 @@
 #define PGTOOLS_DEFAULTPGMATCHER_H
 
 #include "../pseudogenome/PseudoGenomeBase.h"
-#include "PgMatcherBase.h"
 
 namespace PgTools {
 
     using namespace PgSAIndex;
 
-    class DefaultPgMatcher: public PgMatcherBase {
+    class DefaultPgMatcher {
     private:
         const string srcPgPrefix;
         PseudoGenomeHeader* pgh = 0;
@@ -17,7 +16,8 @@ namespace PgTools {
     public:
         DefaultPgMatcher(const string& srcPgPrefix);
 
-        void exactMatchPg(const string& text, ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg) override;
+        void exactMatchPg(const string& text, ofstream &offsetsDest, uint32_t minMatchLength,
+                bool textFromSamePg, bool textIsRevComplOfPg);
 
         virtual ~DefaultPgMatcher();
     };
