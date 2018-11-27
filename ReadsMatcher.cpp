@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
         default: /* '?' */
             fprintf(stderr, "Usage: %s [-r] [-m targetMaxMismatches] [-M allowedMaxMismatches] [-n expectedMinMismatches]\n"
                             "[-p match_prefix_length] [-a] [-e] [-t] [-i] [-c] [-d divisionfile]\n"
-                            "readssrcfile [pairsrcfile] pgsrcfileprefix outputdivisionfile pgdestfileprefix\n\n",
+                            "readssrcfile [pairsrcfile] pgFilePrefix outputDivisionFile destPgFilePrefix\n\n",
                     argv[0]);
             fprintf(stderr, "-r match reverse compliment of pseudogenome\n-c use complement of reads division\n"
                             "-t write numbers in text mode\n-i dump verbose matching info\n");

@@ -8,35 +8,34 @@
 
 namespace PgTools {
 
-    DefaultPgMatcher::DefaultPgMatcher(const string& srcPgPrefix)
-            :srcPgPrefix(srcPgPrefix) {
+    DefaultPgMatcher::DefaultPgMatcher(const string& srcPgPrefix, const string& targetPgPrefix, bool revComplMatching)
+            :srcPgPrefix(srcPgPrefix), targetPgPrefix(targetPgPrefix), revComplMatching(revComplMatching) {
+        textFromSamePg = srcPgPrefix == targetPgPrefix;
+        if (textFromSamePg)
+            cout << "Reading pseudogenome..." << endl;
+        else
+            cout << "Reading source pseudogenome..." << endl;
+        PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, srcPgh, plainTextReadMode);
+        srcPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
+        cout << "Pseudogenome length: " << srcPgh->getPseudoGenomeLength() << endl;
 
-        PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, pgh, plainTextReadMode);
+        if (targetPgPrefix != srcPgPrefix) {
+            cout << "Reading target pseudogenome..." << endl;
+            PseudoGenomeHeader *pgh = 0;
+            bool plainTextReadMode = false;
+            PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(targetPgPrefix, pgh,
+                                                                                 plainTextReadMode);
+            destPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(targetPgPrefix);
+            cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
+        } else
+            destPg = srcPg;
+
+        if (revComplMatching)
+            destPg = PgSAHelpers::reverseComplement(destPg);
     }
 
     DefaultPgMatcher::~DefaultPgMatcher() {
     }
-
-    struct PgMatch{
-        uint_pg_len_max posPg;
-        uint_pg_len_max length;
-        uint_pg_len_max posText;
-
-        PgMatch(uint_pg_len_max posPg, uint_pg_len_max length, uint_pg_len_max posText) : posPg(posPg), length(length),
-                                                                                          posText(posText) {}
-
-        uint_pg_len_max endPosPg() {
-            return posPg + length;
-        }
-
-        uint_pg_len_max endPosText() {
-            return posText + length;
-        }
-
-        void report(ostream& out) {
-            out << length << ": <" << posPg << ", " << endPosPg() << ") in " << posText << endl;
-        }
-    };
 
     void backMatchExpand(const string& text, uint64_t& textPos, const string& pattern, uint64_t& patternPos, uint64_t& length) {
         const char* textGuardPtr = text.data();
@@ -60,27 +59,26 @@ namespace PgTools {
             length++;
     }
 
-    void DefaultPgMatcher::exactMatchPg(const string& text,
-            ofstream &offsetsDest, uint32_t minMatchLength, bool textFromSamePg, bool textIsRevComplOfPg) {
+    void DefaultPgMatcher::exactMatchPg(uint32_t minMatchLength) {
         clock_checkpoint();
-        const uint_read_len_max readLength  = pgh->getMaxReadLength();
-        const char* textPtr = text.data();
 
         cout << "Feeding pattern pseudogenome parts...\n" << endl;
         const uint_pg_len_max matchingLength = minMatchLength / 2;
         DefaultConstantLengthPatternsOnTextHashMatcher hashMatcher(matchingLength);
-        string pgPattern = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
-        const char* pgPtr = pgPattern.data();
-        uint32_t partsCount = pgPattern.length() / matchingLength;
+
+        const char* pgPtr = srcPg.data();
+        uint32_t partsCount = srcPg.length() / matchingLength;
         for (uint32_t i = 0; i < partsCount; i++)
             hashMatcher.addPattern(pgPtr + i * matchingLength, i);
 
         cout << "... finished in " << clock_millis() << " msec. " << endl;
         clock_checkpoint();
         cout << "Matching...\n" << endl;
-        hashMatcher.iterateOver(textPtr, text.length());
 
-        vector<PgMatch> pgMatches;
+        const char* textPtr = destPg.data();
+        hashMatcher.iterateOver(textPtr, destPg.length());
+
+        pgMatches.clear();
         pgMatches.push_back(PgMatch(0,0,0));
         list<PgMatch> currentMatches;
 
@@ -94,7 +92,7 @@ namespace PgTools {
             uint64_t matchTextPos = hashMatcher.getHashMatchTextPosition();
             const uint32_t matchPatternIndex = hashMatcher.getHashMatchPatternIndex();
             uint64_t matchPatternPos = matchPatternIndex * matchingLength;
-            if(textFromSamePg && textIsRevComplOfPg?text.length() - matchPatternPos < matchTextPos:matchTextPos >= matchPatternPos)
+            if(textFromSamePg && revComplMatching?destPg.length() - matchPatternPos < matchTextPos:matchTextPos >= matchPatternPos)
                 continue;
             auto cmIt = currentMatches.begin();
             bool continueMatch = false;
@@ -115,8 +113,8 @@ namespace PgTools {
             bool confirmPatternMatch = strncmp(textPtr + matchTextPos, pgPtr + matchPatternPos, matchingLength) == 0;
             uint64_t matchLength = matchingLength;
             if (confirmPatternMatch) {
-                backMatchExpand(text, matchTextPos, pgPattern, matchPatternPos, matchLength);
-                forwardMatchExpand(text, matchTextPos, pgPattern, matchPatternPos, matchLength);
+                backMatchExpand(destPg, matchTextPos, srcPg, matchPatternPos, matchLength);
+                forwardMatchExpand(destPg, matchTextPos, srcPg, matchPatternPos, matchLength);
                 if (matchLength >= minMatchLength) {
                     matchCount++;
                     matchCharsWithOverlapCount += matchLength;
@@ -132,20 +130,20 @@ namespace PgTools {
             if ((i++ % 100000) == 0 || matchLength > minMatchLength * 15) {
                  cout << (confirmPatternMatch?"Matched ":"False-matched ") << matchLength << " chars: <" << matchPatternPos << "; "
                      << (matchPatternPos + matchLength) << ") " << " in " << matchTextPos << " (" << matchCharsCount << " chars matched total)" << endl;
-                 cout << "Elapsed time: " << ((double) text.length() / matchTextPos) * clock_millis() / 1000 << "[s]" << endl;
+                 cout << "Elapsed time: " << ((double) destPg.length() / matchTextPos) * clock_millis() / 1000 << "[s]" << endl;
                 if (matchLength < matchingLength * 10) {
                     uint8_t beforeChars = matchingLength / 4;
                     const uint64_t &minPos = min<uint64_t>(matchPatternIndex, matchTextPos);
                     beforeChars = minPos < beforeChars ? minPos : beforeChars;
                     uint8_t afterChars = matchingLength / 4;
                     const uint64_t &maxLength =
-                            min<uint64_t>(pgPattern.length() - matchPatternPos, text.length() - matchTextPos) -
+                            min<uint64_t>(srcPg.length() - matchPatternPos, destPg.length() - matchTextPos) -
                             matchLength;
                     afterChars = maxLength < afterChars ? maxLength : afterChars;
-                    cout << pgPattern.substr(matchPatternPos, matchLength) << endl;
-                    cout << text.substr(matchTextPos, matchLength) << endl;
-                    cout << pgPattern.substr(matchPatternPos - beforeChars, beforeChars) << " ... " << pgPattern.substr(matchPatternPos + matchLength, afterChars) << endl;
-                    cout << text.substr(matchTextPos - beforeChars, beforeChars) << " ... " << text.substr(matchTextPos + matchLength, afterChars) << endl;
+                    cout << srcPg.substr(matchPatternPos, matchLength) << endl;
+                    cout << destPg.substr(matchTextPos, matchLength) << endl;
+                    cout << srcPg.substr(matchPatternPos - beforeChars, beforeChars) << " ... " << srcPg.substr(matchPatternPos + matchLength, afterChars) << endl;
+                    cout << destPg.substr(matchTextPos - beforeChars, beforeChars) << " ... " << destPg.substr(matchTextPos + matchLength, afterChars) << endl;
                 }
             }
         }
@@ -159,6 +157,14 @@ namespace PgTools {
         cout << "Largest matches:" << endl;
         for(uint32_t i = 0; i < pgMatches.size() && i < 10; i++)
             pgMatches[i].report(cout);
+    }
+
+    void DefaultPgMatcher::writeMatchesInfo(const string &dumpFilePrefix) {
+        cout << "Sorry, unimplemented matches info dump feature." << endl;
+    }
+
+    void DefaultPgMatcher::writeIntoPseudoGenome(const string &destPgFilePrefix) {
+        cout << "Sorry, unimplemented writing new pseudo genome file." << endl;
     }
 }
 
