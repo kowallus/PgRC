@@ -299,7 +299,7 @@ namespace PgSAReadsSet {
 
     template<typename uint_read_len>
     bool IgnoreNReadsSetIterator<uint_read_len>::isFreeOfN() {
-        return coreIterator->getReadVirtual().find('N');
+        return coreIterator->getReadVirtual().find('N') == string::npos;
     }
 
     template class ReadsSourceIteratorTemplate<uint_read_len_min>;
