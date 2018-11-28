@@ -76,16 +76,17 @@ namespace PgSAReadsSet {
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(const string &srcFile,
                                                                                                     const string &pairFile,
+                                                                                                    bool ignoreNReads,
                                                                                                     const string &divisionFile,
                                                                                                     bool divisionComplement,
                                                                                                     bool revComplPairFile) {
-        return new ManagedReadsSetIterator(srcFile, pairFile, divisionFile, divisionComplement, revComplPairFile);
+        return new ManagedReadsSetIterator(srcFile, pairFile, ignoreNReads, divisionFile, divisionComplement, revComplPairFile);
     }
 
     using namespace PgTools;
 
     ReadsSetPersistence::ManagedReadsSetIterator::ManagedReadsSetIterator(const string &srcFile, const string &pairFile,
-            const string &divisionFile, bool divisionComplement, bool revComplPairFile) {
+            bool ignoreNReads, const string &divisionFile, bool divisionComplement, bool revComplPairFile) {
         srcSource = new ifstream(srcFile, ios_base::in | ios_base::binary);
         if (srcSource->fail()) {
             fprintf(stderr, "cannot open reads file %s\n", srcFile.c_str());
@@ -119,6 +120,11 @@ namespace PgSAReadsSet {
                 exit(EXIT_FAILURE);
             }
             readsIterator = new DividedReadsSetIterator<uint_read_len_max>(readsIterator, divSource, divisionComplement);
+        }
+
+        if (ignoreNReads) {
+            coreIterators.push_back(readsIterator);
+            readsIterator = new IgnoreNReadsSetIterator<uint_read_len_max>(readsIterator);
         }
     }
 

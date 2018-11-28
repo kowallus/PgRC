@@ -260,6 +260,48 @@ namespace PgSAReadsSet {
         coreIterator->rewindVirtual();
     }
 
+    template<typename uint_read_len>
+    IgnoreNReadsSetIterator<uint_read_len>::IgnoreNReadsSetIterator(
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator): coreIterator(coreIterator) {
+    }
+
+    template<typename uint_read_len>
+    bool IgnoreNReadsSetIterator<uint_read_len>::moveNextVirtual() {
+        while (coreIterator->moveNextVirtual()) {
+            counter++;
+            if (isFreeOfN())
+                return true;
+        }
+        counter++;
+        return false;
+    }
+
+    template<typename uint_read_len>
+    string IgnoreNReadsSetIterator<uint_read_len>::getReadVirtual() {
+        return coreIterator->getReadVirtual();
+    }
+
+    template<typename uint_read_len>
+    string IgnoreNReadsSetIterator<uint_read_len>::getQualityInfoVirtual() {
+        return coreIterator->getQualityInfoVirtual();
+    }
+
+    template<typename uint_read_len>
+    uint_read_len IgnoreNReadsSetIterator<uint_read_len>::getReadLengthVirtual() {
+        return coreIterator->getReadLengthVirtual();
+    }
+
+    template<typename uint_read_len>
+    void IgnoreNReadsSetIterator<uint_read_len>::rewindVirtual() {
+        counter = -1;
+        coreIterator->rewindVirtual();
+    }
+
+    template<typename uint_read_len>
+    bool IgnoreNReadsSetIterator<uint_read_len>::isFreeOfN() {
+        return coreIterator->getReadVirtual().find('N');
+    }
+
     template class ReadsSourceIteratorTemplate<uint_read_len_min>;
     template class ReadsSourceIteratorTemplate<uint_read_len_std>;
     template class ConcatenatedReadsSourceIterator<uint_read_len_min>;
@@ -270,5 +312,7 @@ namespace PgSAReadsSet {
     template class FASTQReadsSourceIterator<uint_read_len_std>;
     template class RevComplPairReadsSetIterator<uint_read_len_min>;
     template class RevComplPairReadsSetIterator<uint_read_len_std>;
-    
+    template class IgnoreNReadsSetIterator<uint_read_len_min>;
+    template class IgnoreNReadsSetIterator<uint_read_len_std>;
+
 }
