@@ -65,8 +65,11 @@ namespace PgTools {
         virtual ReadsListEntry<maxMismatches, uint_read_len, uint_reads_cnt, uint_pg_len>& peekReadEntry() = 0;
     };
 
-    typedef ReadsListEntry<UINT8_MAX,  uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> DefaultReadsListEntry;
+    typedef ReadsListEntry<UINT8_MAX, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> DefaultReadsListEntry;
     typedef ExtendedReadsListIteratorInterface<UINT8_MAX, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> DefaultReadsListIteratorInterface;
+
+    typedef ReadsListEntry<0,  uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> SimpleReadsListEntry;
+    typedef ExtendedReadsListIteratorInterface<0, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> SimpleReadsListIteratorInterface;
 
 }
 

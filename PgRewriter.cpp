@@ -9,7 +9,7 @@ using namespace PgTools;
 
 void rewritePg(string pgFileSrcPrefix, string pgFileDestPrefix, bool compactBytes) {
     clock_checkpoint();
-    SeparatedExtendedReadsListIterator* rlIt = new SeparatedExtendedReadsListIterator(pgFileSrcPrefix);
+    DefaultSeparatedExtendedReadsListIterator* rlIt = new DefaultSeparatedExtendedReadsListIterator(pgFileSrcPrefix);
     SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(pgFileDestPrefix,
             !rlIt->isRevCompEnabled(), !rlIt->areMismatchesEnabled());
     builder->setReadsSourceIterator(rlIt);

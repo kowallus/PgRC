@@ -57,31 +57,52 @@ namespace PgTools {
     }
 
     template<typename uint_read_len>
+    bool QualityDividingReadsSetIterator<uint_read_len>::containsN() {
+        return coreIterator->getReadVirtual().find('N') != string::npos;
+    }
+
+    template<typename uint_read_len>
     DividedReadsSetIterator<uint_read_len>::DividedReadsSetIterator(
-            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream *divSource, bool visitComplement)
-            :coreIterator(coreIterator), divSource(divSource), visitComplement(visitComplement) {
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream *divSource, bool visitComplement,
+            bool ignoreNReads, bool ignoreNoNReads)
+            :coreIterator(coreIterator), divSource(divSource), visitComplement(visitComplement),
+            ignoreNReads(ignoreNReads), ignoreNoNReads(ignoreNoNReads) {
         plainTextReadMode = readReadMode(*divSource);
         readValue(*divSource, currentDivIdx, plainTextReadMode);
     }
 
     template<typename uint_read_len>
     bool DividedReadsSetIterator<uint_read_len>::moveNextVirtual() {
+        if (counter >= 0)
+            indexesMapping.push_back(counter);
         while (coreIterator->moveNextVirtual()) {
             counter++;
             if (visitComplement) {
-                if (counter != currentDivIdx)
+                if ((counter != currentDivIdx) && !isIgnored())
                     return true;
-                else
-                    readValue(*divSource, currentDivIdx, plainTextReadMode);
+
+                readValue(*divSource, currentDivIdx, plainTextReadMode);
             } else {
                 if (counter == currentDivIdx) {
                     readValue(*divSource, currentDivIdx, plainTextReadMode);
-                    return true;
+                    if (!isIgnored())
+                        return true;
                 }
             }
         }
         counter++;
         return false;
+    }
+
+    template<typename uint_read_len>
+    const vector<uint_reads_cnt_max> DividedReadsSetIterator<uint_read_len>::getVisitedIndexesMapping() {
+        return indexesMapping;
+    }
+
+    template<typename uint_read_len>
+    bool DividedReadsSetIterator<uint_read_len>::isIgnored() {
+        return (ignoreNReads && coreIterator->getReadVirtual().find('N') != string::npos)
+            || (ignoreNoNReads && coreIterator->getReadVirtual().find('N') == string::npos);
     }
 
     template<typename uint_read_len>

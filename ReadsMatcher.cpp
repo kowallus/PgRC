@@ -100,11 +100,10 @@ int main(int argc, char *argv[])
     cout << "Reading reads set\n";
     PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
     readsSet->printout();
-
+    const vector<uint_reads_cnt_max> indexesMapping = readsIterator->getVisitedIndexesMapping();
     mapReadsIntoPg(
             pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches, maxMismatches, minMismatches, dumpInfo,
-            pgDestFilePrefix, divisionFile, divisionComplement,
-            outDivisionFile);
+            pgDestFilePrefix, indexesMapping, divisionComplement, outDivisionFile);
 
     delete(readsSet);
     delete(readsIterator);

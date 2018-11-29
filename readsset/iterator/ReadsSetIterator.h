@@ -3,6 +3,7 @@
 
 #include <ctype.h>
 #include <iostream>
+#include <vector>
 #include "../../utils/helper.h"
 #include "../../pgsaconfig.h"
 
@@ -22,6 +23,10 @@ namespace PgSAReadsSet {
             virtual string getQualityInfoVirtual() { return std::string(); };
             virtual uint_read_len getReadLengthVirtual() = 0;
             virtual void rewindVirtual() = 0;
+
+            virtual const std::vector<uint_reads_cnt_max> getVisitedIndexesMapping() {
+                return {};
+            }
     };
 
     template < typename uint_read_len >

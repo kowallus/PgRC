@@ -10,21 +10,25 @@
 
 using namespace PgTools;
 
-PseudoGenomeBase *preparePg(string srcFile, string pairFile, string divisionFile, bool divisionComplement) {
+void prepareAndWritePg(string srcFile, string pairFile, string divisionFile, bool divisionComplement, string idxPrefix) {
     PseudoGenomeBase* pgb = 0;
 
+    vector<uint_reads_cnt_max> indexesMapping = {};
     if (PseudoGenomePersistence::isValidPseudoGenome(srcFile)) {
         pgb = PseudoGenomePersistence::readPseudoGenome(srcFile);
         cout << "Pseudogenome length: " << pgb->getPseudoGenomeLength() << endl;
         pgb->getReadsSetProperties()->printout();
-        return pgb;
+
+    } else {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFile, pairFile, divisionFile, divisionComplement);
+        pgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(readsIterator);
+        indexesMapping = readsIterator->getVisitedIndexesMapping();
+        delete (readsIterator);
     }
 
-    ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
-            srcFile, pairFile, divisionFile, divisionComplement);
-    pgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(readsIterator);
-    delete(readsIterator);
-    return pgb;
+    PgTools::SeparatedPseudoGenomePersistence::writePseudoGenome(pgb, idxPrefix, indexesMapping);
+    delete(pgb);
 }
 
 int main(int argc, char *argv[]) {
@@ -79,11 +83,7 @@ int main(int argc, char *argv[]) {
         pairFile = argv[optind++];
     string idxPrefix(argv[optind++]);
 
-    PseudoGenomeBase *pgb = preparePg(srcFile, pairFile, divisionFile, divisionComplement);
+    prepareAndWritePg(srcFile, pairFile, divisionFile, divisionComplement, idxPrefix);
 
-    PgTools::SeparatedPseudoGenomePersistence::writePseudoGenome(pgb, idxPrefix, divisionFile, divisionComplement);
-
-    delete(pgb);
-    
     exit(EXIT_SUCCESS);
 }

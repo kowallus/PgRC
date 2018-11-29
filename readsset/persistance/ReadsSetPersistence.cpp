@@ -4,42 +4,6 @@
 
 namespace PgSAReadsSet {
 
-    vector<uint_reads_cnt_max>
-    ReadsSetPersistence::getReadsOriginalIndexes(const string &divisionFile, bool divisionComplement,
-                                                 uint64_t readsCount) {
-        vector<uint_reads_cnt_max> mapping(readsCount);
-        if (divisionFile == "") {
-            for(uint64_t i = 0; i < readsCount; i++)
-                mapping[i] = i;
-        } else {
-            std::ifstream divSource(divisionFile, std::ios::in | std::ios::binary);
-            if (divSource.fail()) {
-                fprintf(stderr, "cannot open reads division file %s\n", divisionFile.c_str());
-                exit(EXIT_FAILURE);
-            }
-            uint64_t i = 0;
-            uint64_t counter = 0;
-            uint64_t currentDivIdx = 0;
-            bool plainTextReadMode = readReadMode(divSource);
-            readValue(divSource, currentDivIdx, plainTextReadMode);
-            while (i < readsCount) {
-                if (divisionComplement) {
-                    while (counter == currentDivIdx) {
-                        readValue(divSource, currentDivIdx, plainTextReadMode);
-                        counter++;
-                    }
-                    mapping[i++] = counter++;
-                } else {
-                    while (counter != currentDivIdx)
-                        counter++;
-                    mapping[i++] = counter++;
-                    readValue(divSource, currentDivIdx, plainTextReadMode);
-                }
-            }
-        }
-        return mapping;
-    }
-
     void ReadsSetPersistence::writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping,
                                                   const vector<uint32_t> &readsFilterResult,
                                                   const uint32_t readNotMatchedValue, string divisionFile,
@@ -76,17 +40,19 @@ namespace PgSAReadsSet {
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(const string &srcFile,
                                                                                                     const string &pairFile,
-                                                                                                    bool ignoreNReads,
                                                                                                     const string &divisionFile,
                                                                                                     bool divisionComplement,
-                                                                                                    bool revComplPairFile) {
-        return new ManagedReadsSetIterator(srcFile, pairFile, ignoreNReads, divisionFile, divisionComplement, revComplPairFile);
+                                                                                                    bool revComplPairFile,
+                                                                                                    bool ignoreNReads,
+                                                                                                    bool ignoreNoNReads) {
+        return new ManagedReadsSetIterator(srcFile, pairFile, divisionFile, divisionComplement, revComplPairFile,
+                                           ignoreNReads, ignoreNoNReads);
     }
 
     using namespace PgTools;
 
     ReadsSetPersistence::ManagedReadsSetIterator::ManagedReadsSetIterator(const string &srcFile, const string &pairFile,
-            bool ignoreNReads, const string &divisionFile, bool divisionComplement, bool revComplPairFile) {
+            const string &divisionFile, bool divisionComplement, bool revComplPairFile, bool ignoreNReads, bool ignoreNoNReads) {
         srcSource = new ifstream(srcFile, ios_base::in | ios_base::binary);
         if (srcSource->fail()) {
             fprintf(stderr, "cannot open reads file %s\n", srcFile.c_str());
@@ -119,12 +85,8 @@ namespace PgSAReadsSet {
                 fprintf(stderr, "cannot open reads division file %s\n", divisionFile.c_str());
                 exit(EXIT_FAILURE);
             }
-            readsIterator = new DividedReadsSetIterator<uint_read_len_max>(readsIterator, divSource, divisionComplement);
-        }
-
-        if (ignoreNReads) {
-            coreIterators.push_back(readsIterator);
-            readsIterator = new IgnoreNReadsSetIterator<uint_read_len_max>(readsIterator);
+            readsIterator = new DividedReadsSetIterator<uint_read_len_max>(readsIterator, divSource, divisionComplement,
+                    ignoreNReads, ignoreNoNReads);
         }
     }
 
@@ -162,4 +124,7 @@ namespace PgSAReadsSet {
         readsIterator->rewindVirtual();
     }
 
+    const vector<uint_reads_cnt_max> ReadsSetPersistence::ManagedReadsSetIterator::getVisitedIndexesMapping() {
+        return readsIterator->getVisitedIndexesMapping();
+    }
 }

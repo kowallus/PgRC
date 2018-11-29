@@ -19,8 +19,9 @@ namespace PgSAReadsSet {
             ifstream* pairSource = 0;
             ifstream* divSource = 0;
         public:
-            ManagedReadsSetIterator(const string &srcFile, const string &pairFile = "", bool ignoreNReads = false, const string &divisionFile = "",
-                    bool divisionComplement = false, bool revComplPairFile = false);
+            ManagedReadsSetIterator(const string &srcFile, const string &pairFile = "", const string &divisionFile = "",
+                    bool divisionComplement = false, bool revComplPairFile = false,
+                    bool ignoreNReads = false, bool ignoreNoNReads = false);
 
         public:
             bool moveNextVirtual();
@@ -30,20 +31,18 @@ namespace PgSAReadsSet {
             void rewindVirtual();
 
             virtual ~ManagedReadsSetIterator();
+
+            const vector<uint_reads_cnt_max> getVisitedIndexesMapping() override;
         };
 
     public:
         static ReadsSourceIteratorTemplate<uint_read_len_max>* createManagedReadsIterator(const string &srcFile,
                                                                                           const string &pairFile = "",
-                                                                                          bool ignoreNReads = false,
                                                                                           const string &divisionFile = "",
                                                                                           bool divisionComplement = false,
-                                                                                          bool revComplPairFile = false);
-
-        static vector<uint_reads_cnt_max> getReadsOriginalIndexes(const string &divisionFile = "",
-                                                                  bool divisionComplement = false,
-                                                                  uint64_t readsCount = 0);
-
+                                                                                          bool revComplPairFile = false,
+                                                                                          bool ignoreNReads = false,
+                                                                                          bool ignoreNoNReads = false);
 
         static void writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping, const vector<uint32_t> &readsFilterResult,
                         const uint32_t readNotMatchedValue, string divisionFile, bool divisionComplement);

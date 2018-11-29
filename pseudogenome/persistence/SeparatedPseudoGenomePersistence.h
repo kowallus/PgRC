@@ -19,7 +19,7 @@ namespace PgTools {
 
     public:
         static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
-                string divisionFile = "", bool divisionComplement = false, bool revComplPairFile = false);
+                const vector<uint_reads_cnt_max>& orgIndexesMapping = {}, bool revComplPairFile = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
         static string getPseudoGenome(const string &pseudoGenomePrefix);
@@ -100,7 +100,7 @@ namespace PgTools {
         uint_pg_len_max writeReadsFromIterator(uint_pg_len_max stopPos = (uint_pg_len_max) -1);
         void writeExtraReadEntry(const DefaultReadsListEntry &rlEntry);
 
-        void writePseudoGenome(PseudoGenomeBase* pgb, string divisionFile, bool divisionComplement, bool revComplPairFile = "false");
+        void writePseudoGenome(PseudoGenomeBase* pgb, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool revComplPairFile = "false");
 
         void build();
     };

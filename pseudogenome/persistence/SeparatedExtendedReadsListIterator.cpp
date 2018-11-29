@@ -2,7 +2,8 @@
 
 namespace PgTools {
 
-    SeparatedExtendedReadsListIterator::SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix)
+    template <int maxMismatches>
+    SeparatedExtendedReadsListIterator<maxMismatches>::SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix)
             : pseudoGenomePrefix(pseudoGenomePrefix) {
         SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pseudoGenomePrefix, pgh, plainTextReadMode);
         if (PgSAReadsSet::isReadLengthMin(pgh->getMaxReadLength()))
@@ -10,12 +11,14 @@ namespace PgTools {
         initSrcs();
     }
 
-    SeparatedExtendedReadsListIterator::~SeparatedExtendedReadsListIterator() {
+    template <int maxMismatches>
+    SeparatedExtendedReadsListIterator<maxMismatches>::~SeparatedExtendedReadsListIterator() {
         delete(pgh);
         freeSrcs();
     }
 
-    void SeparatedExtendedReadsListIterator::initSrc(ifstream *&src, const string &fileSuffix) {
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(ifstream *&src, const string &fileSuffix) {
         src = new ifstream(pseudoGenomePrefix + fileSuffix, ios_base::in | ios_base::binary);
         if (src->fail()) {
             delete (src);
@@ -23,11 +26,15 @@ namespace PgTools {
         }
     }
 
-    void SeparatedExtendedReadsListIterator::initSrcs() {
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrcs() {
         initSrc(rlPosSrc, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
         initSrc(rlOrgIdxSrc, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         initSrc(rlRevCompSrc, SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX);
         initSrc(rlMisCntSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_COUNT_FILE_SUFFIX);
+        if (maxMismatches == 0 && rlMisCntSrc) {
+            fprintf(stderr, "WARNING: mismatches unsupported in current routine working on %s Pg\n", pseudoGenomePrefix.c_str());
+        }
         initSrc(rlMisSymSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX);
         initSrc(rlMisOffSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
 
@@ -35,7 +42,8 @@ namespace PgTools {
         initSrc(rlMisRevOffSrc, SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX);
     }
 
-    void SeparatedExtendedReadsListIterator::freeSrc(ifstream *&src) {
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::freeSrc(ifstream *&src) {
         if (src) {
             src->close();
             delete (src);
@@ -43,7 +51,8 @@ namespace PgTools {
         }
     }
 
-    void SeparatedExtendedReadsListIterator::freeSrcs() {
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::freeSrcs() {
         freeSrc(rlPosSrc);
         freeSrc(rlOrgIdxSrc);
         freeSrc(rlRevCompSrc);
@@ -55,9 +64,10 @@ namespace PgTools {
         freeSrc(rlMisRevOffSrc);
     }
 
-    bool SeparatedExtendedReadsListIterator::moveNext() {
+    template <int maxMismatches>
+    bool SeparatedExtendedReadsListIterator<maxMismatches>::moveNext() {
         if (++current < pgh->getReadsCount()) {
-            uint_reads_cnt_std idx;
+            uint_reads_cnt_std idx = 0;
             uint8_t revComp = 0;
             PgSAHelpers::readValue<uint_reads_cnt_std>(*rlOrgIdxSrc, idx, plainTextReadMode);
             if (rlRevCompSrc)
@@ -71,7 +81,7 @@ namespace PgTools {
                 PgSAHelpers::readValue<uint_pg_len_max>(*rlPosSrc, pos, plainTextReadMode);
                 entry.advanceEntryByPosition(pos, idx, revComp == 1);
             }
-            if (rlMisCntSrc) {
+            if (maxMismatches != 0 && rlMisCntSrc) {
                 uint8_t mismatchesCount = 0;
                 PgSAHelpers::readValue<uint8_t>(*rlMisCntSrc, mismatchesCount, plainTextReadMode);
                 for(uint8_t i = 0; i < mismatchesCount; i++) {
@@ -92,16 +102,22 @@ namespace PgTools {
         return false;
     }
 
-    PgTools::ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &
-    SeparatedExtendedReadsListIterator::peekReadEntry() {
+    template <int maxMismatches>
+    PgTools::ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &
+    SeparatedExtendedReadsListIterator<maxMismatches>::peekReadEntry() {
         return entry;
     }
 
-    bool SeparatedExtendedReadsListIterator::isRevCompEnabled() {
+    template <int maxMismatches>
+    bool SeparatedExtendedReadsListIterator<maxMismatches>::isRevCompEnabled() {
         return rlRevCompSrc;
     }
 
-    bool SeparatedExtendedReadsListIterator::areMismatchesEnabled() {
+    template <int maxMismatches>
+    bool SeparatedExtendedReadsListIterator<maxMismatches>::areMismatchesEnabled() {
         return rlMisCntSrc;
     }
+
+    template class SeparatedExtendedReadsListIterator<UINT8_MAX>;
+    template class SeparatedExtendedReadsListIterator<0>;
 }

@@ -440,7 +440,7 @@ namespace PgTools {
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
         initEntryUpdating();
-        SeparatedExtendedReadsListIterator* rlIt = new SeparatedExtendedReadsListIterator(pgFilePrefix);
+        DefaultSeparatedExtendedReadsListIterator* rlIt = new DefaultSeparatedExtendedReadsListIterator(pgFilePrefix);
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(outPgPrefix,
                 rlIt->isRevCompEnabled(), rlIt->areMismatchesEnabled());
         builder->setReadsSourceIterator(rlIt);
@@ -463,7 +463,7 @@ namespace PgTools {
 
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
-                        const string &pgDestFilePrefix, const string &divisionFile, bool divisionComplement,
+                        const string &pgDestFilePrefix, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
                         const string &outDivisionFile) {
         DefaultReadsMatcher* matcher;
         if (targetMismatches == 0)
@@ -476,8 +476,6 @@ namespace PgTools {
 
         const vector<uint32_t> &readsMatchPos = matcher->getReadMatchPos();
         const vector<uint8_t> &readsMismatches = matcher->getReadMismatches();
-        const vector<uint_reads_cnt_max> orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile,
-                                                                                                          divisionComplement, readsSet->getReadsSetProperties()->readsCount);
 
         ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, readsMatchPos,
                                                  DefaultReadsMatcher::NOT_MATCHED_VALUE, outDivisionFile, divisionComplement);

@@ -6,7 +6,8 @@
 
 namespace PgTools {
 
-    class SeparatedExtendedReadsListIterator : public PgTools::DefaultReadsListIteratorInterface {
+    template <int maxMismatches>
+    class SeparatedExtendedReadsListIterator : public ExtendedReadsListIteratorInterface<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> {
     private:
         const string &pseudoGenomePrefix;
         ifstream *rlPosSrc = 0;
@@ -24,7 +25,7 @@ namespace PgTools {
 
         int64_t current = -1;
 
-        PgTools::DefaultReadsListEntry entry;
+        ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> entry;
 
         void initSrc(ifstream *&src, const string &fileSuffix);
         void initSrcs();
@@ -38,13 +39,17 @@ namespace PgTools {
 
         bool moveNext() override;
 
-        PgTools::ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, PgSAIndex::uint_pg_len_max> &
+        ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max>&
         peekReadEntry() override;
 
         bool isRevCompEnabled();
 
         bool areMismatchesEnabled();
     };
+
+    typedef SeparatedExtendedReadsListIterator<UINT8_MAX> DefaultSeparatedExtendedReadsListIterator;
+    typedef SeparatedExtendedReadsListIterator<0> SimpleSeparatedReadsListIterator;
+
 }
 
 #endif //PGTOOLS_SEPARATEDEXTENDEDREADSLISTITERATOR_H

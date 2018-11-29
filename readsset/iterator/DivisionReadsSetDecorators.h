@@ -13,6 +13,7 @@ namespace PgTools {
         double error_level;
         bool visitGoodReads;
         bool isQualityGood();
+        bool containsN();
 
     public:
 
@@ -38,17 +39,23 @@ namespace PgTools {
         uint64_t currentDivIdx;
         std::istream* divSource;
         bool visitComplement;
+        bool ignoreNReads;
+        bool ignoreNoNReads;
         bool plainTextReadMode = false;
 
+        vector<uint_reads_cnt_max> indexesMapping;
+        bool isIgnored();
     public:
         DividedReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream* divSource,
-                bool visitComplement = false);
+                bool visitComplement = false, bool ignoreNReads = false, bool ignoreNoNReads = false);
 
         bool moveNextVirtual();
         string getReadVirtual();
         string getQualityInfoVirtual();
         uint_read_len getReadLengthVirtual();
         void rewindVirtual();
+
+        const vector<uint_reads_cnt_max> getVisitedIndexesMapping() override;
     };
 
 }

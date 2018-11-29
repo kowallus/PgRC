@@ -7,10 +7,10 @@
 namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix,
-            string divisionFile, bool divisionComplement, bool revComplPairFile) {
+            const vector<uint_reads_cnt_max>& orgIndexesMapping, bool revComplPairFile) {
         clock_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix, !revComplPairFile, true);
-        builder.writePseudoGenome(pgb, divisionFile, divisionComplement, revComplPairFile);
+        builder.writePseudoGenome(pgb, orgIndexesMapping, revComplPairFile);
         builder.build();
         cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << clock_millis() << " msec." << endl << endl;
     }
@@ -302,8 +302,7 @@ namespace PgTools {
         }
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, string divisionFile,
-            bool divisionComplement, bool revComplPairFile) {
+    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool revComplPairFile) {
 
         initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
         string pg = pgb->getPseudoGenomeVirtual();
@@ -311,8 +310,8 @@ namespace PgTools {
 
         ReadsListIteratorExtendedWrapperBase* rlIt =
                 TemplateUserGenerator::generateReadsListUser<ReadsListIteratorExtendedWrapper, ReadsListIteratorExtendedWrapperBase>(pgb);
-        if (divisionFile != "")
-            rlIt->applyDivision(divisionFile, divisionComplement);
+        if (orgIndexesMapping.size() > 0)
+            rlIt->applyIndexesMapping(orgIndexesMapping);
         if (revComplPairFile)
             rlIt->applyRevComplPairFileFlag();
         if (pgb->isReadLengthMin())

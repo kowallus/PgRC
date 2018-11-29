@@ -12,7 +12,7 @@ namespace PgTools {
 
     class ReadsListIteratorExtendedWrapperBase: public DefaultReadsListIteratorInterface {
     public:
-        virtual void applyDivision(string divisionFile, bool divisionComplement) = 0;
+        virtual void applyIndexesMapping(const vector<uint_reads_cnt_max>& orgIndexesMapping) = 0;
 
         virtual void applyRevComplPairFileFlag() = 0;
     };
@@ -37,9 +37,9 @@ namespace PgTools {
             return mapping?orgIndexesMapping[idx]:idx;
         }
 
-        void applyDivision(string divisionFile, bool divisionComplement) {
+        void applyIndexesMapping(const vector<uint_reads_cnt_max>& orgIndexesMapping) {
             mapping = true;
-            orgIndexesMapping = ReadsSetPersistence::getReadsOriginalIndexes(divisionFile, divisionComplement, readsList->getReadsCount());
+            this->orgIndexesMapping = orgIndexesMapping;
         }
 
         void applyRevComplPairFileFlag() {
@@ -52,7 +52,7 @@ namespace PgTools {
             return currentIdx++ < readsList->getReadsCount();
         }
 
-        ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &peekReadEntry() override {
+        DefaultReadsListEntry &peekReadEntry() override {
             return entry;
         }
     };
