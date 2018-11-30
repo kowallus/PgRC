@@ -39,23 +39,31 @@ namespace PgTools {
 
 
     struct PgMatch{
-        uint_pg_len_max posPg;
+        uint_pg_len_max posSrcPg;
         uint_pg_len_max length;
-        uint_pg_len_max posText;
+        uint_pg_len_max posDestPg;
 
-        PgMatch(uint_pg_len_max posPg, uint_pg_len_max length, uint_pg_len_max posText) : posPg(posPg), length(length),
-                                                                                          posText(posText) {}
+        uint_pg_len_max nettoLength = 0;
+        uint_reads_cnt_max startRlIdx = -1;
 
-        uint_pg_len_max endPosPg() {
-            return posPg + length;
+        PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) : posSrcPg(posSrcPg), length(length),
+                                                                                          posDestPg(posDestPg) {}
+        void reverseMatch() {
+            uint_pg_len_max temp = posSrcPg;
+            posSrcPg = posDestPg;
+            posDestPg = temp;
         }
 
-        uint_pg_len_max endPosText() {
-            return posText + length;
+        uint_pg_len_max endPosSrcPg() {
+            return posSrcPg + length;
+        }
+
+        uint_pg_len_max endPosDestPg() {
+            return posDestPg + length;
         }
 
         void report(ostream& out) {
-            out << length << ": <" << posPg << ", " << endPosPg() << ") in " << posText << endl;
+            out << length << ": <" << posSrcPg << ", " << endPosSrcPg() << ") in " << posDestPg << endl;
         }
     };
 }
