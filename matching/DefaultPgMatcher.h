@@ -31,6 +31,8 @@ namespace PgTools {
 
         void mapPgMatches2SrcReadsList();
         void reverseDestWithSrcForBetterMatchesMappingInTheSamePg();
+        void correctDestPositionDueToRevComplMatching();
+        void resolveDestOverlapSrcConflictsInTheSamePg();
 
     public:
         DefaultPgMatcher(const string& srcPgPrefix, const string& targetPgPrefix, bool revComplMatching);
@@ -43,7 +45,6 @@ namespace PgTools {
 
         void writeIntoPseudoGenome(const string &destPgFilePrefix);
 
-        void correctDestPositionDueToRevComplMatching();
     };
 
 
@@ -57,6 +58,8 @@ namespace PgTools {
         uint_reads_cnt_max startRlIdx = -1;
         uint_reads_cnt_max endRlIdx = -1;
 
+        bool inactiveDueToCollision = false;
+
         PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) : posSrcPg(posSrcPg), length(length),
                                                                                           posDestPg(posDestPg) {}
         void reverseMatch() {
@@ -65,12 +68,28 @@ namespace PgTools {
             posDestPg = temp;
         }
 
-        uint_pg_len_max endPosSrcPg() {
+        uint_pg_len_max endPosSrcPg() const {
             return posSrcPg + length;
         }
 
-        uint_pg_len_max endPosDestPg() {
+        uint_pg_len_max endPosDestPg() const {
             return posDestPg + length;
+        }
+
+        uint_pg_len_max netPosSrcPg() const {
+            return posSrcPg + netPosAlignment;
+        }
+
+        uint_pg_len_max netPosDestPg() const {
+            return posDestPg + netPosAlignment;
+        }
+
+        uint_pg_len_max netEndPosSrcPg() const {
+            return netPosSrcPg() + netLength;
+        }
+
+        uint_pg_len_max netEndPosDestPg() const {
+            return netPosDestPg() + netLength;
         }
 
         void report(ostream& out) {
