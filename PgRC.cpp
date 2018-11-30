@@ -21,7 +21,8 @@ using namespace PgTools;
 
 void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pairFastqFile, bool ignoreNReads,
                             uint8_t targetMismatches, uint8_t maxMismatches,
-                            string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput) {
+                            string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput,
+                            uint8_t skipStages, uint8_t endAtStage) {
 
     string outputfile = "pgrc_res.txt";
     bool hasHeader = (bool) std::ifstream(outputfile);
@@ -48,12 +49,14 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
         badDivisionFile = mappedBadDivisionFile;
     }
 
-    ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-            srcFastqFile, pairFastqFile);
-    divideReads(allReadsIterator, badDivisionFile, error_limit);
-    delete (allReadsIterator);
+    if (skipStages == 0) {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile);
+        divideReads(allReadsIterator, badDivisionFile, error_limit);
+        delete (allReadsIterator);
+    }
     clock_t div_t = clock();
-    {
+    if (skipStages < 2 && endAtStage >= 2) {
         ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
         PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
@@ -65,7 +68,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
         delete (goodReadsIterator);
     }
     clock_t good_t = clock();
-    {
+    if (skipStages < 3 && endAtStage >= 3) {
         ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, badDivisionFile, false);
         cout << "Reading (div: " << badDivisionFile << ") reads set\n";
@@ -80,45 +83,45 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
         delete (badReadsIterator);
     }
     clock_t match_t = clock();
-    {
-        ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
-        PseudoGenomeBase *badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
-                mappedBadReadsIterator);
-        const vector<uint_reads_cnt_max> mappedBadIndexesMapping = mappedBadReadsIterator->getVisitedIndexesMapping();
-        SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadIndexesMapping,
-                                                            revComplPairFile);
-        delete (badPgb);
-        delete (mappedBadReadsIterator);
+    if (skipStages < 4 && endAtStage >= 4) {
+        {
+            ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
+            PseudoGenomeBase *badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+                    mappedBadReadsIterator);
+            const vector<uint_reads_cnt_max> mappedBadIndexesMapping = mappedBadReadsIterator->getVisitedIndexesMapping();
+            SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadIndexesMapping,
+                                                                revComplPairFile);
+            delete (badPgb);
+            delete (mappedBadReadsIterator);
+        }
+        if (ignoreNReads) {
+            ReadsSourceIteratorTemplate<uint_read_len_max> *mappedNReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, false, true);
+            PseudoGenomeBase *nPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+                    mappedNReadsIterator);
+            const vector<uint_reads_cnt_max> mappedNIndexesMapping = mappedNReadsIterator->getVisitedIndexesMapping();
+            SeparatedPseudoGenomePersistence::writePseudoGenome(nPgb, pgNPrefix, mappedNIndexesMapping,
+                                                                revComplPairFile);
+            delete (nPgb);
+            delete (mappedNReadsIterator);
+        }
     }
     clock_t bad_t = clock();
-    clock_t n_t = bad_t;
-    if (ignoreNReads) {
-        ReadsSourceIteratorTemplate<uint_read_len_max> *mappedNReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, false, true);
-        PseudoGenomeBase *nPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
-                mappedNReadsIterator);
-        const vector<uint_reads_cnt_max> mappedNIndexesMapping = mappedNReadsIterator->getVisitedIndexesMapping();
-        SeparatedPseudoGenomePersistence::writePseudoGenome(nPgb, pgNPrefix, mappedNIndexesMapping,
-                                                            revComplPairFile);
-        delete (nPgb);
-        delete (mappedNReadsIterator);
-        n_t = clock();
-    }
 
-    if (pairFastqFile != "")
+    if (pairFastqFile != "" && skipStages < 5 && endAtStage >= 5) {
         if (ignoreNReads)
             SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix, pgNPrefix});
         else
             SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
+    }
 
     fout << getTimeInSec(clock(), start_t) << "\t";
     fout << getTimeInSec(div_t, start_t) << "\t";
     fout << getTimeInSec(good_t, div_t) << "\t";
     fout << getTimeInSec(match_t, good_t) << "\t";
     fout << getTimeInSec(bad_t, match_t) << "\t";
-    if (ignoreNReads) fout << getTimeInSec(n_t, bad_t) << "\t";
-    fout << getTimeInSec(clock(), n_t) << endl;
+    fout << getTimeInSec(clock(), bad_t) << endl;
 }
 
 int main(int argc, char *argv[])
@@ -129,8 +132,10 @@ int main(int argc, char *argv[])
     bool skipIntermediateOutput = false;
     bool revComplPairFile = false;
     bool ignoreNReads = false;
+    uint8_t skipStages = 0;
+    uint8_t endAtStage = UINT8_MAX;
 
-    while ((opt = getopt(argc, argv, "m:M:rsnitae?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:M:S:E:rsnitae?")) != -1) {
         switch (opt) {
         case 'r':
             revComplPairFile = true;
@@ -146,6 +151,12 @@ int main(int argc, char *argv[])
             break;
         case 'M':
             maxMismatches = atoi(optarg);
+            break;
+        case 'S':
+            skipStages = atoi(optarg);
+            break;
+        case 'E':
+            endAtStage = atoi(optarg);
             break;
         case 't':
             plainTextWriteMode = true;
@@ -163,8 +174,10 @@ int main(int argc, char *argv[])
                     argv[0]);
             fprintf(stderr, "-r reverse compliment reads in a pair file\n");
             fprintf(stderr, "-n ignore reads containing N (WARNING: experimental - does not perserve reads order\n");
-            fprintf(stderr, "-t write numbers in text mode\n-c skip intermediate output files\n");
+            fprintf(stderr, "-t write numbers in text mode\n-s skip intermediate output files\n");
             fprintf(stderr, "-a write absolute read position \n-e write mismatches as offsets from end\n");
+            fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
+            fprintf(stderr, "(Stages: 1:division; 2:Pg(good); 3:ReadsMatching; 4:Pg(bad)); 5:pairDump\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
         }
@@ -188,6 +201,12 @@ int main(int argc, char *argv[])
         maxMismatches = targetMismatches;
     }
 
+    if (skipStages >= endAtStage) {
+        fprintf(stdout, "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",
+                skipStages, endAtStage);
+        exit(EXIT_FAILURE);
+    }
+
     string error_limit = argv[optind++];
     string srcFastqFile(argv[optind++]);
     string pairFastqFile = "";
@@ -196,7 +215,7 @@ int main(int argc, char *argv[])
     string pgFilesPrefixes(argv[optind++]);
 
     divideGenerateAndMatch(error_limit, srcFastqFile, pairFastqFile, ignoreNReads, targetMismatches, maxMismatches, pgFilesPrefixes,
-            revComplPairFile, skipIntermediateOutput);
+            revComplPairFile, skipIntermediateOutput, skipStages, endAtStage);
 
     exit(EXIT_SUCCESS);
 }
