@@ -25,6 +25,13 @@ namespace PgTools {
 
         vector<PgMatch> pgMatches;
 
+        vector<uint_pg_len_max> rlPos;
+        vector<uint_reads_cnt_max> rlIdx;
+        void fillSrcReadsList();
+
+        void mapPgMatches2SrcReadsList();
+        void reverseDestWithSrcForBetterMatchesMappingInTheSamePg();
+
     public:
         DefaultPgMatcher(const string& srcPgPrefix, const string& targetPgPrefix, bool revComplMatching);
 
@@ -35,6 +42,8 @@ namespace PgTools {
         void writeMatchesInfo(const string &dumpFilePrefix);
 
         void writeIntoPseudoGenome(const string &destPgFilePrefix);
+
+        void correctDestPositionDueToRevComplMatching();
     };
 
 
@@ -43,8 +52,10 @@ namespace PgTools {
         uint_pg_len_max length;
         uint_pg_len_max posDestPg;
 
-        uint_pg_len_max nettoLength = 0;
+        uint_read_len_max netPosAlignment = 0;
+        uint_pg_len_max netLength = 0;
         uint_reads_cnt_max startRlIdx = -1;
+        uint_reads_cnt_max endRlIdx = -1;
 
         PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) : posSrcPg(posSrcPg), length(length),
                                                                                           posDestPg(posDestPg) {}
