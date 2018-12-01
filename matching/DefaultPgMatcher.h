@@ -33,6 +33,9 @@ namespace PgTools {
         void reverseDestWithSrcForBetterMatchesMappingInTheSamePg();
         void correctDestPositionDueToRevComplMatching();
         void resolveDestOverlapSrcConflictsInTheSamePg();
+        bool resolveCollision(PgMatch &destMatch, PgMatch &srcMatch, uint_pg_len_max& collidedCharsCount);
+
+        string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
     public:
         DefaultPgMatcher(const string& srcPgPrefix, const string& targetPgPrefix, bool revComplMatching);
@@ -44,7 +47,6 @@ namespace PgTools {
         void writeMatchesInfo(const string &dumpFilePrefix);
 
         void writeIntoPseudoGenome(const string &destPgFilePrefix);
-
     };
 
 
@@ -58,7 +60,7 @@ namespace PgTools {
         uint_reads_cnt_max startRlIdx = -1;
         uint_reads_cnt_max endRlIdx = -1;
 
-        bool inactiveDueToCollision = false;
+        bool inactive = false;
 
         PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) : posSrcPg(posSrcPg), length(length),
                                                                                           posDestPg(posDestPg) {}
