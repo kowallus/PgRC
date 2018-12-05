@@ -19,6 +19,7 @@ namespace PgTools {
         PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, srcPgh, plainTextReadMode);
         srcPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
         cout << "Pseudogenome length: " << srcPgh->getPseudoGenomeLength() << endl;
+        readLength = srcPgh->getMaxReadLength();
 
         if (targetPgPrefix != srcPgPrefix) {
             cout << "Reading target pseudogenome..." << endl;
@@ -98,10 +99,10 @@ namespace PgTools {
             auto cmIt = currentMatches.begin();
             bool continueMatch = false;
             while (cmIt != currentMatches.end()) {
-                if (matchDestPos + matchingLength > (*cmIt).endPosDestPg())  {
+                if (matchDestPos + matchingLength > (*cmIt).endGrossPosDestPg())  {
                     currentMatches.erase(cmIt++);
                 } else {
-                    if ((*cmIt).posSrcPg - (*cmIt).posDestPg == matchSrcPos - matchDestPos) {
+                    if ((*cmIt).posGrossSrcPg - (*cmIt).posGrossDestPg == matchSrcPos - matchDestPos) {
                         continueMatch = true;
                         break;
                     }
@@ -131,7 +132,7 @@ namespace PgTools {
             } else
                 falseMatchCount++;
 
-            if ((i++ % 100000) == 0 || matchLength > minMatchLength * 15) {
+            if ((i++ % 1000000) == 0 || matchLength > minMatchLength * 15) {
                  cout << (confirmPatternMatch?"Matched ":"False-matched ") << matchLength << " chars: <" << matchSrcPos << "; "
                      << (matchSrcPos + matchLength) << ") " << " in " << matchDestPos << " (" << matchCharsCount << " chars matched total)" << endl;
                  cout << "Elapsed time: " << ((double) destPg.length() / matchDestPos) * clock_millis() / 1000 << "[s]" << endl;
@@ -156,7 +157,7 @@ namespace PgTools {
         cout << "Stage 1: Matched " << getTotalMatchStat(matchCharsCount) << " Pg characters. Sum length of all matches is " << matchCharsWithOverlapCount << "." << endl;
 
         std::sort(pgMatches.begin(), pgMatches.end(), [](const PgMatch& match1, const PgMatch& match2) -> bool
-        { return match1.length > match2.length; });
+        { return match1.grossLength > match2.grossLength; });
 
         cout << "Largest matches:" << endl;
         for(uint32_t i = 0; i < pgMatches.size() && i < 10; i++)
@@ -195,29 +196,16 @@ namespace PgTools {
 
     void DefaultPgMatcher::mapPgMatches2SrcReadsList() {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
-        { return pgMatch1.posSrcPg < pgMatch2.posSrcPg; });
+        { return pgMatch1.posGrossSrcPg < pgMatch2.posGrossSrcPg; });
 
         uint32_t cancelledMatchesCount = 0;
-        uint_read_len_max readLength = srcPgh->getMaxReadLength();
         uint_pg_len_max totalNetMatchCharsWithOverlapCount = 0;
-        int64_t i = -1;
+        int64_t i = 0;
         for(PgMatch& pgMatch: pgMatches) {
-            while(i > 0 && rlPos[--i] >= pgMatch.posSrcPg);
-            while(rlPos[++i] < pgMatch.posSrcPg);
-            pgMatch.startRlIdx = i--;
-            while(rlPos[++i] + readLength <= pgMatch.posSrcPg + pgMatch.length);
-            pgMatch.endRlIdx = i - 1;
-            uint_pg_len_max nettoPosSrcPg = pgMatch.startRlIdx > 0?rlPos[pgMatch.startRlIdx - 1] + readLength:0;
-            pgMatch.netPosAlignment = nettoPosSrcPg - pgMatch.posSrcPg;
-            if (rlPos[i] > nettoPosSrcPg)
-                pgMatch.netLength = rlPos[i] - nettoPosSrcPg;
-            else {
-                pgMatch.netLength = 0;
-                pgMatch.inactive = true;
+            pgMatch.alignToReads(rlPos, readLength, i);
+            if (pgMatch.inactive(rlPos, readLength))
                 cancelledMatchesCount++;
-            }
-
-            totalNetMatchCharsWithOverlapCount += pgMatch.netLength;
+            totalNetMatchCharsWithOverlapCount += pgMatch.netSrcLength(rlPos, readLength);
         }
         cout << "Cancelled " << cancelledMatchesCount << " short matches due to external reads overlap." << endl;
         cout << "Stage 2: Net-matched " << getTotalMatchStat(totalNetMatchCharsWithOverlapCount) << " Pg src->dest sum length of all matches." << endl;
@@ -225,36 +213,24 @@ namespace PgTools {
 
     void DefaultPgMatcher::reverseDestWithSrcForBetterMatchesMappingInTheSamePg() {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
-        { return pgMatch1.posDestPg < pgMatch2.posDestPg; });
+        { return pgMatch1.posGrossDestPg < pgMatch2.posGrossDestPg; });
 
         uint_read_len_max readLength = srcPgh->getMaxReadLength();
         uint_pg_len_max totalNetReverseMatchCharsWithOverlapCount = 0;
         uint_pg_len_max totalNetMatchCharsWithOverlapCount = 0;
         uint32_t restoredMatchesCount = 0;
-        int64_t i = -1;
+        int64_t i = 0;
         for (PgMatch& pgMatch: pgMatches) {
-            while (i > 0 && rlPos[--i] >= pgMatch.posDestPg);
-            while (rlPos[++i] < pgMatch.posDestPg);
-            uint_reads_cnt_max startRlIdx = i--;
-            while (rlPos[++i] + readLength <= pgMatch.posDestPg + pgMatch.length);
-            uint_reads_cnt_max endRlIdx = i - 1;
-            uint_pg_len_max nettoPosDestPg = startRlIdx > 0?rlPos[startRlIdx - 1] + readLength:0;
-            uint_pg_len_max netLength = 0;
-            if (rlPos[i] > nettoPosDestPg)
-                netLength = rlPos[i] - nettoPosDestPg;
-            totalNetReverseMatchCharsWithOverlapCount += netLength;
-            if (netLength > pgMatch.netLength) {
-                if (pgMatch.netLength == 0) {
+            PgMatch revMatch(pgMatch.posGrossDestPg, pgMatch.grossLength, pgMatch.posGrossSrcPg);
+            revMatch.alignToReads(rlPos, readLength, i);
+            uint_pg_len_max revNetSrcLength = revMatch.netSrcLength(rlPos, readLength);
+            totalNetReverseMatchCharsWithOverlapCount += revNetSrcLength;
+            if (revNetSrcLength > pgMatch.netSrcLength(rlPos, readLength)) {
+                if (pgMatch.netSrcLength(rlPos, readLength) == 0)
                     restoredMatchesCount++;
-                    pgMatch.inactive = false;
-                }
-                pgMatch.netPosAlignment = nettoPosDestPg - pgMatch.posDestPg;
-                pgMatch.reverseMatch();
-                pgMatch.startRlIdx = startRlIdx;
-                pgMatch.endRlIdx = endRlIdx;
-                pgMatch.netLength = netLength;
+                pgMatch = revMatch;
             }
-            totalNetMatchCharsWithOverlapCount += pgMatch.netLength;
+            totalNetMatchCharsWithOverlapCount += pgMatch.netSrcLength(rlPos, readLength);
         }
 
         cout << "Restored " << restoredMatchesCount << " short matches (cancelled earlier due to external reads overlap)." << endl;
@@ -264,34 +240,38 @@ namespace PgTools {
 
     void DefaultPgMatcher::resolveDestOverlapSrcConflictsInTheSamePg() {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
-        { return pgMatch1.netEndPosSrcPg() < pgMatch2.netEndPosSrcPg(); });
+        { return pgMatch1.netEndPosSrcPg(rlPos) < pgMatch2.netEndPosSrcPg(rlPos); });
 
         vector<uint32_t> matchDestOrderedIdx(pgMatches.size());
         for(uint32_t i = 0; i < pgMatches.size(); i++)
             matchDestOrderedIdx[i] = i;
         sort(matchDestOrderedIdx.begin(), matchDestOrderedIdx.end(), [this](const uint32_t& pgMatchIdx1, const uint32_t& pgMatchIdx2) -> bool
-        { return pgMatches[pgMatchIdx1].netPosDestPg() < pgMatches[pgMatchIdx2].netPosDestPg(); });
+        { return pgMatches[pgMatchIdx1].netPosDestPg(rlPos) < pgMatches[pgMatchIdx2].netPosDestPg(rlPos); });
 
         uint_pg_len_max totalNetMatchCharsCount = 0;
         uint_pg_len_max collidedCharsCount = 0;
         uint32_t conflictsCount = 0;
         uint32_t resolvedConflictsCount = 0;
         vector<uint_pg_len_max> maxNetEndPosDestPgUpTo(pgMatches.size());
-        maxNetEndPosDestPgUpTo[0] = pgMatches[matchDestOrderedIdx[0]].netEndPosDestPg();
+        maxNetEndPosDestPgUpTo[0] = pgMatches[matchDestOrderedIdx[0]].netEndPosDestPg(rlPos, readLength);
         for(uint32_t i = 1; i < pgMatches.size(); i++) {
-            maxNetEndPosDestPgUpTo[i] = pgMatches[matchDestOrderedIdx[i]].netEndPosDestPg();
+            maxNetEndPosDestPgUpTo[i] = pgMatches[matchDestOrderedIdx[i]].netEndPosDestPg(rlPos, readLength);
             if (maxNetEndPosDestPgUpTo[i] < maxNetEndPosDestPgUpTo[i - 1])
                 maxNetEndPosDestPgUpTo[i] = maxNetEndPosDestPgUpTo[i - 1];
         }
         int64_t dOrdIdx = 0;
         for (PgMatch& sPgMatch: pgMatches) {
-            totalNetMatchCharsCount += sPgMatch.netLength;
-            while(sPgMatch.netPosSrcPg() < maxNetEndPosDestPgUpTo[dOrdIdx] && --dOrdIdx > 0);
-            while (++dOrdIdx < pgMatches.size() && pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg() < sPgMatch.netEndPosSrcPg()) {
-                if (sPgMatch.inactive)
+            totalNetMatchCharsCount += sPgMatch.netSrcLength(rlPos, readLength);
+            while(sPgMatch.netPosSrcPg(rlPos, readLength) < maxNetEndPosDestPgUpTo[dOrdIdx] && --dOrdIdx > 0);
+            while (++dOrdIdx < pgMatches.size()
+                && pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg(rlPos) < sPgMatch.netEndPosSrcPg(rlPos)) {
+                if (sPgMatch.inactive(rlPos, readLength))
                     break;
                 int64_t dIdx = matchDestOrderedIdx[dOrdIdx];
-                if (!pgMatches[dIdx].inactive && pgMatches[dIdx].netEndPosDestPg() > sPgMatch.netPosSrcPg()) {
+                if (!pgMatches[dIdx].inactive(rlPos, readLength)
+                    && pgMatches[dIdx].netEndPosDestPg(rlPos, readLength) > sPgMatch.netPosSrcPg(rlPos, readLength)) {
+//                    cout << pgMatches[dIdx].netPosDestPg(rlPos) << "\t" << pgMatches[dIdx].netEndPosDestPg(rlPos, readLength) <<
+//                    "\t" << sPgMatch.netPosSrcPg(rlPos, readLength) << "\t" << sPgMatch.netEndPosSrcPg(rlPos) << endl;
                     if (resolveCollision(pgMatches[dIdx], sPgMatch, collidedCharsCount))
                         resolvedConflictsCount++;
                     else
@@ -301,24 +281,72 @@ namespace PgTools {
         }
         totalNetMatchCharsCount -= collidedCharsCount;
         cout << conflictsCount << " conflicts remain in matches (resolved " << resolvedConflictsCount << ")." << endl;
-        cout << "Stage 2c: Conflicts filtered optimial net-matched " << getTotalMatchStat(totalNetMatchCharsCount) << " Pg sum length of all matches." << endl;
+        cout << "Stage 2c: Conflicts filtered optimal net-matched " << getTotalMatchStat(totalNetMatchCharsCount) << " Pg sum length of all matches." << endl;
     }
 
     bool DefaultPgMatcher::resolveCollision(PgMatch &destMatch, PgMatch &srcMatch, uint_pg_len_max& collidedCharsCount) {
-        if (destMatch.netLength > srcMatch.netLength) {
-            srcMatch.inactive = true;
-            collidedCharsCount += srcMatch.netLength;
-        } else {
-            destMatch.inactive = true;
-            collidedCharsCount += destMatch.netLength;
+        if (destMatch.netEndPosDestPg(rlPos, readLength) < srcMatch.netEndPosSrcPg(rlPos) &&
+            destMatch.netPosDestPg(rlPos) < srcMatch.netPosSrcPg(rlPos, readLength)) {
+            uint64_t overlapLength = destMatch.netEndPosDestPg(rlPos, readLength) - srcMatch.netPosSrcPg(rlPos, readLength);
+            int64_t charsReduced = trimOverlap(destMatch, srcMatch, overlapLength);
+            if (charsReduced != 0) {
+                if (charsReduced < 0) {
+                    charsReduced = -charsReduced;
+                } else {
+
+                }
+                collidedCharsCount += charsReduced;
+                return true;
+            }
         }
-        if (destMatch.netEndPosDestPg() < srcMatch.netEndPosSrcPg() &&
-            destMatch.netPosDestPg() < srcMatch.netPosSrcPg())
-            return true;
-        if (destMatch.netEndPosDestPg() > srcMatch.netEndPosSrcPg() &&
-            destMatch.netPosDestPg() > srcMatch.netPosSrcPg())
-            return true;
+        if (destMatch.netEndPosDestPg(rlPos, readLength) > srcMatch.netEndPosSrcPg(rlPos) &&
+            destMatch.netPosDestPg(rlPos) > srcMatch.netPosSrcPg(rlPos, readLength)) {
+            uint64_t overlapLength = srcMatch.netEndPosSrcPg(rlPos) - destMatch.netPosDestPg(rlPos);
+            int64_t charsReduced = trimOverlap(srcMatch, destMatch, overlapLength);
+            if (charsReduced != 0) {
+                if (charsReduced < 0) {
+                    charsReduced = -charsReduced;
+                } else {
+
+                }
+                collidedCharsCount += charsReduced;
+                return true;
+            }
+        }
+        if (destMatch.netSrcLength(rlPos, readLength) > srcMatch.netSrcLength(rlPos, readLength)) {
+            collidedCharsCount += srcMatch.netSrcLength(rlPos, readLength);
+            srcMatch.endRlIdx = srcMatch.startRlIdx - 1;
+        } else {
+            collidedCharsCount += destMatch.netSrcLength(rlPos, readLength);
+            destMatch.endRlIdx = destMatch.startRlIdx - 1;
+        }
         return false;
+    }
+
+    int64_t DefaultPgMatcher::trimOverlap(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max overlapLength) {
+        uint64_t leftCharsReduced = 0;
+        bool leftTrim = false;
+        uint_reads_cnt_max leIdx = leftMatch.endRlIdx + 1;
+        while (--leIdx > leftMatch.startRlIdx && rlPos[leftMatch.endRlIdx + 1] - rlPos[leIdx] < overlapLength);
+        if (leIdx > leftMatch.startRlIdx) {
+            leftCharsReduced = rlPos[leftMatch.endRlIdx + 1] - rlPos[leIdx];
+            leftTrim = true;
+        }
+
+        uint_reads_cnt_max rsIdx = rightMatch.startRlIdx - 1;
+        while (++rsIdx < rightMatch.endRlIdx && rlPos[rsIdx] - rlPos[rightMatch.startRlIdx - 1] < overlapLength);
+        if (rsIdx < rightMatch.endRlIdx) {
+            int64_t rightCharsReduced = rlPos[rsIdx] - rlPos[rightMatch.startRlIdx - 1];
+            if ((!leftTrim && rightCharsReduced < leftMatch.netSrcLength(rlPos, readLength))
+                ||(leftTrim && rightCharsReduced < leftCharsReduced)) {
+                rightMatch.startRlIdx = rsIdx + 1;
+                return rightCharsReduced;
+            }
+        }
+        if (leftTrim && leftCharsReduced < rightMatch.netSrcLength(rlPos, readLength)) {
+            leftMatch.endRlIdx = leIdx - 1;
+        }
+        return -((int64_t) leftCharsReduced);
     }
 
     void DefaultPgMatcher::fillSrcReadsList() {
@@ -338,7 +366,7 @@ namespace PgTools {
 
     void DefaultPgMatcher::correctDestPositionDueToRevComplMatching() {
         for (PgMatch& pgMatch: pgMatches)
-            pgMatch.posDestPg = srcPgh->getPseudoGenomeLength() - (pgMatch.posDestPg + pgMatch.length);
+            pgMatch.posGrossDestPg = srcPgh->getPseudoGenomeLength() - (pgMatch.posGrossDestPg + pgMatch.grossLength);
     }
 
     string DefaultPgMatcher::getTotalMatchStat(uint_pg_len_max totalMatchLength) {

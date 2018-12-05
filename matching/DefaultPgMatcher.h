@@ -11,6 +11,7 @@ namespace PgTools {
 
     class DefaultPgMatcher {
     private:
+
         const string srcPgPrefix;
         const string targetPgPrefix;
         const bool revComplMatching;
@@ -20,8 +21,10 @@ namespace PgTools {
         bool plainTextReadMode = false;
 
         PseudoGenomeHeader* srcPgh = 0;
+        uint_read_len_max readLength;
         string srcPg;
         string destPg;
+
 
         vector<PgMatch> pgMatches;
 
@@ -47,57 +50,82 @@ namespace PgTools {
         void writeMatchesInfo(const string &dumpFilePrefix);
 
         void writeIntoPseudoGenome(const string &destPgFilePrefix);
+
+        int64_t trimOverlap(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max overlapLength);
     };
 
+    struct PgMatch {
+        uint_pg_len_max posGrossSrcPg;
+        uint_pg_len_max grossLength;
+        uint_pg_len_max posGrossDestPg;
 
-    struct PgMatch{
-        uint_pg_len_max posSrcPg;
-        uint_pg_len_max length;
-        uint_pg_len_max posDestPg;
-
-        uint_read_len_max netPosAlignment = 0;
-        uint_pg_len_max netLength = 0;
         uint_reads_cnt_max startRlIdx = -1;
         uint_reads_cnt_max endRlIdx = -1;
 
-        bool inactive = false;
+        uint_pg_len_max leftSrcLockedMargin = 0;
+        uint_pg_len_max rightSrcLockedMargin = 0;
 
-        PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) : posSrcPg(posSrcPg), length(length),
-                                                                                          posDestPg(posDestPg) {}
-        void reverseMatch() {
-            uint_pg_len_max temp = posSrcPg;
-            posSrcPg = posDestPg;
-            posDestPg = temp;
+        PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) :
+            posGrossSrcPg(posSrcPg), grossLength(length), posGrossDestPg(posDestPg) {}
+
+        void alignToReads(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength, int64_t &i) {
+            while(--i > 0 && rlPos[i] >= posGrossSrcPg);
+            while(rlPos[++i] < posGrossSrcPg);
+            startRlIdx = i--;
+            while(rlPos[++i] + readLength <= posGrossSrcPg + grossLength);
+            endRlIdx = i - 1;
         }
 
-        uint_pg_len_max endPosSrcPg() const {
-            return posSrcPg + length;
+        uint_pg_len_max endGrossPosSrcPg() const {
+            return posGrossSrcPg + grossLength;
         }
 
-        uint_pg_len_max endPosDestPg() const {
-            return posDestPg + length;
+        uint_pg_len_max endGrossPosDestPg() const {
+            return posGrossDestPg + grossLength;
         }
 
-        uint_pg_len_max netPosSrcPg() const {
-            return posSrcPg + netPosAlignment;
+        uint_pg_len_max netPosSrcPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
+            return startRlIdx > 0?rlPos[startRlIdx - 1] + readLength:0;
         }
 
-        uint_pg_len_max netPosDestPg() const {
-            return posDestPg + netPosAlignment;
+        uint_pg_len_max netSrcPosAlignment(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
+            return netPosSrcPg(rlPos, readLength) - posGrossSrcPg;
+        };
+
+        uint_pg_len_max netEndPosSrcPg(const vector<uint_pg_len_max> &rlPos) const {
+            return rlPos[endRlIdx + 1] - rightSrcLockedMargin;
         }
 
-        uint_pg_len_max netEndPosSrcPg() const {
-            return netPosSrcPg() + netLength;
+        uint_pg_len_max netSrcLength(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
+            int64_t len = (int64_t) netEndPosSrcPg(rlPos) - netPosSrcPg(rlPos, readLength);
+            return len > 0?len:0;
+        };
+
+        bool inactive(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) {
+            return netSrcLength(rlPos, readLength) == 0;
+        };
+
+        uint_read_len_max netDestPosAlignment(const vector<uint_pg_len_max> &rlPos) const {
+            return rlPos[startRlIdx] - posGrossSrcPg;
         }
 
-        uint_pg_len_max netEndPosDestPg() const {
-            return netPosDestPg() + netLength;
+        uint_pg_len_max netPosDestPg(const vector<uint_pg_len_max> &rlPos) const {
+            return posGrossDestPg + netDestPosAlignment(rlPos);
+        }~
+
+        uint_pg_len_max netEndPosDestPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
+            return posGrossDestPg + ((rlPos[endRlIdx] + readLength) - posGrossSrcPg);
         }
+
+        uint_pg_len_max netDestLength(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
+            return netEndPosDestPg(rlPos, readLength) + netPosDestPg(rlPos);
+        };
 
         void report(ostream& out) {
-            out << length << ": <" << posSrcPg << ", " << endPosSrcPg() << ") in " << posDestPg << endl;
+            out << grossLength << ": <" << posGrossSrcPg << ", " << endGrossPosSrcPg() << ") in " << posGrossDestPg << endl;
         }
     };
+
 }
 
 
