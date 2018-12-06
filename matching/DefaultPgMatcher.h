@@ -36,7 +36,11 @@ namespace PgTools {
         void reverseDestWithSrcForBetterMatchesMappingInTheSamePg();
         void correctDestPositionDueToRevComplMatching();
         void resolveDestOverlapSrcConflictsInTheSamePg();
-        bool resolveCollision(PgMatch &destMatch, PgMatch &srcMatch, uint_pg_len_max& collidedCharsCount);
+        bool resolveDestSrcCollision(PgMatch &destMatch, PgMatch &srcMatch, uint_pg_len_max &collidedCharsCount);
+        void resolveMatchesOverlapInSrc();
+        bool resolveSrcSrcCollision(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max &collidedCharsCount);
+
+        void removeMatchesFromSrc();
 
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
@@ -85,7 +89,7 @@ namespace PgTools {
         }
 
         uint_pg_len_max netPosSrcPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
-            return startRlIdx > 0?rlPos[startRlIdx - 1] + readLength:0;
+            return leftSrcLockedMargin + (startRlIdx > 0?rlPos[startRlIdx - 1] + readLength:0);
         }
 
         uint_pg_len_max netSrcPosAlignment(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
@@ -105,13 +109,31 @@ namespace PgTools {
             return netSrcLength(rlPos, readLength) == 0;
         };
 
+        void trimLeft(uint_pg_len_max overlapLength,
+                      const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) {
+            const uint_pg_len_max leftPos = leftSrcLockedMargin + (startRlIdx > 0 ? rlPos[startRlIdx - 1] : 0);
+            uint_reads_cnt_max rsIdx = startRlIdx - 1;
+            while (++rsIdx <= endRlIdx && rlPos[rsIdx] - leftPos <= overlapLength);
+            leftSrcLockedMargin = overlapLength - (rlPos[rsIdx - 1] - leftPos);
+            startRlIdx = rsIdx;
+        }
+
+        void trimRight(uint_pg_len_max overlapLength,
+                const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) {
+            const uint_pg_len_max rightPos = rlPos[endRlIdx + 1] - rightSrcLockedMargin;
+            uint_reads_cnt_max leIdx = endRlIdx + 1;
+            while (--leIdx >= startRlIdx && rightPos - rlPos[leIdx] <= overlapLength);
+            rightSrcLockedMargin = overlapLength - (rightPos - rlPos[leIdx + 1]);
+            endRlIdx = leIdx;
+        }
+
         uint_read_len_max netDestPosAlignment(const vector<uint_pg_len_max> &rlPos) const {
             return rlPos[startRlIdx] - posGrossSrcPg;
         }
 
         uint_pg_len_max netPosDestPg(const vector<uint_pg_len_max> &rlPos) const {
             return posGrossDestPg + netDestPosAlignment(rlPos);
-        }~
+        }
 
         uint_pg_len_max netEndPosDestPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
             return posGrossDestPg + ((rlPos[endRlIdx] + readLength) - posGrossSrcPg);
