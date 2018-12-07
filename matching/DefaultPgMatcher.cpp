@@ -37,6 +37,7 @@ namespace PgTools {
     }
 
     DefaultPgMatcher::~DefaultPgMatcher() {
+        delete(srcPgh);
     }
 
     void backMatchExpand(const string& text, uint64_t& textPos, const string& pattern, uint64_t& patternPos, uint64_t& length) {
@@ -132,7 +133,7 @@ namespace PgTools {
             } else
                 falseMatchCount++;
 
-            if ((i++ % 1000000) == 0 || matchLength > minMatchLength * 15) {
+/*            if ((i++ % 1000000) == 0 || matchLength > minMatchLength * 15) {
                  cout << (confirmPatternMatch?"Matched ":"False-matched ") << matchLength << " chars: <" << matchSrcPos << "; "
                      << (matchSrcPos + matchLength) << ") " << " in " << matchDestPos << " (" << matchCharsCount << " chars matched total)" << endl;
                  cout << "Elapsed time: " << ((double) destPg.length() / matchDestPos) * clock_millis() / 1000 << "[s]" << endl;
@@ -150,7 +151,7 @@ namespace PgTools {
                     cout << srcPg.substr(matchSrcPos - beforeChars, beforeChars) << " ... " << srcPg.substr(matchSrcPos + matchLength, afterChars) << endl;
                     cout << destPg.substr(matchDestPos - beforeChars, beforeChars) << " ... " << destPg.substr(matchDestPos + matchLength, afterChars) << endl;
                 }
-            }
+            }*/
         }
         cout << "Finished matching in  " << clock_millis() << " msec. " << endl;
         cout << "Exact matched " << matchCount << " parts (too short matches: " << shorterMatchCount << "). False matches reported: " << falseMatchCount << "." << endl;
@@ -210,7 +211,6 @@ namespace PgTools {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
         { return pgMatch1.posGrossDestPg < pgMatch2.posGrossDestPg; });
 
-        uint_read_len_max readLength = srcPgh->getMaxReadLength();
         uint_pg_len_max totalNetReverseMatchCharsWithOverlapCount = 0;
         uint_pg_len_max totalNetMatchCharsWithOverlapCount = 0;
         uint32_t restoredMatchesCount = 0;
@@ -488,6 +488,19 @@ namespace PgTools {
         }
         rlIdx.clear();
         newRlPos.clear();
+    }
+
+    void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
+                         const string &destPgPrefix, bool revComplPg, bool dumpInfo) {
+
+        PgTools::DefaultPgMatcher matcher(srcPgPrefix, targetPgPrefix, revComplPg);
+
+        matcher.exactMatchPg(targetMatchLength);
+
+        if (dumpInfo)
+            matcher.writeMatchesInfo(destPgPrefix);
+
+        matcher.writeIntoPseudoGenome(destPgPrefix);
     }
 }
 

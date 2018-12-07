@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "matching/ReadsMatchers.h"
+#include "matching/DefaultPgMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "readsset/tools/division.h"
@@ -48,15 +49,15 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
         pgGoodPrefix = pgMappedGoodPrefix;
         badDivisionFile = mappedBadDivisionFile;
     }
-
-    if (skipStages == 0) {
+    uint8_t stageCount = 0;
+    if (skipStages < ++stageCount) {
         ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile);
         divideReads(allReadsIterator, badDivisionFile, error_limit);
         delete (allReadsIterator);
     }
     clock_t div_t = clock();
-    if (skipStages < 2 && endAtStage >= 2) {
+    if (skipStages < ++stageCount && endAtStage >= stageCount) {
         ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
         PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
@@ -68,7 +69,17 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
         delete (goodReadsIterator);
     }
     clock_t good_t = clock();
-    if (skipStages < 3 && endAtStage >= 3) {
+
+    if (skipStages < ++stageCount && endAtStage >= stageCount) {
+        PseudoGenomeHeader* pgh;
+        bool tmp;
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgGoodPrefix, pgh, tmp);
+        matchPgInPgFile(pgGoodPrefix, pgGoodPrefix, pgh->getMaxReadLength(), pgGoodPrefix, true, false);
+        delete(pgh);
+    }
+    clock_t gooder_t = clock();
+
+    if (skipStages < ++stageCount && endAtStage >= stageCount) {
         ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, badDivisionFile, false);
         cout << "Reading (div: " << badDivisionFile << ") reads set\n";
@@ -83,7 +94,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
         delete (badReadsIterator);
     }
     clock_t match_t = clock();
-    if (skipStages < 4 && endAtStage >= 4) {
+    if (skipStages < ++stageCount && endAtStage >= stageCount) {
         {
             ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                     srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
@@ -109,7 +120,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     }
     clock_t bad_t = clock();
 
-    if (pairFastqFile != "" && skipStages < 5 && endAtStage >= 5) {
+    if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
         if (ignoreNReads)
             SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix, pgNPrefix});
         else
@@ -119,7 +130,8 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     fout << getTimeInSec(clock(), start_t) << "\t";
     fout << getTimeInSec(div_t, start_t) << "\t";
     fout << getTimeInSec(good_t, div_t) << "\t";
-    fout << getTimeInSec(match_t, good_t) << "\t";
+    fout << getTimeInSec(gooder_t, good_t) << "\t";
+    fout << getTimeInSec(match_t, gooder_t) << "\t";
     fout << getTimeInSec(bad_t, match_t) << "\t";
     fout << getTimeInSec(clock(), bad_t) << endl;
 }
@@ -177,7 +189,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "-t write numbers in text mode\n-s skip intermediate output files\n");
             fprintf(stderr, "-a write absolute read position \n-e write mismatches as offsets from end\n");
             fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
-            fprintf(stderr, "(Stages: 1:division; 2:Pg(good); 3:ReadsMatching; 4:Pg(bad)); 5:pairDump\n");
+            fprintf(stderr, "(Stages: 1:division; 2:Pg(good); 3:Pg(gooder); 4:ReadsMatching; 5:Pg(bad); 6:pairDump\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
         }

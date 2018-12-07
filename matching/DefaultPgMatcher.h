@@ -9,6 +9,9 @@ namespace PgTools {
 
     struct PgMatch;
 
+    void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
+                         const string &destPgPrefix, bool revComplPg, bool dumpInfo);
+
     class DefaultPgMatcher {
     private:
 

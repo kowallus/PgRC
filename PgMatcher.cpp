@@ -9,20 +9,6 @@
 
 using namespace std;
 
-void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
-                     const string &destPgPrefix, bool revComplPg, bool dumpInfo) {
-
-    PgTools::DefaultPgMatcher matcher(srcPgPrefix, targetPgPrefix, revComplPg);
-
-    matcher.exactMatchPg(targetMatchLength);
-
-    if (dumpInfo)
-        matcher.writeMatchesInfo(destPgPrefix);
-
-    matcher.writeIntoPseudoGenome(destPgPrefix);
-}
-
-
 int main(int argc, char *argv[])
 {
     int opt; // current option
@@ -62,7 +48,7 @@ int main(int argc, char *argv[])
     string targetPgFilePrefix(argv[optind++]);
     string destPgFilePrefix(argv[optind++]);
 
-    matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
+    PgTools::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
 
     exit(EXIT_SUCCESS);
 }
