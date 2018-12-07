@@ -278,8 +278,10 @@ namespace PgTools {
 
     void SeparatedPseudoGenomeOutputBuilder::writeExtraReadEntry(const DefaultReadsListEntry &rlEntry) {
         writeReadEntry(rlEntry);
-        ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &itEntry = this->rlIt->peekReadEntry();
-        itEntry.offset -= rlEntry.offset;
+        if (rlIt != 0) {
+            ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &itEntry = this->rlIt->peekReadEntry();
+            itEntry.offset -= rlEntry.offset;
+        }
     }
 
     void SeparatedPseudoGenomeOutputBuilder::setReadsSourceIterator(DefaultReadsListIteratorInterface *rlIt) {
@@ -339,6 +341,12 @@ namespace PgTools {
         }
         this->pgh = new PseudoGenomeHeader(pgPropSrc);
         pgPropSrc.close();
+    }
+
+    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(const string &pg) {
+        pgh->setPseudoGenomeLength(pg.length());
+        initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
+        PgSAHelpers::writeArray(*pgDest, (void*) pg.data(), pg.length());
     }
 
 }

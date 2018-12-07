@@ -38,20 +38,8 @@ namespace PgTools {
             this->mismatchesCount = 0;
         }
 
-        void recedeEntryByPosition(uint_pg_len pos, uint_reads_cnt idx, bool revComp = false) {
-            this->offset = this->pos - pos;
-            this->pos = pos;
-            this->idx = idx;
-            this->revComp = revComp;
-            this->mismatchesCount = 0;
-        }
-
         void advanceEntryByOffset(uint_read_len offset, uint_reads_cnt idx, bool revComp = false) {
             this->advanceEntryByPosition(this->pos + offset, idx, revComp);
-        }
-
-        void recedeEntryByOffset(uint_read_len offset, uint_reads_cnt idx, bool revComp = false) {
-            this->recedeEntryByPosition(this->pos - offset, idx, revComp);
         }
     };
 

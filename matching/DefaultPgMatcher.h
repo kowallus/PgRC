@@ -16,7 +16,7 @@ namespace PgTools {
         const string targetPgPrefix;
         const bool revComplMatching;
 
-        bool textFromSamePg;
+        bool destPgIsSrcPg;
 
         bool plainTextReadMode = false;
 
@@ -40,7 +40,7 @@ namespace PgTools {
         void resolveMatchesOverlapInSrc();
         bool resolveSrcSrcCollision(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max &collidedCharsCount);
 
-        void removeMatchesFromSrc();
+        void removeMatchesFromSrc(const string& destPgPrefix);
 
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 

@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     bool revComplPg = false;
     bool dumpInfo = false;
 
-    while ((opt = getopt(argc, argv, "r?")) != -1) {
+    while ((opt = getopt(argc, argv, "rt?")) != -1) {
         switch (opt) {
         case 'r':
             revComplPg = true;
