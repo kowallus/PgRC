@@ -29,6 +29,7 @@ namespace PgTools {
         vector<PgMatch> pgMatches;
 
         vector<uint_pg_len_max> rlPos;
+        vector<uint_pg_len_max> newRlPos;
         vector<uint_reads_cnt_max> rlIdx;
         void fillSrcReadsList();
 
@@ -40,7 +41,7 @@ namespace PgTools {
         void resolveMatchesOverlapInSrc();
         bool resolveSrcSrcCollision(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max &collidedCharsCount);
 
-        void removeMatchesFromSrc(const string& destPgPrefix);
+        void transferMatchesFromSrcToDest(const string &destPgPrefix);
 
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 

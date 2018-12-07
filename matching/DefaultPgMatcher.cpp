@@ -183,7 +183,7 @@ namespace PgTools {
         if (destPgIsSrcPg)
             resolveDestOverlapSrcConflictsInTheSamePg();
 
-        removeMatchesFromSrc(destPgIsSrcPg?destPgFilePrefix:srcPgPrefix);
+        transferMatchesFromSrcToDest(destPgFilePrefix);
 
         rlPos.clear();
         rlIdx.clear();
@@ -365,8 +365,8 @@ namespace PgTools {
     void DefaultPgMatcher::fillSrcReadsList() {
         rlPos.clear();
         rlIdx.clear();
-        rlPos.reserve(srcPgh->getReadsCount());
-        rlIdx.reserve(srcPgh->getReadsCount());
+        rlPos.reserve(srcPgh->getReadsCount() + 1);
+        rlIdx.reserve(srcPgh->getReadsCount() + 1);
         SimpleSeparatedReadsListIterator* rlIt = new SimpleSeparatedReadsListIterator(srcPgPrefix);
         while (rlIt->moveNext()) {
             rlPos.push_back(rlIt->peekReadEntry().pos);
@@ -385,7 +385,7 @@ namespace PgTools {
         return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / srcPgh->getPseudoGenomeLength(), 1)+ "%)";
     }
 
-    void DefaultPgMatcher::removeMatchesFromSrc(const string& destPgPrefix) {
+    void DefaultPgMatcher::transferMatchesFromSrcToDest(const string &destPgPrefix) {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
         { return pgMatch1.netPosSrcPg(rlPos, readLength) < pgMatch2.netPosSrcPg(rlPos, readLength); });
 
@@ -400,14 +400,14 @@ namespace PgTools {
                      return pgMatches[pgMatchIdx1].netPosDestPg(rlPos) < pgMatches[pgMatchIdx2].netPosDestPg(rlPos);
                  });
         }
-
         string newSrcPg;
-        SeparatedPseudoGenomeOutputBuilder builder(destPgPrefix, true, true);
-        builder.copyPseudoGenomeHeader(srcPgPrefix);
+        vector<bool> isReadRemapped(srcPgh->getReadsCount() + 1, false);
+        newRlPos.resize(srcPgh->getReadsCount() + 1);
+
         uint_pg_len_max pos = 0;
+        uint_pg_len_max lastReadPos = 0;
         uint_reads_cnt_max i = 0;
         uint_pg_len_max removedCount = 0;
-        DefaultReadsListEntry entry;
         for (PgMatch& pgMatch: pgMatches) {
             if (pgMatch.inactive(rlPos, readLength))
                 continue;
@@ -415,41 +415,79 @@ namespace PgTools {
                 while (++dOrdIdx < pgMatches.size() &&
                     pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg(rlPos) < pgMatch.netPosSrcPg(rlPos, readLength)) {
                     PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx]];
-                    if (!destMatch.inactive(rlPos, readLength)) {
+                    if (!destMatch.inactive(rlPos, readLength))
                         destMatch.posGrossDestPg -= removedCount;
-                        for(uint_reads_cnt_max i = destMatch.startRlIdx; i <= destMatch.endRlIdx; i++) {
-
-                        }
-                    }
                 }
             }
 
             newSrcPg.append(srcPg, pos, pgMatch.netPosSrcPg(rlPos, readLength) - pos);
+            uint_pg_len_max netSrcLength = pgMatch.netSrcLength(rlPos, readLength);
             pos = pgMatch.netEndPosSrcPg(rlPos);
             while(i < pgMatch.startRlIdx) {
-                entry.advanceEntryByPosition(rlPos[i] - removedCount, rlIdx[i]);
-                rlIdx[i] = (uint_reads_cnt_max) -1;
-                if (entry.offset > readLength) {
-                    uint_read_len_max overflow = entry.offset - readLength;
+                newRlPos[i] = rlPos[i] - removedCount;
+                uint_read_len_max offset = newRlPos[i] - lastReadPos;
+                if (offset > readLength) {
+                    uint_read_len_max overflow = offset - readLength;
                     newSrcPg.resize(newSrcPg.length() - overflow);
                     removedCount += overflow;
-                    entry.offset -= overflow;
-                    entry.pos -= overflow;
+                    newRlPos[i] -= overflow;
                 }
-                builder.writeExtraReadEntry(entry);
-                i++;
+                lastReadPos = newRlPos[i++];
             }
-            removedCount += pgMatch.netSrcLength(rlPos, readLength);
+            removedCount += netSrcLength;
             i = pgMatch.endRlIdx + 1;
         }
         newSrcPg.append(srcPg, pos, srcPg.length() - pos);
         cout << "Source Pg reduced to " << newSrcPg.length() << " symbols (removed: " <<
             getTotalMatchStat(srcPgh->getPseudoGenomeLength() - newSrcPg.length()) << ")." << endl;
+        if (destPgIsSrcPg)
+            while (++dOrdIdx < pgMatches.size()) {
+                PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx]];
+                if (!destMatch.inactive(rlPos, readLength))
+                    destMatch.posGrossDestPg -= removedCount;
+            }
 
+        for (PgMatch& pgMatch: pgMatches) {
+            if (pgMatch.inactive(rlPos, readLength))
+                continue;
+            for(uint_reads_cnt_max i = pgMatch.startRlIdx; i <= pgMatch.endRlIdx; i++) {
+                isReadRemapped[i] = true;
+                newRlPos[i] = pgMatch.posGrossDestPg + (rlPos[i] - pgMatch.posGrossSrcPg);
+            }
+        }
+        rlPos.clear();
+
+        vector<uint_reads_cnt_max> rlPosOrd(srcPgh->getReadsCount());
+        for (uint_reads_cnt_max i = 0; i < srcPgh->getReadsCount(); i++)
+            rlPosOrd[i] = i;
+        sort(rlPosOrd.begin(), rlPosOrd.end(),
+             [this](const uint_reads_cnt_max &rlPosIdx1, const uint_reads_cnt_max &rlPosIdx2) -> bool {
+                 return newRlPos[rlPosIdx1] < newRlPos[rlPosIdx2];
+             });
+
+        SeparatedPseudoGenomeOutputBuilder builder(destPgIsSrcPg?destPgPrefix:srcPgPrefix,
+                                                   destPgIsSrcPg?!revComplMatching:true, true);
+        builder.copyPseudoGenomeHeader(srcPgPrefix);
         builder.writePseudoGenome(newSrcPg);
+
+        DefaultReadsListEntry entry;
+        for(uint_reads_cnt_max iOrd = 0; iOrd < srcPgh->getReadsCount(); iOrd++) {
+            uint_reads_cnt_max i = rlPosOrd[iOrd];
+            if(destPgIsSrcPg || !isReadRemapped[i]) {
+                entry.advanceEntryByPosition(newRlPos[i], rlIdx[i],
+                        destPgIsSrcPg?(revComplMatching && isReadRemapped[i]):false);
+                builder.writeExtraReadEntry(entry);
+            }
+        }
 
         builder.build();
 
+        if(!destPgIsSrcPg) {
+            cout << "Error: Unimplemented adding reads removed from source Pg to destination Pg.";
+            exit(EXIT_FAILURE);
+        }
+        rlIdx.clear();
+        newRlPos.clear();
     }
 }
 
