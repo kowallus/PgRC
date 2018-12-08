@@ -29,7 +29,7 @@ void divideGenerateAndMatch(string err_limit_str, string srcFastqFile, string pa
     bool hasHeader = (bool) std::ifstream(outputfile);
     fstream fout(outputfile, ios::out | ios::binary | ios::app);
     if (!hasHeader)
-        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%]\tm\tM\ttotal[s]\tdiv[s]\tgood[s]\tmatch[s]\tbad[s]\tpost[s]" << endl;
+        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%]\tm\tM\ttotal[s]\tdiv[s]\tgood[s]\tgooder[s]\tmatch[s]\tbad[s]\tpost[s]" << endl;
     clock_t start_t = clock();
     fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
         << pgFilesPrefixes << "\t" << err_limit_str << "\t"
