@@ -60,10 +60,10 @@ namespace PgTools {
 
     bool SeparatedPseudoGenomePersistence::acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix,
                                                                               const string &fileSuffix,
-                                                                              bool removeExisting) {
+                                                                              bool alwaysRemoveExisting) {
         string pgElFile = pseudoGenomePrefix + fileSuffix;
         string pgElTempFile = pgElFile + TEMPORARY_FILE_SUFFIX;
-        if (std::ifstream(pgElFile) && (std::ifstream(pgElTempFile) || removeExisting))
+        if (std::ifstream(pgElFile) && (std::ifstream(pgElTempFile) || alwaysRemoveExisting))
             remove(pgElFile.c_str());
         if (std::ifstream(pgElTempFile))
             return rename(pgElTempFile.c_str(), pgElFile.c_str()) == 0;

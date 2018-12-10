@@ -48,8 +48,8 @@ void validatePg(const string &srcFastqFile, const string &pairFastqFile, const s
         if (pgRead != rsRead) {
             errorsCounter++;
             if (errorsCounter < 10) {
-                cout << endl << getRead(pg, pgEntry, readLength) << " (" << pgReadsCounter << ")" << endl;
-                cout << rsRead << " (" << pgEntry.idx << ")" << endl << endl;
+                cout << endl << getRead(pg, pgEntry, readLength) << " (" << pgReadsCounter << ";" << pgEntry.pos << ")" << endl;
+                cout << rsRead << " (" << pgEntry.idx << ";" << pgEntry.pos << ")" << endl << endl;
             }
         }
     }

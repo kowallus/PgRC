@@ -12,7 +12,7 @@ namespace PgTools {
     class SeparatedPseudoGenomePersistence {
     private:
 
-        static bool acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix, const string& fileSuffix, bool removeExisting);
+        static bool acceptTemporaryPseudoGenomeElement(const string &pseudoGenomePrefix, const string& fileSuffix, bool alwaysRemoveExisting);
 
         static void appendIndexesFromPg(string pgFilePrefix, vector<uint_reads_cnt_std> &idxs);
         static void writePairMapping(basic_string<char> &pgFilePrefix, vector<uint_reads_cnt_std> orgIdxs);
