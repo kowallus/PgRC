@@ -131,20 +131,27 @@ namespace PgTools {
             endRlIdx = leIdx;
         }
 
-        uint_read_len_max netDestPosAlignment(const vector<uint_pg_len_max> &rlPos) const {
-            return rlPos[startRlIdx] - posGrossSrcPg;
+        uint_pg_len_max mapSrcReadToDest(const uint_pg_len_max &srcReadPos, const uint_read_len_max &readLength,
+                                         bool revComplMatch) const {
+            uint_pg_len_max srcOffset = srcReadPos - posGrossSrcPg;
+            return posGrossDestPg + (revComplMatch?grossLength - srcOffset - readLength:srcOffset);
         }
 
-        uint_pg_len_max netPosDestPg(const vector<uint_pg_len_max> &rlPos) const {
-            return posGrossDestPg + netDestPosAlignment(rlPos);
+        uint_pg_len_max netPosDestPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength,
+                bool revComplMatch) const {
+            return revComplMatch?mapSrcReadToDest(rlPos[endRlIdx], readLength, true)
+                :mapSrcReadToDest(rlPos[startRlIdx], readLength, false);
         }
 
-        uint_pg_len_max netEndPosDestPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
-            return posGrossDestPg + ((rlPos[endRlIdx] + readLength) - posGrossSrcPg);
+        uint_pg_len_max netEndPosDestPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength,
+                bool revComplMatch) const {
+            return readLength + (revComplMatch?mapSrcReadToDest(rlPos[startRlIdx], readLength, true)
+                :mapSrcReadToDest(rlPos[endRlIdx], readLength, false));
         }
 
-        uint_pg_len_max netDestLength(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
-            return netEndPosDestPg(rlPos, readLength) + netPosDestPg(rlPos);
+        uint_pg_len_max netDestLength(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength,
+                bool revComplMatch) const {
+            return netEndPosDestPg(rlPos, readLength, revComplMatch) + netPosDestPg(rlPos, readLength,revComplMatch);
         };
 
         void report(ostream& out) {

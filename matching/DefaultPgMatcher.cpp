@@ -240,13 +240,17 @@ namespace PgTools {
         vector<uint32_t> matchDestOrderedIdx(pgMatches.size());
         for(uint32_t i = 0; i < pgMatches.size(); i++)
             matchDestOrderedIdx[i] = i;
-        sort(matchDestOrderedIdx.begin(), matchDestOrderedIdx.end(), [this](const uint32_t& pgMatchIdx1, const uint32_t& pgMatchIdx2) -> bool
-        { return pgMatches[pgMatchIdx1].netPosDestPg(rlPos) < pgMatches[pgMatchIdx2].netPosDestPg(rlPos); });
+        sort(matchDestOrderedIdx.begin(), matchDestOrderedIdx.end(),
+                [this](const uint32_t& pgMatchIdx1, const uint32_t& pgMatchIdx2) -> bool
+            { return pgMatches[pgMatchIdx1].netPosDestPg(rlPos, readLength, revComplMatching)
+                < pgMatches[pgMatchIdx2].netPosDestPg(rlPos,readLength, revComplMatching); });
 
         vector<uint_pg_len_max> maxNetEndPosDestPgUpTo(pgMatches.size());
-        maxNetEndPosDestPgUpTo[0] = pgMatches[matchDestOrderedIdx[0]].netEndPosDestPg(rlPos, readLength);
+        maxNetEndPosDestPgUpTo[0] = pgMatches[matchDestOrderedIdx[0]].netEndPosDestPg(rlPos, readLength,
+                revComplMatching);
         for(uint32_t i = 1; i < pgMatches.size(); i++) {
-            maxNetEndPosDestPgUpTo[i] = pgMatches[matchDestOrderedIdx[i]].netEndPosDestPg(rlPos, readLength);
+            maxNetEndPosDestPgUpTo[i] = pgMatches[matchDestOrderedIdx[i]].netEndPosDestPg(rlPos, readLength,
+                    revComplMatching);
             if (maxNetEndPosDestPgUpTo[i] < maxNetEndPosDestPgUpTo[i - 1])
                 maxNetEndPosDestPgUpTo[i] = maxNetEndPosDestPgUpTo[i - 1];
         }
@@ -260,12 +264,13 @@ namespace PgTools {
             totalNetMatchCharsCount += srcMatch.netSrcLength(rlPos, readLength);
             while(srcMatch.netPosSrcPg(rlPos, readLength) < maxNetEndPosDestPgUpTo[dOrdIdx] && --dOrdIdx > 0);
             while (++dOrdIdx < pgMatches.size()
-                && pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg(rlPos) < srcMatch.netEndPosSrcPg(rlPos)) {
+                && pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg(rlPos, readLength, revComplMatching)
+                    < srcMatch.netEndPosSrcPg(rlPos)) {
                 if (srcMatch.inactive(rlPos, readLength))
                     break;
                 PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx]];
                 if (!destMatch.inactive(rlPos, readLength)
-                    && destMatch.netEndPosDestPg(rlPos, readLength) > srcMatch.netPosSrcPg(rlPos, readLength)) {
+                    && destMatch.netEndPosDestPg(rlPos, readLength, revComplMatching) > srcMatch.netPosSrcPg(rlPos, readLength)) {
                     if (resolveDestSrcCollision(destMatch, srcMatch, collidedCharsCount))
                         resolvedConflictsCount++;
                     else
@@ -280,16 +285,18 @@ namespace PgTools {
 
     bool DefaultPgMatcher::resolveDestSrcCollision(PgMatch &destMatch, PgMatch &srcMatch,
                                                    uint_pg_len_max &collidedCharsCount) {
-        if (destMatch.netEndPosDestPg(rlPos, readLength) < srcMatch.netEndPosSrcPg(rlPos) &&
-            destMatch.netPosDestPg(rlPos) < srcMatch.netPosSrcPg(rlPos, readLength)) {
-            uint_pg_len_max overlapLength = destMatch.netEndPosDestPg(rlPos, readLength) - srcMatch.netPosSrcPg(rlPos, readLength);
+        if (destMatch.netEndPosDestPg(rlPos, readLength, revComplMatching) < srcMatch.netEndPosSrcPg(rlPos) &&
+            destMatch.netPosDestPg(rlPos, readLength, revComplMatching) < srcMatch.netPosSrcPg(rlPos, readLength)) {
+            uint_pg_len_max overlapLength = destMatch.netEndPosDestPg(rlPos, readLength, revComplMatching)
+                    - srcMatch.netPosSrcPg(rlPos, readLength);
             srcMatch.trimLeft(overlapLength, rlPos, readLength);
             collidedCharsCount += overlapLength;
             return !srcMatch.inactive(rlPos, readLength);
         }
-        if (destMatch.netEndPosDestPg(rlPos, readLength) > srcMatch.netEndPosSrcPg(rlPos) &&
-            destMatch.netPosDestPg(rlPos) > srcMatch.netPosSrcPg(rlPos, readLength)) {
-            uint_pg_len_max overlapLength = srcMatch.netEndPosSrcPg(rlPos) - destMatch.netPosDestPg(rlPos);
+        if (destMatch.netEndPosDestPg(rlPos, readLength, revComplMatching) > srcMatch.netEndPosSrcPg(rlPos) &&
+            destMatch.netPosDestPg(rlPos, readLength, revComplMatching) > srcMatch.netPosSrcPg(rlPos, readLength)) {
+            uint_pg_len_max overlapLength = srcMatch.netEndPosSrcPg(rlPos)
+                    - destMatch.netPosDestPg(rlPos, readLength, revComplMatching);
             srcMatch.trimRight(overlapLength, rlPos, readLength);
             collidedCharsCount += overlapLength;
             return !srcMatch.inactive(rlPos, readLength);
@@ -390,20 +397,21 @@ namespace PgTools {
         { return pgMatch1.netPosSrcPg(rlPos, readLength) < pgMatch2.netPosSrcPg(rlPos, readLength); });
 
         vector<uint32_t> matchDestOrderedIdx;
-        int64_t dOrdIdx = -1;
         if (destPgIsSrcPg) {
             matchDestOrderedIdx.resize(pgMatches.size());
             for (uint32_t i = 0; i < pgMatches.size(); i++)
                 matchDestOrderedIdx[i] = i;
             sort(matchDestOrderedIdx.begin(), matchDestOrderedIdx.end(),
                  [this](const uint32_t &pgMatchIdx1, const uint32_t &pgMatchIdx2) -> bool {
-                     return pgMatches[pgMatchIdx1].netPosDestPg(rlPos) < pgMatches[pgMatchIdx2].netPosDestPg(rlPos);
+                     return pgMatches[pgMatchIdx1].netPosDestPg(rlPos, readLength, revComplMatching)
+                     < pgMatches[pgMatchIdx2].netPosDestPg(rlPos, readLength, revComplMatching);
                  });
         }
         string newSrcPg;
         vector<bool> isReadRemapped(srcPgh->getReadsCount() + 1, false);
         newRlPos.resize(srcPgh->getReadsCount() + 1);
 
+        uint64_t dOrdIdx = 0;
         uint_pg_len_max pos = 0;
         uint_pg_len_max lastReadPos = 0;
         uint_reads_cnt_max i = 0;
@@ -411,38 +419,35 @@ namespace PgTools {
         for (PgMatch& pgMatch: pgMatches) {
             if (pgMatch.inactive(rlPos, readLength))
                 continue;
-            if (destPgIsSrcPg) {
-                while (++dOrdIdx < pgMatches.size() &&
-                    pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg(rlPos) < pgMatch.netPosSrcPg(rlPos, readLength)) {
-                    PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx]];
-                    if (!destMatch.inactive(rlPos, readLength))
-                        destMatch.posGrossDestPg -= removedCount;
+            if (i >= pgMatch.startRlIdx) {
+                removedCount += pgMatch.netEndPosSrcPg(rlPos) - pos;
+            } else {
+                uint_read_len_max offset = rlPos[i] - removedCount - lastReadPos;
+                newSrcPg.append(srcPg, pos, pgMatch.netPosSrcPg(rlPos, readLength) - pos);
+                while (i < pgMatch.startRlIdx) {
+                    newRlPos[i] = rlPos[i] - removedCount;
+                    lastReadPos = newRlPos[i++];
                 }
+                if (destPgIsSrcPg) {
+                    while (dOrdIdx < pgMatches.size() &&
+                           pgMatches[matchDestOrderedIdx[dOrdIdx]].netPosDestPg(rlPos, readLength, revComplMatching) <
+                           pgMatch.netPosSrcPg(rlPos, readLength)) {
+                        PgMatch &destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx++]];
+                        if (!destMatch.inactive(rlPos, readLength))
+                            destMatch.posGrossDestPg -= removedCount;
+                    }
+                }
+                removedCount += pgMatch.netSrcLength(rlPos, readLength);
             }
-
-            newSrcPg.append(srcPg, pos, pgMatch.netPosSrcPg(rlPos, readLength) - pos);
-            uint_pg_len_max netSrcLength = pgMatch.netSrcLength(rlPos, readLength);
             pos = pgMatch.netEndPosSrcPg(rlPos);
-            while(i < pgMatch.startRlIdx) {
-                newRlPos[i] = rlPos[i] - removedCount;
-                uint_read_len_max offset = newRlPos[i] - lastReadPos;
-                if (offset > readLength) {
-                    uint_read_len_max overflow = offset - readLength;
-                    newSrcPg.resize(newSrcPg.length() - overflow);
-                    removedCount += overflow;
-                    newRlPos[i] -= overflow;
-                }
-                lastReadPos = newRlPos[i++];
-            }
-            removedCount += netSrcLength;
             i = pgMatch.endRlIdx + 1;
         }
         newSrcPg.append(srcPg, pos, srcPg.length() - pos);
         cout << "Source Pg reduced to " << newSrcPg.length() << " symbols (removed: " <<
             getTotalMatchStat(srcPgh->getPseudoGenomeLength() - newSrcPg.length()) << ")." << endl;
         if (destPgIsSrcPg)
-            while (++dOrdIdx < pgMatches.size()) {
-                PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx]];
+            while (dOrdIdx < pgMatches.size()) {
+                PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx++]];
                 if (!destMatch.inactive(rlPos, readLength))
                     destMatch.posGrossDestPg -= removedCount;
             }
@@ -452,7 +457,7 @@ namespace PgTools {
                 continue;
             for(uint_reads_cnt_max i = pgMatch.startRlIdx; i <= pgMatch.endRlIdx; i++) {
                 isReadRemapped[i] = true;
-                newRlPos[i] = pgMatch.posGrossDestPg + (rlPos[i] - pgMatch.posGrossSrcPg);
+                newRlPos[i] = pgMatch.mapSrcReadToDest(rlPos[i], readLength, revComplMatching);
             }
         }
         rlPos.clear();
@@ -476,6 +481,8 @@ namespace PgTools {
             if(destPgIsSrcPg || !isReadRemapped[i]) {
                 entry.advanceEntryByPosition(newRlPos[i], rlIdx[i],
                         destPgIsSrcPg?(revComplMatching && isReadRemapped[i]):false);
+                if (entry.offset > readLength)
+                    cout << "WARNING: offset overflow: " << entry.offset << ";" << i << ";" << newRlPos[i] << ";" << newRlPos[rlPosOrd[iOrd-1]] << endl;
                 builder.writeExtraReadEntry(entry);
             }
         }
