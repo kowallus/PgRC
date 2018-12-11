@@ -19,7 +19,9 @@ getRead(string pg, const ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_m
     return read;
 }
 
-void validatePg(const string &srcFastqFile, const string &pairFastqFile, const string &pgFilePrefix) {
+void
+validatePg(const string &srcFastqFile, const string &pairFastqFile, const string &pgFilePrefix,
+        uint_pg_len_max startPos) {
     clock_checkpoint();
     DefaultSeparatedExtendedReadsListIterator* rlIt = new DefaultSeparatedExtendedReadsListIterator(pgFilePrefix);
     PseudoGenomeHeader* pgh;
@@ -43,6 +45,8 @@ void validatePg(const string &srcFastqFile, const string &pairFastqFile, const s
         }
 
         const ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &pgEntry = rlIt->peekReadEntry();
+        if (pgEntry.pos < startPos)
+            continue;
         string pgRead = getRead(pg, pgEntry, readLength);
         string rsRead = readsSet->getReadVirtual(pgEntry.idx);
         if (pgRead != rsRead) {
@@ -63,12 +67,16 @@ void validatePg(const string &srcFastqFile, const string &pairFastqFile, const s
 int main(int argc, char *argv[])
 {
     int opt; // current option
+    uint_pg_len_max startPos = 0;
 
-    while ((opt = getopt(argc, argv, "?")) != -1) {
+    while ((opt = getopt(argc, argv, "p:?")) != -1) {
         switch (opt) {
+        case 'p':
+            startPos = atoi(optarg);
+            break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s readssrcfile [pairsrcfile] pgfileprefix\n\n",
+            fprintf(stderr, "Usage: %s [-p start_position] readssrcfile [pairsrcfile] pgfileprefix\n\n",
                     argv[0]);
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
@@ -88,7 +96,7 @@ int main(int argc, char *argv[])
         pairFastqFile = argv[optind++];
     string pgFilePrefix(argv[optind++]);
 
-    validatePg(srcFastqFile, pairFastqFile, pgFilePrefix);
+    validatePg(srcFastqFile, pairFastqFile, pgFilePrefix, startPos);
 
     exit(EXIT_SUCCESS);
 }
