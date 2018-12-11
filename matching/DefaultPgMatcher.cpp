@@ -473,19 +473,29 @@ namespace PgTools {
         SeparatedPseudoGenomeOutputBuilder builder(destPgIsSrcPg?destPgPrefix:srcPgPrefix,
                                                    destPgIsSrcPg?!revComplMatching:true, true);
         builder.copyPseudoGenomeHeader(srcPgPrefix);
-        builder.writePseudoGenome(newSrcPg);
 
+        pos = 0;
+        removedCount = 0;
         DefaultReadsListEntry entry;
         for(uint_reads_cnt_max iOrd = 0; iOrd < srcPgh->getReadsCount(); iOrd++) {
             uint_reads_cnt_max i = rlPosOrd[iOrd];
             if(destPgIsSrcPg || !isReadRemapped[i]) {
-                entry.advanceEntryByPosition(newRlPos[i], rlIdx[i],
+                entry.advanceEntryByPosition(newRlPos[i] - removedCount, rlIdx[i],
                         destPgIsSrcPg?(revComplMatching && isReadRemapped[i]):false);
-                if (entry.offset > readLength)
-                    cout << "WARNING: offset overflow: " << entry.offset << ";" << i << ";" << newRlPos[i] << ";" << newRlPos[rlPosOrd[iOrd-1]] << endl;
+                if (entry.offset > readLength) {
+                    cout << "WARNING: offset overflow: " << entry.offset << ";" << i << ";" << newRlPos[i] << ";"
+                         << newRlPos[rlPosOrd[iOrd - 1]] << endl;
+                    uint_pg_len_max overflow = entry.offset - readLength;
+                    removedCount += overflow;
+                    entry.offset = readLength;
+                    entry.pos -= overflow;
+                    builder.appendPseudoGenome(newSrcPg.substr(pos, newRlPos[i] - overflow - pos));
+                    pos = newRlPos[i];
+                }
                 builder.writeExtraReadEntry(entry);
             }
         }
+        builder.appendPseudoGenome(newSrcPg.substr(pos, newSrcPg.length() - pos));
 
         builder.build();
 

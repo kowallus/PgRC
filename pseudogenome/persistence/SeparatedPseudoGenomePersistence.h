@@ -102,7 +102,7 @@ namespace PgTools {
         void writeExtraReadEntry(const DefaultReadsListEntry &rlEntry);
 
         void writePseudoGenome(PseudoGenomeBase* pgb, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool revComplPairFile = "false");
-        void writePseudoGenome(const string& pg);
+        void appendPseudoGenome(const string &pg);
 
         void build();
     };

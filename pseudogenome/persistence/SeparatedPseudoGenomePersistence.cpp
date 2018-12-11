@@ -343,10 +343,15 @@ namespace PgTools {
         pgPropSrc.close();
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(const string &pg) {
-        pgh->setPseudoGenomeLength(pg.length());
-        initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
-        PgSAHelpers::writeArray(*pgDest, (void*) pg.data(), pg.length());
+    void SeparatedPseudoGenomeOutputBuilder::appendPseudoGenome(const string &pg) {
+        if (pgDest) {
+            pgh->setPseudoGenomeLength(pgh->getPseudoGenomeLength() + pg.length());
+            PgSAHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
+        } else {
+            pgh->setPseudoGenomeLength(pg.length());
+            initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
+            PgSAHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
+        }
     }
 
 }
