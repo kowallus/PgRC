@@ -52,7 +52,7 @@ namespace PgSAIndex {
 
             void initAndFindDuplicates();
             
-            virtual void findOverlappingReads();
+            virtual void findOverlappingReads(double overlappedReadsCountStopCoef) override;
             
         public:
 
@@ -81,6 +81,8 @@ namespace PgSAIndex {
             PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
 
             static PseudoGenomeBase* generatePg(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
+            static const vector<bool> getBetterReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator,
+                    double qualityCoef);
     };
 
 }

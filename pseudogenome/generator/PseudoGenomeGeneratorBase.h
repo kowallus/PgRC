@@ -15,6 +15,8 @@ namespace PgSAIndex {
         public:
 
             virtual PseudoGenomeBase* generatePseudoGenomeBase() = 0;
+            virtual const vector<bool> getBothSidesOverlappedReads(double overlappedReadsCountStopCoef) = 0;
+
 
             virtual ~PseudoGenomeGeneratorBase() {} ;
 

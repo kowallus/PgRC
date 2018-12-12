@@ -22,6 +22,42 @@ namespace PgSAIndex {
         free(headRead);
     }
 
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    const vector<bool> AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::getBothSidesOverlappedReads(
+            double overlappedReadsCountStopCoef) {
+
+        clock_checkpoint();
+        init();
+        findOverlappingReads(overlappedReadsCountStopCoef);
+        pseudoGenomeLength = countPseudoGenomeLength();
+        quick_stats();
+
+        vector<uint_read_len> prevOverlap(readsTotal() + 1, 0);
+        for(uint_reads_cnt i = 1; i <= readsTotal(); i++)
+            if (hasSuccessor(i))
+                prevOverlap[nextRead[i]] = overlap[i];
+
+
+        uint_reads_cnt resCount = readsTotal();
+        vector<bool> res(readsTotal(), true);
+        for(uint_reads_cnt i = 1; i <= readsTotal(); i++) {
+            if (hasPredecessor(i) && hasSuccessor(i))
+                continue;
+            if (hasSuccessor(i) && overlap[i] == readLength(i))
+                continue;
+            if (hasPredecessor(i) && prevOverlap[i] == readLength(i))
+                continue;
+            res[i-1] = false;
+            resCount--;
+        }
+        dispose();
+
+        cout << "Found " << resCount << " both-side overlapped reads in " << clock_millis() << " msec\n\n";
+
+        return res;
+    }
+
     template<typename uint_read_len, typename uint_reads_cnt>
     PseudoGenomeBase* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::generatePseudoGenomeBase() {
 

@@ -11,6 +11,7 @@ namespace PgTools {
         ReadsSourceIteratorTemplate< uint_read_len >* coreIterator;
         int64_t counter = -1;
         double error_level;
+        bool filterNReads;
         bool visitGoodReads;
         bool isQualityGood();
         bool containsN();
@@ -18,7 +19,7 @@ namespace PgTools {
     public:
 
         QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
-                                        bool visitGoodReads = true);
+                                        bool filterNreads = false, bool visitGoodReads = true);
 
         virtual ~QualityDividingReadsSetIterator();
 

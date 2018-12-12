@@ -41,7 +41,7 @@ namespace PgSAIndex {
             template<typename uint_pg_len>
             PseudoGenomeBase* assemblePseudoGenomeTemplate();
 
-            virtual void findOverlappingReads() = 0;
+            virtual void findOverlappingReads(double overlappedReadsCountStopCoef = 1) = 0;
             
             uint_pg_len_max countPseudoGenomeLength();
             uint_reads_cnt countSingles();
@@ -57,6 +57,7 @@ namespace PgSAIndex {
             virtual ~AbstractOverlapPseudoGenomeGeneratorTemplate() {}
 
             PseudoGenomeBase* generatePseudoGenomeBase();
+            const vector<bool> getBothSidesOverlappedReads(double overlappedReadsCountStopCoef) override;
 
             bool isPseudoGenomeLengthStandardVirtual();
             bool isPseudoGenomeLengthMaximalVirtual();

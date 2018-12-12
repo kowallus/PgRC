@@ -44,8 +44,38 @@ namespace PgSAReadsSet {
                                                                                           bool ignoreNReads = false,
                                                                                           bool ignoreNoNReads = false);
 
-        static void writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping, const vector<uint32_t> &readsFilterResult,
-                        const uint32_t readNotMatchedValue, string divisionFile, bool divisionComplement);
+        template<typename filter_res_t>
+        static void writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping, const vector<filter_res_t> &readsFilterResult,
+                        const filter_res_t readSelectedValue, string divisionFile, bool divisionComplement) {
+            std::ofstream divDest(divisionFile, std::ios::out | std::ios::binary);
+            if (divDest.fail()) {
+                fprintf(stderr, "cannot write to division file %s\n", divisionFile.c_str());
+                exit(EXIT_FAILURE);
+            }
+            divDest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << endl;
+
+            int64_t i = -1;
+            uint64_t visitedReadsCount = orgIndexesMapping.size() - 1;
+
+            if (divisionComplement) {
+                int64_t counter = -1;
+                while (++i < visitedReadsCount) {
+                    while (++counter != orgIndexesMapping[i])
+                        writeValue(divDest, counter);
+                    if (readsFilterResult[i] != readSelectedValue)
+                        writeValue(divDest, orgIndexesMapping[i]);
+                }
+                while (++counter != orgIndexesMapping[i])
+                    writeValue(divDest, counter);
+            } else {
+                for(uint64_t i = 0; i < visitedReadsCount; i++)
+                    if (readsFilterResult[i] == readSelectedValue)
+                        writeValue(divDest, orgIndexesMapping[i]);
+            }
+
+            writeValue(divDest, UINT64_MAX);
+            divDest.close();
+        }
     };
 
 }

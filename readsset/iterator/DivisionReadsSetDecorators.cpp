@@ -8,8 +8,10 @@ namespace PgTools {
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::QualityDividingReadsSetIterator(
-            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level, bool visitGoodReads)
-            :coreIterator(coreIterator), error_level(error_level), visitGoodReads(visitGoodReads) {}
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
+                bool filterNReads, bool visitGoodReads)
+            :coreIterator(coreIterator), error_level(error_level),
+             filterNReads(filterNReads), visitGoodReads(visitGoodReads) {}
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::~QualityDividingReadsSetIterator() {}
@@ -27,7 +29,8 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::isQualityGood() {
-        return 1 - qualityScore2correctProb(getQualityInfoVirtual()) < error_level;
+        return (1 - qualityScore2correctProb(getQualityInfoVirtual()) < error_level) &&
+                (!filterNReads || coreIterator->getReadVirtual().find('N') == string::npos);
     }
 
     template<typename uint_read_len>
@@ -90,7 +93,7 @@ namespace PgTools {
                 }
             }
         }
-        counter++;
+        indexesMapping.push_back(++counter);
         return false;
     }
 
@@ -123,6 +126,7 @@ namespace PgTools {
     template<typename uint_read_len>
     void DividedReadsSetIterator<uint_read_len>::rewindVirtual() {
         counter = -1;
+        indexesMapping.clear();
         divSource->clear();
         divSource->seekg(0);
         readReadMode(*divSource);

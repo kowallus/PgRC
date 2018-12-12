@@ -4,40 +4,6 @@
 
 namespace PgSAReadsSet {
 
-    void ReadsSetPersistence::writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping,
-                                                  const vector<uint32_t> &readsFilterResult,
-                                                  const uint32_t readNotMatchedValue, string divisionFile,
-                                                  bool divisionComplement) {
-        std::ofstream divDest(divisionFile, std::ios::out | std::ios::binary);
-        if (divDest.fail()) {
-            fprintf(stderr, "cannot write to division file %s\n", divisionFile.c_str());
-            exit(EXIT_FAILURE);
-        }
-        divDest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << endl;
-
-        int64_t i = -1;
-        uint64_t readsCount = orgIndexesMapping.size();
-
-        if (divisionComplement) {
-            uint64_t counter = 0;
-            while (++i < readsCount) {
-                while (counter != orgIndexesMapping[i]) {
-                    writeValue(divDest, counter);
-                    counter++;
-                }
-                if (readsFilterResult[i] != readNotMatchedValue)
-                    writeValue(divDest, orgIndexesMapping[i]);
-            }
-        } else {
-            for(uint64_t i = 0; i < readsCount; i++)
-                if (readsFilterResult[i] == readNotMatchedValue)
-                    writeValue(divDest, orgIndexesMapping[i]);
-        }
-
-        writeValue(divDest, UINT64_MAX);
-        divDest.close();
-    }
-
     ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(const string &srcFile,
                                                                                                     const string &pairFile,
                                                                                                     const string &divisionFile,

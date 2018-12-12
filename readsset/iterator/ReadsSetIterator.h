@@ -27,6 +27,10 @@ namespace PgSAReadsSet {
             virtual const std::vector<uint_reads_cnt_max> getVisitedIndexesMapping() {
                 return {};
             }
+
+            virtual uint_reads_cnt_max getAllReadsCount() {
+                return 0;
+            }
     };
 
     template < typename uint_read_len >
