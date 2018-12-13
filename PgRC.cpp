@@ -29,7 +29,7 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
     bool hasHeader = (bool) std::ifstream(outputfile);
     fstream fout(outputfile, ios::out | ios::binary | ios::app);
     if (!hasHeader)
-        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\tgooder[s]\tmatch[s]\tbad[s]\tpost[s]" << endl;
+        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\tmatch[s]\tgooder[s]\tbad[s]\tpost[s]" << endl;
     clock_t start_t = clock();
     fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
         << pgFilesPrefixes << "\t" << err_limit_str << "\t" << gen_quality_str << "\t"
@@ -83,16 +83,6 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         delete (goodReadsIterator);
     }
     clock_t good_t = clock();
-
-    if (skipStages < ++stageCount && endAtStage >= stageCount) {
-        PseudoGenomeHeader* pgh;
-        bool tmp;
-        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgGoodPrefix, pgh, tmp);
-        matchPgInPgFile(pgGoodPrefix, pgGoodPrefix, pgh->getMaxReadLength(), pgGoodPrefix, true, false);
-        delete(pgh);
-    }
-    clock_t gooder_t = clock();
-
     if (skipStages < ++stageCount && endAtStage >= stageCount) {
         ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, badDivisionFile, false);
@@ -108,6 +98,14 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         delete (badReadsIterator);
     }
     clock_t match_t = clock();
+    if (skipStages < ++stageCount && endAtStage >= stageCount) {
+        PseudoGenomeHeader* pgh;
+        bool tmp;
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgGoodPrefix, pgh, tmp);
+        matchPgInPgFile(pgGoodPrefix, pgGoodPrefix, pgh->getMaxReadLength(), pgGoodPrefix, true, false);
+        delete(pgh);
+    }
+    clock_t gooder_t = clock();
     if (skipStages < ++stageCount && endAtStage >= stageCount) {
         {
             ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
@@ -145,9 +143,9 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
     fout << getTimeInSec(div_t, start_t) << "\t";
     fout << getTimeInSec(pgDiv_t, div_t) << "\t";
     fout << getTimeInSec(good_t, pgDiv_t) << "\t";
-    fout << getTimeInSec(gooder_t, good_t) << "\t";
-    fout << getTimeInSec(match_t, gooder_t) << "\t";
-    fout << getTimeInSec(bad_t, match_t) << "\t";
+    fout << getTimeInSec(match_t, good_t) << "\t";
+    fout << getTimeInSec(gooder_t, match_t) << "\t";
+    fout << getTimeInSec(bad_t, gooder_t) << "\t";
     fout << getTimeInSec(clock(), bad_t) << endl;
 }
 
@@ -208,7 +206,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "-t write numbers in text mode\n-s skip intermediate output files\n");
             fprintf(stderr, "-a write absolute read position \n-e write mismatches as offsets from end\n");
             fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
-            fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:Pg(gooder); 5:ReadsMatching; 6:Pg(bad); 7:pairDump\n");
+            fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(gooder); 6:Pg(bad); 7:pairDump\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
         }
