@@ -2,6 +2,7 @@
 #define PGTOOLS_DEFAULTPGMATCHER_H
 
 #include "../pseudogenome/PseudoGenomeBase.h"
+#include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
 
 namespace PgTools {
 
@@ -31,10 +32,8 @@ namespace PgTools {
 
         vector<PgMatch> pgMatches;
 
-        vector<uint_pg_len_max> rlPos;
+        ConstantAccessExtendedReadsList* srcRl = 0;
         vector<uint_pg_len_max> newRlPos;
-        vector<uint_reads_cnt_max> rlIdx;
-        void fillSrcReadsList();
 
         void mapPgMatches2SrcReadsList();
         void reverseDestWithSrcForBetterMatchesMappingInTheSamePg();

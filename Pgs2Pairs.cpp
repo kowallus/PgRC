@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "pseudogenome/persistence/SeparatedExtendedReadsListIterator.h"
+#include "pseudogenome/persistence/SeparatedExtendedReadsList.h"
 
 using namespace std;
 using namespace PgTools;

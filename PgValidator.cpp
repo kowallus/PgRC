@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "pseudogenome/persistence/SeparatedExtendedReadsListIterator.h"
+#include "pseudogenome/persistence/SeparatedExtendedReadsList.h"
 
 using namespace std;
 using namespace PgTools;
@@ -23,7 +23,7 @@ void
 validatePg(const string &srcFastqFile, const string &pairFastqFile, const string &pgFilePrefix,
         uint_pg_len_max startPos) {
     clock_checkpoint();
-    DefaultSeparatedExtendedReadsListIterator* rlIt = new DefaultSeparatedExtendedReadsListIterator(pgFilePrefix);
+    DefaultSeparatedExtendedReadsListIterator* rlIt = DefaultSeparatedExtendedReadsListIterator::getIterator(pgFilePrefix);
     PseudoGenomeHeader* pgh;
     bool plainTextReadMode;
     PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgFilePrefix, pgh, plainTextReadMode);

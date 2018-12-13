@@ -2,14 +2,14 @@
 #include <unistd.h>
 
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "pseudogenome/persistence/SeparatedExtendedReadsListIterator.h"
+#include "pseudogenome/persistence/SeparatedExtendedReadsList.h"
 
 using namespace std;
 using namespace PgTools;
 
 void rewritePg(string pgFileSrcPrefix, string pgFileDestPrefix, bool compactBytes) {
     clock_checkpoint();
-    DefaultSeparatedExtendedReadsListIterator* rlIt = new DefaultSeparatedExtendedReadsListIterator(pgFileSrcPrefix);
+    DefaultSeparatedExtendedReadsListIterator* rlIt = DefaultSeparatedExtendedReadsListIterator::getIterator(pgFileSrcPrefix);
     SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(pgFileDestPrefix,
             !rlIt->isRevCompEnabled(), !rlIt->areMismatchesEnabled());
     builder->setReadsSourceIterator(rlIt);

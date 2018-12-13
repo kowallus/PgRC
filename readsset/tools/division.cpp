@@ -5,10 +5,10 @@
 using namespace PgSAHelpers;
 
 void PgTools::divideReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator, string outputFile,
-        double error_limit, bool filterNReads) {
+        double error_limit, bool filterAllNReads) {
     clock_checkpoint();
     QualityDividingReadsSetIterator<uint_read_len_max> *badReadsIterator =
-            new QualityDividingReadsSetIterator<uint_read_len_max>(readsIterator, error_limit, filterNReads, false);
+            new QualityDividingReadsSetIterator<uint_read_len_max>(readsIterator, error_limit, filterAllNReads, false);
     std::ofstream filteredIndexesDest(outputFile, std::ios::out | std::ios::binary | std::ios::trunc);
     if (filteredIndexesDest.fail()) {
         fprintf(stderr, "cannot write to filtered indexes file %s\n", outputFile.c_str());

@@ -4,7 +4,7 @@
 #include "../readsset/persistance/ReadsSetPersistence.h"
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "../pseudogenome/persistence/SeparatedExtendedReadsListIterator.h"
+#include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
 
 namespace PgTools {
 
@@ -440,7 +440,7 @@ namespace PgTools {
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
         initEntryUpdating();
-        DefaultSeparatedExtendedReadsListIterator* rlIt = new DefaultSeparatedExtendedReadsListIterator(pgFilePrefix);
+        DefaultSeparatedExtendedReadsListIterator* rlIt = DefaultSeparatedExtendedReadsListIterator::getIterator(pgFilePrefix);
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(outPgPrefix,
                 rlIt->isRevCompEnabled(), rlIt->areMismatchesEnabled());
         builder->setReadsSourceIterator(rlIt);
