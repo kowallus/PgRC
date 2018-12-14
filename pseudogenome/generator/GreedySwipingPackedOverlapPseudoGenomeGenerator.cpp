@@ -123,8 +123,10 @@ namespace PgSAIndex {
 
         initAndFindDuplicates();
         cout << "Start overlapping.\n";
-    
-        for(int i = 1 ; i < packedReadsSet->maxReadLength(); i++) {
+
+        uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
+
+        for(int i = 1 ; i < overlapIterations; i++) {
             vector<uint_reads_cnt> sortedReadsLeft;
             sortedReadsLeft.reserve(this->readsLeft);
             vector<uint_reads_cnt> sortedSuffixLeft;
@@ -199,8 +201,6 @@ namespace PgSAIndex {
             ssiSymbolEnd.swap(ssiSymbolEndLeft);
         
             cout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap\n";
-            if (((double) this->readsLeft) / this->getReadsSetProperties()->readsCount < (1.0 - overlappedReadsCountStopCoef))
-                break;
         }
 
         sortedReadsIdxs.clear();

@@ -312,7 +312,7 @@ double PgSAHelpers::qualityScore2approxCorrectProb(string quality) {
             default: ;
         }
     }
-    return val;
+    return pow(val, 1.0/quality.length());
 }
 
 double PgSAHelpers::qualityScore2correctProb(string quality) {
@@ -363,7 +363,7 @@ double PgSAHelpers::qualityScore2correctProb(string quality) {
             default: val *= 1;
         }
     }
-    return val;
+    return pow(val, 1.0/quality.length());
 }
 
 int PgSAHelpers::readsSufPreCmp(const char* suffixPart, const char* prefixRead) {

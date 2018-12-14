@@ -36,10 +36,18 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         << (int) targetMismatches << "\t" << (int) maxMismatches << "\t";
 
     double error_limit = atoi(err_limit_str.c_str()) / 1000.0;
-    double gen_quality_coef = atoi(gen_quality_str.c_str()) / 1000.0;
-    pgFilesPrefixes = pgFilesPrefixes + "_q" + string("000").substr(err_limit_str.length()) +
-            err_limit_str
-            + (filterNReads2Bad?"N":"") + "_g" + string("000").substr(gen_quality_str.length()) + gen_quality_str;
+    if (error_limit > 1 || error_limit <= 0) {
+        fprintf(stderr, "Error limit should be between 1 and 1000.\n");
+        exit(EXIT_FAILURE);
+    }
+    double gen_quality_coef = atoi(gen_quality_str.c_str()) / 100.0;
+    if (gen_quality_coef > 1 || gen_quality_coef <= 0) {
+        fprintf(stderr, "Generate quality coefficient should be between 1 and 100.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    pgFilesPrefixes = pgFilesPrefixes + "_q" + err_limit_str
+            + (filterNReads2Bad?"N":"") + "_g" + gen_quality_str;
     string badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
     string pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
     string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetMismatches)
@@ -199,7 +207,7 @@ int main(int argc, char *argv[])
         case '?':
         default: /* '?' */
             fprintf(stderr, "Usage: %s [-m targetMaxMismatches] [-M allowedMaxMismatches] [-r] [-n] [-N] [-a] [-e] [-t] [-s] \n"
-                            "error_probability*1000 gen_quality_coef*1000 readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
+                            "error_probability*1000 gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                     argv[0]);
             fprintf(stderr, "-r reverse compliment reads in a pair file\n");
             fprintf(stderr, "-n ignore reads containing N (WARNING: experimental - does not perserve reads order\n");
