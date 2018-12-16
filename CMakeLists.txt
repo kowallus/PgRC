@@ -90,4 +90,7 @@ add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 add_executable(PgRewriter PgRewriter.cpp ${PG_FILES})
 add_executable(PgValidator PgValidator.cpp ${PG_FILES})
 add_executable(Pgs2Pairs Pgs2Pairs.cpp ${PG_FILES})
+
+set(CMAKE_EXE_LINKER_FLAGS " -static")
 add_executable(PgRC PgRC.cpp ${MATCHER_FILES} ${PG_GEN_FILES})
+target_link_libraries(PgRC -static-libgcc -static-libstdc++)
