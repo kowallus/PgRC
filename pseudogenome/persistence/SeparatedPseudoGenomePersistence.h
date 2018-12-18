@@ -93,6 +93,8 @@ namespace PgTools {
 
         SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix, bool disableRevComp = false, bool disableMismatches = false);
 
+        virtual ~SeparatedPseudoGenomeOutputBuilder();
+
         void copyPseudoGenomeHeader(const string &pseudoGenomePrefix);
 
         void writeReadEntry(const DefaultReadsListEntry &rlEntry);

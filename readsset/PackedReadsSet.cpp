@@ -79,6 +79,7 @@ namespace PgSAReadsSet {
 
     PackedReadsSet::~PackedReadsSet() {
         delete[] packedReads;
+        delete sPacker;
     }
 
     int PackedReadsSet::comparePackedReads(uint_reads_cnt_max lIdx, uint_reads_cnt_max rIdx){

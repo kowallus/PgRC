@@ -160,9 +160,9 @@ namespace PgSAIndex {
         {
             for (uint_reads_cnt i = 0; i < this->readsCount(); i++)
                 if (readsSet->getRead(i).compare(this->getRead(i)) != 0) {
-                    fprintf(stderr, (toString(i) + "-th read is incorrect (below original vs pg).\n\n").c_str());
-                    fprintf(stderr, (readsSet->getRead(i) + "\n").c_str());
-                    fprintf(stderr, (this->getRead(i) + "\n").c_str());
+                    fprintf(stderr, "%s", (toString(i) + "-th read is incorrect (below original vs pg).\n\n").c_str());
+                    fprintf(stderr, "%s", (readsSet->getRead(i) + "\n").c_str());
+                    fprintf(stderr, "%s", (this->getRead(i) + "\n").c_str());
                     return false;
                 }
             return true;

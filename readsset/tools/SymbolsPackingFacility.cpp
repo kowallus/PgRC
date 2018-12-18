@@ -60,6 +60,8 @@ namespace PgSAIndex {
                 j--;
             }
         }
+        delete[]currentClear;
+        delete[]sequence;
     }
 
     template<typename uint_element>

@@ -72,9 +72,9 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         const vector<bool> &badReads = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getBetterReads(
                 goodReadsIterator, gen_quality_coef);
         const vector<uint_reads_cnt_max> goodIndexesMapping = goodReadsIterator->getVisitedIndexesMapping();
+        delete (goodReadsIterator);
         ReadsSetPersistence::writeOutputDivision(goodIndexesMapping, badReads,
                                                  true, badDivisionFile, true);
-        delete (goodReadsIterator);
     }
     clock_t pgDiv_t = clock();
     if (skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -83,10 +83,10 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
                 goodReadsIterator);
         const vector<uint_reads_cnt_max> good2IndexesMapping = goodReadsIterator->getVisitedIndexesMapping();
+        delete (goodReadsIterator);
         SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, good2IndexesMapping,
                                                             revComplPairFile);
         delete (goodPgb);
-        delete (goodReadsIterator);
     }
     clock_t good_t = clock();
     if (skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -96,12 +96,12 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         PackedReadsSet *badReadsSet = new PackedReadsSet(badReadsIterator);
         badReadsSet->printout();
         const vector<uint_reads_cnt_max> badIndexesMapping = badReadsIterator->getVisitedIndexesMapping();
+        delete (badReadsIterator);
         mapReadsIntoPg(
                 pgGoodPrefix, true, badReadsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 targetMismatches, maxMismatches, 0,
                 false, pgMappedGoodPrefix, badIndexesMapping, false, mappedBadDivisionFile);
         delete (badReadsSet);
-        delete (badReadsIterator);
     }
     clock_t match_t = clock();
     if (skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -115,10 +115,10 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
             PseudoGenomeBase *badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
                     mappedBadReadsIterator);
             const vector<uint_reads_cnt_max> mappedBadIndexesMapping = mappedBadReadsIterator->getVisitedIndexesMapping();
+            delete (mappedBadReadsIterator);
             SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadIndexesMapping,
                                                                 revComplPairFile);
             delete (badPgb);
-            delete (mappedBadReadsIterator);
         }
         if (ignoreNReads) {
             ReadsSourceIteratorTemplate<uint_read_len_max> *mappedNReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
@@ -126,10 +126,10 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
             PseudoGenomeBase *nPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
                     mappedNReadsIterator);
             const vector<uint_reads_cnt_max> mappedNIndexesMapping = mappedNReadsIterator->getVisitedIndexesMapping();
+            delete (mappedNReadsIterator);
             SeparatedPseudoGenomePersistence::writePseudoGenome(nPgb, pgNPrefix, mappedNIndexesMapping,
                                                                 revComplPairFile);
             delete (nPgb);
-            delete (mappedNReadsIterator);
         }
     }
     clock_t bad_t = clock();
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     if (revComplPairFile && optind != argc - 4) {
-        fprintf(stderr, "Cannot use -r option without specifying a pair file.\n", argv[0]);
+        fprintf(stderr, "Cannot use -r option without specifying a pair file.\n");
         exit(EXIT_FAILURE);
     }
     if (targetCharsPerMismatch < MIN_CHARS_PER_MISMATCH || maxCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {

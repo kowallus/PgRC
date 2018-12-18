@@ -321,7 +321,8 @@ namespace PgTools {
         setReadsSourceIterator(rlIt);
         writeReadsFromIterator();
 
-        pgh = new PseudoGenomeHeader(pgb);
+        if (pgh == 0)
+            pgh = new PseudoGenomeHeader(pgb);
         if (pgh->getReadsCount() != readsCounter) {
             fprintf(stderr, "Incorrect reads count validation while building separated Pg (%llu instead of %llu).\n",
                     readsCounter, pgh->getReadsCount());
@@ -339,6 +340,8 @@ namespace PgTools {
                     pseudoGenomePrefix.c_str());
             exit(EXIT_FAILURE);
         }
+        if (pgh != 0)
+            delete(pgh);
         this->pgh = new PseudoGenomeHeader(pgPropSrc);
         pgPropSrc.close();
     }
@@ -352,6 +355,10 @@ namespace PgTools {
             initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
             PgSAHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
         }
+    }
+
+    SeparatedPseudoGenomeOutputBuilder::~SeparatedPseudoGenomeOutputBuilder() {
+        delete(pgh);
     }
 
 }

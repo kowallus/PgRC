@@ -32,11 +32,10 @@ namespace PgTools {
             const uint8_t mismatchesCount, DefaultReadsListEntry &entry) {
         uint64_t pos = 0;
         uint8_t count = 0;
-        while (true) {
+        while (count < mismatchesCount) {
             if (read[pos] != pgPart[pos]) {
                 entry.addMismatch(mismatch2code(pgPart[pos], read[pos]), pos);
-                if (++count == mismatchesCount)
-                    return;
+                count++;
             }
             pos++;
         };

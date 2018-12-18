@@ -460,6 +460,7 @@ namespace PgTools {
 
         pos = 0;
         removedCount = 0;
+        uint_pg_len_max totalOffsetOverflow = 0;
         DefaultReadsListEntry entry;
         for(uint_reads_cnt_max iOrd = 0; iOrd < srcPgh->getReadsCount(); iOrd++) {
             uint_reads_cnt_max i = rlPosOrd[iOrd];
@@ -468,9 +469,8 @@ namespace PgTools {
                         srcRl->revComp[i] != (destPgIsSrcPg?(revComplMatching && isReadRemapped[i]):false));
                 srcRl->copyMismatchesToEntry(i, entry);
                 if (entry.offset > readLength) {
-                    cout << "WARNING: offset overflow: " << entry.offset << ";" << i << ";" << newRlPos[i] << ";"
-                         << newRlPos[rlPosOrd[iOrd - 1]] << endl;
                     uint_pg_len_max overflow = entry.offset - readLength;
+                    totalOffsetOverflow += overflow;
                     removedCount += overflow;
                     entry.offset = readLength;
                     entry.pos -= overflow;
@@ -481,7 +481,8 @@ namespace PgTools {
             }
         }
         builder.appendPseudoGenome(newSrcPg.substr(pos, newSrcPg.length() - pos));
-
+        cout << "Final size of Pg: " << (newSrcPg.length() - totalOffsetOverflow) << " (removed "
+            << totalOffsetOverflow << " chars in overflowed offsets)" << endl;
         builder.build();
 
         if(!destPgIsSrcPg) {
