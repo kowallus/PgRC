@@ -108,6 +108,7 @@ namespace PgTools {
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
                                                                                      bool enableRevComp, bool enableMismatches) override;
         void initEntryUpdating() override;
+        string currentRead;
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override;
         void closeEntryUpdating() override;
 

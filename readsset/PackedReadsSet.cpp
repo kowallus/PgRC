@@ -94,6 +94,15 @@ namespace PgSAReadsSet {
         return sPacker->compareSuffixWithPrefix(packedReads + sufIdx * (size_t) packedLength, packedReads + preIdx * (size_t) packedLength, sufOffset, properties->maxReadLength - sufOffset);
     }
 
+    int PackedReadsSet::comparePackedReadWithPattern(const uint_reads_cnt_max i, const char *pattern) {
+        return sPacker->compareSequenceWithUnpacked(packedReads + i * (size_t) packedLength, pattern, properties->maxReadLength);
+    }
+
+    uint8_t PackedReadsSet::countMismatchesVsPattern(uint_reads_cnt_max i, const char *pattern, uint_read_len_max length,
+                                                           uint8_t maxMismatches) {
+        return sPacker->countSequenceMismatchesVsUnpacked(packedReads + i * (size_t) packedLength, pattern, length, maxMismatches);
+    }
+
     template PackedReadsSet::PackedReadsSet<ReadsSourceIteratorTemplate<uint_read_len_min>>(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
     template PackedReadsSet::PackedReadsSet<ReadsSourceIteratorTemplate<uint_read_len_std>>(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
     template PackedReadsSet::PackedReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_min>>(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);

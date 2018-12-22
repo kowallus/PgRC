@@ -1,5 +1,6 @@
 #include "ConstantLengthPatternsOnTextHashMatcher.h"
 
+
 DefaultConstantLengthPatternsOnTextHashMatcher::DefaultConstantLengthPatternsOnTextHashMatcher(uint32_t patternLength)
         : patternLength(patternLength), hf(patternLength, 32) {
 }
@@ -17,6 +18,23 @@ void DefaultConstantLengthPatternsOnTextHashMatcher::addPattern(const char *patt
     for(uint32_t i = 0; i < patternLength; i++)
         hf.eat(pattern[i]);
     hashToIndexMap.insert(std::pair<uint32_t, uint32_t>(hf.hashvalue, idx));
+}
+
+void DefaultConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedReadsSet* readsSet, uint8_t partsCount) {
+    if (this->txt != 0) {
+        cerr << "Adding patterns not permitted during iteration";
+        exit(EXIT_FAILURE);
+    }
+    const uint_reads_cnt_max readsCount = readsSet->getReadsSetProperties()->readsCount;
+    for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+        uint_read_len_max offset = 0;
+        for (uint8_t j = 0; j < partsCount; j++, offset += patternLength) {
+            hf.reset();
+            for(uint32_t k = 0; k < patternLength; k++)
+                hf.eat(readsSet->getReadSymbol(i, offset + k));
+            hashToIndexMap.insert(std::pair<uint32_t, uint32_t>(hf.hashvalue, i * partsCount + j));
+        }
+    }
 }
 
 uint32_t DefaultConstantLengthPatternsOnTextHashMatcher::getHashMatchPatternIndex() {
@@ -48,6 +66,23 @@ void InterleavedConstantLengthPatternsOnTextHashMatcher::addPattern(const char *
     for(uint32_t i = 0; i < patternSpan; i += patternParts)
         hf[0].eat(pattern[i]);
     hashToIndexMap.insert(std::pair<uint32_t, uint32_t>(hf[0].hashvalue, idx));
+}
+
+
+void InterleavedConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedReadsSet *readsSet, int partsCount) {
+    if (this->txt != 0) {
+        cerr << "Adding patterns not permitted during iteration";
+        exit(EXIT_FAILURE);
+    }
+    const uint_reads_cnt_max readsCount = readsSet->getReadsSetProperties()->readsCount;
+    for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+        for (uint8_t j = 0; j < partsCount; j++) {
+            hf[0].reset();
+            for(uint32_t k = 0; k < patternSpan; k += patternParts)
+                hf[0].eat(readsSet->getReadSymbol(i, j + k));
+            hashToIndexMap.insert(std::pair<uint32_t, uint32_t>(hf[0].hashvalue, i * partsCount + j));
+        }
+    }
 }
 
 uint32_t InterleavedConstantLengthPatternsOnTextHashMatcher::getHashMatchPatternIndex() {

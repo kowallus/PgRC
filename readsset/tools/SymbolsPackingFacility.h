@@ -46,13 +46,14 @@ namespace PgSAIndex {
             
             // value should be not greater then maxValue
             char_pg reverseValue(uint_element value, uchar position);
-            
+            char_pg reverseValue(uint_element* sequence, uint_read_len_max position);
+
             // value should be not greater then maxValue
             string reverseValue(uint_element value);
             
             const string reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length);
-            
-            void reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, char_pg* destPtr);  
+            void reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, string& res);
+            void reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, char_pg* destPtr);
           
             // sequence should consist of at least symbolsPerElement symbols; result should be not greater then maxValue
             uint_element packSymbols(const char_pg* symbols);
@@ -74,6 +75,11 @@ namespace PgSAIndex {
             int compareSequences(uint_element* lSeq, uint_element* rSeq, const uint_max length);
             int compareSequences(uint_element* lSeq, uint_element* rSeq, uint_max pos, uint_max length);
             int compareSuffixWithPrefix(uint_element* sufSeq, uint_element* preSeq, uint_max sufPos, uint_max length);
+
+        int compareSequenceWithUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length);
+
+        uint8_t countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length,
+                                              uint8_t maxMismatches);
     };
     
 }

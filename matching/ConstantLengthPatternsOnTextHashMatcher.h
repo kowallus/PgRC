@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <vector>
 #include "../rollinghash/cyclichash.h"
+#include "../readsset/PackedReadsSet.h"
 
 using namespace std;
 
@@ -27,6 +28,7 @@ public:
     virtual ~DefaultConstantLengthPatternsOnTextHashMatcher();
 
     void addPattern(const char* pattern, uint32_t idx);
+    void addPackedPatterns(PackedReadsSet* readsSet, uint8_t partsCount = 1);
 
     //iterator routines
     inline void iterateOver(const char* txt, uint64_t length);
@@ -93,6 +95,8 @@ public:
     inline bool moveNext();
     uint32_t getHashMatchPatternIndex();
     uint64_t getHashMatchTextPosition();
+
+    void addPackedPatterns(PackedReadsSet *readsSet, int partsCount);
 };
 
 

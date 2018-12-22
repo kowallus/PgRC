@@ -272,6 +272,35 @@ string PgSAHelpers::reverseComplement(string kmer) {
     return revcomp;
 }
 
+void PgSAHelpers::reverseComplementInPlace(string &kmer) {
+    size_t kmer_length = kmer.size();
+    size_t j = kmer_length;
+    for(size_t i = 0; i <= kmer_length / 2; i++) {
+        char tmp;
+        switch(kmer[i]) {
+            case 'A': tmp = 'T'; break;
+            case 'T': tmp = 'A'; break;
+            case 'G': tmp = 'C'; break;
+            case 'C': tmp = 'G'; break;
+            case 'N': tmp = 'N'; break;
+            default: tmp = kmer[i];
+                cout << "WARNING: Unsupported reverse compliment: " << kmer[i] << "\n";
+                break;
+        }
+        switch(kmer[--j]) {
+            case 'A': kmer[i] = 'T'; break;
+            case 'T': kmer[i] = 'A'; break;
+            case 'G': kmer[i] = 'C'; break;
+            case 'C': kmer[i] = 'G'; break;
+            case 'N': kmer[i] = 'N'; break;
+            default:
+                cout << "WARNING: Unsupported reverse compliment: " << kmer[j] << "\n";
+                break;
+        }
+        kmer[j] = tmp;
+    }
+}
+
 double PgSAHelpers::qualityScore2approxCorrectProb(string quality) {
     double val = 1;
     for (char q : quality) {

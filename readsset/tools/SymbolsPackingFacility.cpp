@@ -147,6 +147,19 @@ namespace PgSAIndex {
     }
 
     template<typename uint_element>
+    inline void SymbolsPackingFacility<uint_element>::reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, string &res) {
+        res.clear();
+        uint_max i = divideBySmallInteger(pos, symbolsPerElement);
+        uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
+        res.append(reverseValue(sequence[i++]), reminder, this->symbolsPerElement - reminder);
+        while (res.size() < length - symbolsPerElement)
+            res.append(reverseValue(sequence[i++]));
+        uint_element value = sequence[i];
+        for (uchar j = 0; res.size() < length; j++)
+            res.push_back(reverse[value][j]);
+    }
+
+    template<typename uint_element>
     inline void SymbolsPackingFacility<uint_element>::reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, char_pg* destPtr) {
 
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
@@ -167,6 +180,15 @@ namespace PgSAIndex {
     template<typename uint_element>
     inline char_pg SymbolsPackingFacility<uint_element>::reverseValue(uint_element value, uchar position) {
         return reverse[value][position];
+    }
+
+    template<typename uint_element>
+    inline char_pg SymbolsPackingFacility<uint_element>::reverseValue(uint_element* sequence, uint_read_len_max pos) {
+        uint_max i = divideBySmallInteger(pos, symbolsPerElement);
+        uint_max reminder = moduloBySmallInteger<uint_max>(pos, this->symbolsPerElement, i);
+
+        uint_element value = sequence[i++];
+        return reverse[value][reminder];
     }
 
     template<typename uint_element>
@@ -246,7 +268,67 @@ namespace PgSAIndex {
             }
         }
     }
-    
+
+    template<typename uint_element>
+    int SymbolsPackingFacility<uint_element>::compareSequenceWithUnpacked(uint_ps_element_min *seq,
+                                                                          const char *pattern,
+                                                                          uint_read_len_max length) {
+        uint_max i = length;
+        while (i >= symbolsPerElement) {
+            uint_ps_element_min pSeq = packSymbols(pattern);
+            if (*seq > pSeq)
+                return 1;
+            if (*seq++ < pSeq)
+                return -1;
+            pattern += symbolsPerElement;
+            i -= symbolsPerElement;
+        }
+
+        int j = 0;
+        while (i--) {
+            if (reverse[*seq][j] > *pattern)
+                return 1;
+            if (reverse[*seq][j] < *pattern++)
+                return -1;
+            j++;
+        }
+
+        return 0;
+    }
+
+    template<typename uint_element>
+    uint8_t SymbolsPackingFacility<uint_element>::countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq,
+                                                                                    const char *pattern,
+                                                                                    uint_read_len_max length,
+                                                                                    uint8_t maxMismatches) {
+        uint8_t res = 0;
+        uint_max i = length;
+        while (i >= symbolsPerElement) {
+            uint_ps_element_min pSeq = packSymbols(pattern);
+            if (*seq != pSeq) {
+                for(uint8_t j = 0; j < symbolsPerElement; j++) {
+                    if (reverse[*seq][j] != *pattern++)
+                        if (res++ >= maxMismatches)
+                            return UINT8_MAX;
+                }
+            } else
+                pattern += symbolsPerElement;
+            seq++;
+            i -= symbolsPerElement;
+        }
+
+        int j = 0;
+        while (i--) {
+            if (reverse[*seq][j] != *pattern++) {
+                if (res++ >= maxMismatches)
+                    return UINT8_MAX;
+            }
+            j++;
+        }
+
+        return res;
+    }
+
     template class SymbolsPackingFacility<uint_ps_element_min>;
     template class SymbolsPackingFacility<uint_ps_element_std>;
 }
