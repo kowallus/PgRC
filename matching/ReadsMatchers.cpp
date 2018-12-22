@@ -439,15 +439,25 @@ namespace PgTools {
     }
 
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
-                        const string &pgDestFilePrefix, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
+                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
+                        char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
+                        const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
                         const string &outDivisionFile) {
         DefaultReadsMatcher* matcher;
         if (targetMismatches == 0)
             matcher = new DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
-        else
-            matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches, maxMismatches, minMismatches);
-            //matcher = new DefaultReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches, maxMismatches, minMismatches);
+        else switch (mismatchesMode) {
+                case 'd': matcher = new DefaultReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength,
+                                                                      targetMismatches, maxMismatches, minMismatches);
+                    break;
+                case 'i': matcher = new InterleavedReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength,
+                                                            targetMismatches, maxMismatches, minMismatches);
+                    break;
+                default:
+                    fprintf(stderr, "Unknown mismatches mode: %c.\n", mismatchesMode);
+                    exit(EXIT_FAILURE);
+
+            }
         matcher->matchConstantLengthReads();
         if (dumpInfo)
             matcher->writeMatchesInfo(pgDestFilePrefix);

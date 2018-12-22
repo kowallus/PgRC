@@ -25,7 +25,7 @@ using namespace std;
 using namespace PgTools;
 
 void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool filterNReads2Bad, string srcFastqFile, string pairFastqFile,
-                            bool ignoreNReads, uint16_t targetCharsPerMismatch, uint16_t maxCharsPerMismatch,
+                            bool ignoreNReads, uint16_t targetCharsPerMismatch, uint16_t maxCharsPerMismatch, char mismatchesMode,
                             string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput,
                             uint8_t skipStages, uint8_t endAtStage) {
     clock_t start_t = clock();
@@ -49,7 +49,7 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
     string badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
     string pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
     string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetMismatches)
-            + (maxMismatches>targetMismatches?("_M" + toString(maxMismatches)):"");
+            + "_M" + mismatchesMode + toString(maxMismatches);
     string pgMappedGoodPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
     string pgMappedBadPrefix = pgFilesPrefixesWithM + BAD_INFIX;
     string pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
@@ -99,7 +99,7 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         delete (badReadsIterator);
         mapReadsIntoPg(
                 pgGoodPrefix, true, badReadsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
-                targetMismatches, maxMismatches, 0,
+                targetMismatches, maxMismatches, mismatchesMode, 0,
                 false, pgMappedGoodPrefix, badIndexesMapping, false, mappedBadDivisionFile);
         delete (badReadsSet);
     }
@@ -174,20 +174,22 @@ int main(int argc, char *argv[])
     int opt; // current option
     uint16_t maxCharsPerMismatch = UINT16_MAX;
     uint16_t targetCharsPerMismatch = UINT16_MAX;
-    bool skipIntermediateOutput = false;
+    bool skipIntermediateOutput = true;
     bool revComplPairFile = false;
     bool ignoreNReads = false;
     bool filterNReads2Bad = false;
     uint8_t skipStages = 0;
     uint8_t endAtStage = UINT8_MAX;
+    char mismatchesMode = 'd';
 
-    while ((opt = getopt(argc, argv, "m:M:S:E:rsnNitae?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:M:S:E:rsnNitaA?")) != -1) {
+        char* valPtr;
         switch (opt) {
         case 'r':
             revComplPairFile = true;
             break;
         case 's':
-            skipIntermediateOutput = true;
+            skipIntermediateOutput = false;
             break;
         case 'n':
             ignoreNReads = true;
@@ -199,7 +201,13 @@ int main(int argc, char *argv[])
             targetCharsPerMismatch = atoi(optarg);
             break;
         case 'M':
-            maxCharsPerMismatch = atoi(optarg);
+            valPtr = optarg + 1;
+            switch (*optarg) {
+                case 'd': mismatchesMode = 'd'; break;
+                case 'i': mismatchesMode = 'i'; break;
+                default: valPtr--;
+            }
+            maxCharsPerMismatch = atoi(valPtr);
             break;
         case 'S':
             skipStages = atoi(optarg);
@@ -213,19 +221,20 @@ int main(int argc, char *argv[])
         case 'a':
             SeparatedPseudoGenomePersistence::enableReadPositionRepresentation = true;
             break;
-        case 'e':
-            SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = true;
+        case 'A':
+            SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-e] [-t] [-s] \n"
+            fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M [mismatchesMode]allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-e] [-t] [-s] \n"
                             "error_probability*1000 gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                     argv[0]);
             fprintf(stderr, "-r reverse compliment reads in a pair file\n");
             fprintf(stderr, "-n ignore reads containing N (WARNING: experimental - does not preserve reads order\n");
-            fprintf(stderr, "-t write numbers in text mode\n-s skip intermediate output files\n");
-            fprintf(stderr, "-a write absolute read position \n-e write mismatches as offsets from end\n");
+            fprintf(stderr, "-t write numbers in text mode\n-s separate intermediate output files\n");
+            fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
             fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
+            fprintf(stderr, "Mismatches modes: d:default; i:interleaved\n");
             fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(gooder); 6:Pg(bad); 7:pairDump\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
@@ -263,7 +272,7 @@ int main(int argc, char *argv[])
     string pgFilesPrefixes(argv[optind++]);
 
     divideGenerateAndMatch(error_limit, gen_quality, filterNReads2Bad, srcFastqFile, pairFastqFile, ignoreNReads,
-            targetCharsPerMismatch, maxCharsPerMismatch, pgFilesPrefixes,
+            targetCharsPerMismatch, maxCharsPerMismatch, mismatchesMode, pgFilesPrefixes,
             revComplPairFile, skipIntermediateOutput, skipStages, endAtStage);
 
     exit(EXIT_SUCCESS);

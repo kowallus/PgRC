@@ -154,8 +154,9 @@ namespace PgTools {
     };
 
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches, bool dumpInfo,
-                        const string &pgDestFilePrefix, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
+                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
+                        char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
+                        const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
                         const string &outDivisionFile);
 }
 

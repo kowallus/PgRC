@@ -111,7 +111,7 @@ namespace PgTools {
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 
     bool SeparatedPseudoGenomePersistence::enableReadPositionRepresentation = false;
-    bool SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
+    bool SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = true;
 
     void SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(const string &pseudoGenomePrefix,
                                                                      PseudoGenomeHeader *&pgh, bool &plainTextReadMode) {
