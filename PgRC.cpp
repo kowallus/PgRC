@@ -48,8 +48,8 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
             + (filterNReads2Bad?"N":"") + "_g" + gen_quality_str;
     string badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
     string pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
-    string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetMismatches)
-            + "_M" + mismatchesMode + toString(maxMismatches);
+    string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
+            + "_M" + mismatchesMode + toString(maxCharsPerMismatch);
     string pgMappedGoodPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
     string pgMappedBadPrefix = pgFilesPrefixesWithM + BAD_INFIX;
     string pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
@@ -149,7 +149,7 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
 
     fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
          << pgFilesPrefixes << "\t" << err_limit_str << "\t" << gen_quality_str << "\t"
-         << (int) targetMismatches << "\t" << (int) maxMismatches << "\t";
+         << (int) targetMismatches << "\t" << mismatchesMode << (int) maxMismatches << "\t";
     fout << getTimeInSec(clock(), start_t) << "\t";
     fout << getTimeInSec(div_t, start_t) << "\t";
     fout << getTimeInSec(pgDiv_t, div_t) << "\t";
