@@ -3,6 +3,7 @@
 
 #include "../pseudogenome/PseudoGenomeBase.h"
 #include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
+#include "TextMatchers.h"
 
 namespace PgTools {
 
@@ -29,7 +30,7 @@ namespace PgTools {
         string srcPg;
         string destPg;
 
-
+        vector<TextMatch> textMatches;
         vector<PgMatch> pgMatches;
 
         ConstantAccessExtendedReadsList* srcRl = 0;
@@ -38,7 +39,7 @@ namespace PgTools {
         void mapPgMatches2SrcReadsList();
         void reverseDestWithSrcForBetterMatchesMappingInTheSamePg();
         void correctDestPositionDueToRevComplMatching();
-        void resolveDestOverlapSrcConflictsInTheSamePg();
+        void resolveDestSrcReadsOverlapConflictsInTheSamePg();
         bool resolveDestSrcCollision(PgMatch &destMatch, PgMatch &srcMatch, uint_pg_len_max &collidedCharsCount);
         void resolveMatchesOverlapInSrc();
         bool resolveSrcSrcCollision(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max &collidedCharsCount);
@@ -56,15 +57,19 @@ namespace PgTools {
 
         void writeMatchesInfo(const string &dumpFilePrefix);
 
-        void writeIntoPseudoGenome(const string &destPgFilePrefix);
+        void transferMatchedReads(const string &destPgFilePrefix);
 
         int64_t trimOverlap(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max overlapLength);
+
+        void fillPgMatches();
+
+        void markAndRemoveMatches(const string &destPgPrefix);
+
+        void resolveDestSrcOverlapConflictsInTheSameText();
     };
 
     struct PgMatch {
-        uint_pg_len_max posGrossSrcPg;
-        uint_pg_len_max grossLength;
-        uint_pg_len_max posGrossDestPg;
+        TextMatch mapping;
 
         uint_reads_cnt_max startRlIdx = -1;
         uint_reads_cnt_max endRlIdx = -1;
@@ -72,23 +77,14 @@ namespace PgTools {
         uint_pg_len_max leftSrcLockedMargin = 0;
         uint_pg_len_max rightSrcLockedMargin = 0;
 
-        PgMatch(uint_pg_len_max posSrcPg, uint_pg_len_max length, uint_pg_len_max posDestPg) :
-            posGrossSrcPg(posSrcPg), grossLength(length), posGrossDestPg(posDestPg) {}
+        PgMatch(TextMatch& match): mapping(match) {}
 
         void alignToReads(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength, int64_t &i) {
-            while(--i > 0 && rlPos[i] >= posGrossSrcPg);
-            while(rlPos[++i] < posGrossSrcPg);
+            while(--i > 0 && rlPos[i] >= mapping.posSrcText);
+            while(rlPos[++i] < mapping.posSrcText);
             startRlIdx = i--;
-            while(rlPos[++i] + readLength <= posGrossSrcPg + grossLength);
+            while(rlPos[++i] + readLength <= mapping.posSrcText + mapping.length);
             endRlIdx = i - 1;
-        }
-
-        uint_pg_len_max endGrossPosSrcPg() const {
-            return posGrossSrcPg + grossLength;
-        }
-
-        uint_pg_len_max endGrossPosDestPg() const {
-            return posGrossDestPg + grossLength;
         }
 
         uint_pg_len_max netPosSrcPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
@@ -96,7 +92,7 @@ namespace PgTools {
         }
 
         uint_pg_len_max netSrcPosAlignment(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength) const {
-            return netPosSrcPg(rlPos, readLength) - posGrossSrcPg;
+            return netPosSrcPg(rlPos, readLength) - mapping.posSrcText;
         };
 
         uint_pg_len_max netEndPosSrcPg(const vector<uint_pg_len_max> &rlPos) const {
@@ -132,8 +128,8 @@ namespace PgTools {
 
         uint_pg_len_max mapSrcReadToDest(const uint_pg_len_max &srcReadPos, const uint_read_len_max &readLength,
                                          bool revComplMatch) const {
-            uint_pg_len_max srcOffset = srcReadPos - posGrossSrcPg;
-            return posGrossDestPg + (revComplMatch?grossLength - srcOffset - readLength:srcOffset);
+            uint_pg_len_max srcOffset = srcReadPos - mapping.posSrcText;
+            return mapping.posDestText + (revComplMatch?mapping.length - srcOffset - readLength:srcOffset);
         }
 
         uint_pg_len_max netPosDestPg(const vector<uint_pg_len_max> &rlPos, const uint_read_len_max &readLength,
@@ -154,7 +150,7 @@ namespace PgTools {
         };
 
         void report(ostream& out) {
-            out << grossLength << ": <" << posGrossSrcPg << ", " << endGrossPosSrcPg() << ") in " << posGrossDestPg << endl;
+            out << mapping.length << ": <" << mapping.posSrcText << ", " << mapping.endPosSrcText() << ") in " << mapping.posDestText << endl;
         }
     };
 

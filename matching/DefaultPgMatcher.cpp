@@ -4,7 +4,6 @@
 #include "../pseudogenome/PackedPseudoGenome.h"
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
-#include "ConstantLengthPatternsOnTextHashMatcher.h"
 #include <list>
 
 namespace PgTools {
@@ -40,129 +39,14 @@ namespace PgTools {
         delete(srcPgh);
     }
 
-    void backMatchExpand(const string& text, uint64_t& textPos, const string& pattern, uint64_t& patternPos, uint64_t& length) {
-        const char* textGuardPtr = text.data();
-        const char* textPtr = text.data() + textPos;
-        const char* patternGuardPtr = pattern.data();
-        const char* patternPtr = pattern.data() + patternPos;
-        uint64_t i = 0;
-        while (textPtr-- != textGuardPtr && patternPtr-- != patternGuardPtr && *textPtr == *patternPtr)
-            i++;
-        textPos -= i;
-        patternPos -= i;
-        length += i;
-    }
-
-    void forwardMatchExpand(const string& text, uint64_t textPos, const string& pattern, uint64_t patternPos, uint64_t& length) {
-        const char* textGuardPtr = text.data() + text.length();
-        const char* textPtr = text.data() + textPos + length;
-        const char* patternGuardPtr = pattern.data() + pattern.length();
-        const char* patternPtr = pattern.data() + patternPos + length;
-        while (*textPtr == *patternPtr && textPtr++ != textGuardPtr && patternPtr++ != patternGuardPtr)
-            length++;
-    }
-
     void DefaultPgMatcher::exactMatchPg(uint32_t minMatchLength) {
-        clock_checkpoint();
+        TextMatcher* matcher;
+        matcher = new DefaultTextMatcher(srcPg, minMatchLength);
+        matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, minMatchLength);
+        delete(matcher);
 
-        cout << "Feeding pattern pseudogenome parts...\n" << endl;
-        const uint_pg_len_max matchingLength = minMatchLength / 2;
-        DefaultConstantLengthPatternsOnTextHashMatcher hashMatcher(matchingLength);
-
-        const char* pgPtr = srcPg.data();
-        uint32_t partsCount = srcPg.length() / matchingLength;
-        for (uint32_t i = 0; i < partsCount; i++)
-            hashMatcher.addPattern(pgPtr + i * matchingLength, i);
-
-        cout << "... finished in " << clock_millis() << " msec. " << endl;
-        clock_checkpoint();
-        cout << "Matching...\n" << endl;
-
-        const char* textPtr = destPg.data();
-        hashMatcher.iterateOver(textPtr, destPg.length());
-
-        pgMatches.clear();
-        uint_pg_len_max furthestMatchEndPos = 0;
-        list<PgMatch> currentMatches;
-
-        int i = 0;
-        uint64_t matchCount = 0;
-        uint64_t matchCharsCount = 0;
-        uint64_t matchCharsWithOverlapCount = 0;
-        uint64_t shorterMatchCount = 0;
-        uint64_t falseMatchCount = 0;
-        while (hashMatcher.moveNext()) {
-            uint64_t matchDestPos = hashMatcher.getHashMatchTextPosition();
-            const uint32_t matchPatternIndex = hashMatcher.getHashMatchPatternIndex();
-            uint64_t matchSrcPos = matchPatternIndex * matchingLength;
-            if(destPgIsSrcPg && revComplMatching?destPg.length() - matchSrcPos < matchDestPos:matchDestPos >= matchSrcPos)
-                continue;
-            auto cmIt = currentMatches.begin();
-            bool continueMatch = false;
-            while (cmIt != currentMatches.end()) {
-                if (matchDestPos + matchingLength > (*cmIt).endGrossPosDestPg())  {
-                    currentMatches.erase(cmIt++);
-                } else {
-                    if ((*cmIt).posGrossSrcPg - (*cmIt).posGrossDestPg == matchSrcPos - matchDestPos) {
-                        continueMatch = true;
-                        break;
-                    }
-                    cmIt++;
-                }
-            }
-            if (continueMatch)
-                continue;
-
-            bool confirmPatternMatch = strncmp(textPtr + matchDestPos, pgPtr + matchSrcPos, matchingLength) == 0;
-            uint64_t matchLength = matchingLength;
-            if (confirmPatternMatch) {
-                backMatchExpand(destPg, matchDestPos, srcPg, matchSrcPos, matchLength);
-                forwardMatchExpand(destPg, matchDestPos, srcPg, matchSrcPos, matchLength);
-                if (matchLength >= minMatchLength) {
-                    matchCount++;
-                    matchCharsWithOverlapCount += matchLength;
-                    matchCharsCount += matchLength - (matchDestPos < furthestMatchEndPos?
-                                                      furthestMatchEndPos - matchDestPos:0);
-                    const PgMatch &matchInfo = PgMatch(matchSrcPos, matchLength, matchDestPos);
-                    if (furthestMatchEndPos < matchDestPos + matchLength)
-                        furthestMatchEndPos = matchDestPos + matchLength;
-                    pgMatches.push_back(matchInfo);
-                    currentMatches.push_back(matchInfo);
-                } else
-                    shorterMatchCount++ ;
-            } else
-                falseMatchCount++;
-
-/*            if ((i++ % 1000000) == 0 || matchLength > minMatchLength * 15) {
-                 cout << (confirmPatternMatch?"Matched ":"False-matched ") << matchLength << " chars: <" << matchSrcPos << "; "
-                     << (matchSrcPos + matchLength) << ") " << " in " << matchDestPos << " (" << matchCharsCount << " chars matched total)" << endl;
-                 cout << "Elapsed time: " << ((double) destPg.length() / matchDestPos) * clock_millis() / 1000 << "[s]" << endl;
-                if (matchLength < matchingLength * 10) {
-                    uint8_t beforeChars = matchingLength / 4;
-                    const uint64_t &minPos = min<uint64_t>(matchPatternIndex, matchDestPos);
-                    beforeChars = minPos < beforeChars ? minPos : beforeChars;
-                    uint8_t afterChars = matchingLength / 4;
-                    const uint64_t &maxLength =
-                            min<uint64_t>(srcPg.length() - matchSrcPos, destPg.length() - matchDestPos) -
-                            matchLength;
-                    afterChars = maxLength < afterChars ? maxLength : afterChars;
-                    cout << srcPg.substr(matchSrcPos, matchLength) << endl;
-                    cout << destPg.substr(matchDestPos, matchLength) << endl;
-                    cout << srcPg.substr(matchSrcPos - beforeChars, beforeChars) << " ... " << srcPg.substr(matchSrcPos + matchLength, afterChars) << endl;
-                    cout << destPg.substr(matchDestPos - beforeChars, beforeChars) << " ... " << destPg.substr(matchDestPos + matchLength, afterChars) << endl;
-                }
-            }*/
-        }
-        cout << "Finished matching in  " << clock_millis() << " msec. " << endl;
-        cout << "Exact matched " << matchCount << " parts (too short matches: " << shorterMatchCount << "). False matches reported: " << falseMatchCount << "." << endl;
-        cout << "Stage 1: Matched " << getTotalMatchStat(matchCharsCount) << " Pg characters. Sum length of all matches is " << matchCharsWithOverlapCount << "." << endl;
-
-        std::sort(pgMatches.begin(), pgMatches.end(), [](const PgMatch& match1, const PgMatch& match2) -> bool
-        { return match1.grossLength > match2.grossLength; });
-
-        cout << "Largest matches:" << endl;
-        for(uint32_t i = 0; i < pgMatches.size() && i < 10; i++)
-            pgMatches[i].report(cout);
+        if (revComplMatching)
+            correctDestPositionDueToRevComplMatching();
     }
 
     void DefaultPgMatcher::writeMatchesInfo(const string &dumpFilePrefix) {
@@ -171,18 +55,16 @@ namespace PgTools {
 
     using namespace PgTools;
 
-    void DefaultPgMatcher::writeIntoPseudoGenome(const string &destPgFilePrefix) {
+    void DefaultPgMatcher::transferMatchedReads(const string &destPgFilePrefix) {
         srcRl = DefaultSeparatedExtendedReadsList::getConstantAccessExtendedReadsList(srcPgPrefix, srcPgh->getPseudoGenomeLength());
 
-        if (revComplMatching)
-            correctDestPositionDueToRevComplMatching();
-
+        fillPgMatches();
         mapPgMatches2SrcReadsList();
         if (destPgIsSrcPg)
             reverseDestWithSrcForBetterMatchesMappingInTheSamePg();
         resolveMatchesOverlapInSrc();
         if (destPgIsSrcPg)
-            resolveDestOverlapSrcConflictsInTheSamePg();
+            resolveDestSrcReadsOverlapConflictsInTheSamePg();
 
         transferMatchesFromSrcToDest(destPgFilePrefix);
 
@@ -191,7 +73,7 @@ namespace PgTools {
 
     void DefaultPgMatcher::mapPgMatches2SrcReadsList() {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
-        { return pgMatch1.posGrossSrcPg < pgMatch2.posGrossSrcPg; });
+        { return pgMatch1.mapping.posSrcText < pgMatch2.mapping.posSrcText; });
 
         uint32_t cancelledMatchesCount = 0;
         uint_pg_len_max totalNetMatchCharsWithOverlapCount = 0;
@@ -208,14 +90,15 @@ namespace PgTools {
 
     void DefaultPgMatcher::reverseDestWithSrcForBetterMatchesMappingInTheSamePg() {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
-        { return pgMatch1.posGrossDestPg < pgMatch2.posGrossDestPg; });
+        { return pgMatch1.mapping.posDestText < pgMatch2.mapping.posDestText; });
 
         uint_pg_len_max totalNetReverseMatchCharsWithOverlapCount = 0;
         uint_pg_len_max totalNetMatchCharsWithOverlapCount = 0;
         uint32_t restoredMatchesCount = 0;
         int64_t i = 0;
         for (PgMatch& pgMatch: pgMatches) {
-            PgMatch revMatch(pgMatch.posGrossDestPg, pgMatch.grossLength, pgMatch.posGrossSrcPg);
+            TextMatch revTextMatch(pgMatch.mapping.posDestText, pgMatch.mapping.length, pgMatch.mapping.posSrcText);
+            PgMatch revMatch(revTextMatch);
             revMatch.alignToReads(srcRl->pos, readLength, i);
             uint_pg_len_max revNetSrcLength = revMatch.netSrcLength(srcRl->pos, readLength);
             totalNetReverseMatchCharsWithOverlapCount += revNetSrcLength;
@@ -232,7 +115,7 @@ namespace PgTools {
         cout << "Stage 2b: Optimized net-matched " << getTotalMatchStat(totalNetMatchCharsWithOverlapCount) << " Pg sum length of all matches." << endl;
     }
 
-    void DefaultPgMatcher::resolveDestOverlapSrcConflictsInTheSamePg() {
+    void DefaultPgMatcher::resolveDestSrcReadsOverlapConflictsInTheSamePg() {
         sort(pgMatches.begin(), pgMatches.end(), [this](const PgMatch& pgMatch1, const PgMatch& pgMatch2) -> bool
         { return pgMatch1.netEndPosSrcPg(srcRl->pos) < pgMatch2.netEndPosSrcPg(srcRl->pos); });
 
@@ -368,9 +251,17 @@ namespace PgTools {
         return false;
     }
 
+    void DefaultPgMatcher::fillPgMatches() {
+        pgMatches.clear();
+        pgMatches.reserve(textMatches.size());
+        for (TextMatch& textMatch: textMatches) {
+            pgMatches.push_back(textMatch);
+        }
+    }
+
     void DefaultPgMatcher::correctDestPositionDueToRevComplMatching() {
-        for (PgMatch& pgMatch: pgMatches)
-            pgMatch.posGrossDestPg = srcPgh->getPseudoGenomeLength() - (pgMatch.posGrossDestPg + pgMatch.grossLength);
+        for (TextMatch& match: textMatches)
+            match.posDestText = srcPgh->getPseudoGenomeLength() - (match.posDestText + match.length);
     }
 
     string DefaultPgMatcher::getTotalMatchStat(uint_pg_len_max totalMatchLength) {
@@ -419,7 +310,7 @@ namespace PgTools {
                            pgMatch.netPosSrcPg(srcRl->pos, readLength)) {
                         PgMatch &destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx++]];
                         if (!destMatch.inactive(srcRl->pos, readLength))
-                            destMatch.posGrossDestPg -= removedCount;
+                            destMatch.mapping.posDestText -= removedCount;
                     }
                 }
                 removedCount += pgMatch.netSrcLength(srcRl->pos, readLength);
@@ -434,7 +325,7 @@ namespace PgTools {
             while (dOrdIdx < pgMatches.size()) {
                 PgMatch& destMatch = pgMatches[matchDestOrderedIdx[dOrdIdx++]];
                 if (!destMatch.inactive(srcRl->pos, readLength))
-                    destMatch.posGrossDestPg -= removedCount;
+                    destMatch.mapping.posDestText -= removedCount;
             }
 
         for (PgMatch& pgMatch: pgMatches) {
@@ -492,6 +383,18 @@ namespace PgTools {
         newRlPos.clear();
     }
 
+    void DefaultPgMatcher::markAndRemoveMatches(const string &destPgFilePrefix) {
+
+        if (destPgIsSrcPg)
+            resolveDestSrcOverlapConflictsInTheSameText();
+
+        // TODO
+    }
+
+    void DefaultPgMatcher::resolveDestSrcOverlapConflictsInTheSameText() {
+
+    }
+
     void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
                          const string &destPgPrefix, bool revComplPg, bool dumpInfo) {
 
@@ -502,7 +405,8 @@ namespace PgTools {
         if (dumpInfo)
             matcher.writeMatchesInfo(destPgPrefix);
 
-        matcher.writeIntoPseudoGenome(destPgPrefix);
+        matcher.transferMatchedReads(destPgPrefix);
+        //matcher.markAndRemoveMatches(destPgPrefix);
     }
 }
 
