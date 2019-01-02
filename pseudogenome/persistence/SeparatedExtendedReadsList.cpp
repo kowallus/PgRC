@@ -171,14 +171,11 @@ namespace PgTools {
                 res->misCumCount.push_back(cumCount);
             }
             res->misSymCode.resize(cumCount);
-            PgSAHelpers::readArray(*(rl.rlMisSymSrc), res->misSymCode.data(), sizeof(uint8_t) * readsCount);
+            PgSAHelpers::readArray(*(rl.rlMisSymSrc), res->misSymCode.data(), sizeof(uint8_t) * cumCount);
             res->misOff.resize(cumCount);
-            if (rl.rlMisOffSrc) {
-                PgSAHelpers::readArray(*(rl.rlMisOffSrc), res->misOff.data(), sizeof(uint8_t) * readsCount);
-            } else {
-                res->misRevOffMode = true;
-                PgSAHelpers::readArray(*(rl.rlMisRevOffSrc), res->misOff.data(), sizeof(uint8_t) * readsCount);
-            }
+            res->misRevOffMode = rl.rlMisOffSrc == 0;
+            PgSAHelpers::readArray(res->misRevOffMode?*(rl.rlMisRevOffSrc):*(rl.rlMisOffSrc), res->misOff.data(),
+                    sizeof(uint8_t) * cumCount);
         }
 
         return res;

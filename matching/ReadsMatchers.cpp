@@ -444,6 +444,7 @@ namespace PgTools {
                         const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
                         const string &outDivisionFile) {
         DefaultReadsMatcher* matcher;
+        cout << "targetMismatches (maxMismatches): " << (int) targetMismatches << "(" << (int) maxMismatches << ")" << endl;
         if (targetMismatches == 0)
             matcher = new DefaultReadsExactMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength);
         else switch (mismatchesMode) {
