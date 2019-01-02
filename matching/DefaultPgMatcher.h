@@ -46,6 +46,9 @@ namespace PgTools {
 
         void transferMatchesFromSrcToDest(const string &destPgPrefix);
 
+        void fillPgMatches();
+        void applyForwardMappingInTheSameText();
+
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
     public:
@@ -58,14 +61,8 @@ namespace PgTools {
         void writeMatchesInfo(const string &dumpFilePrefix);
 
         void transferMatchedReads(const string &destPgFilePrefix);
+        void markAndRemoveMatches(const string &destPgPrefix, uint_pg_len_max targetMatchLength);
 
-        int64_t trimOverlap(PgMatch &leftMatch, PgMatch &rightMatch, uint_pg_len_max overlapLength);
-
-        void fillPgMatches();
-
-        void markAndRemoveMatches(const string &destPgPrefix);
-
-        void resolveDestSrcOverlapConflictsInTheSameText();
     };
 
     struct PgMatch {

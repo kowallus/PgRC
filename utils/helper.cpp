@@ -43,7 +43,7 @@ void PgSAHelpers::readArray(std::istream& in, void* destArray, size_t arraySizeI
         throw(errno);
 }
 
-void PgSAHelpers::writeArray(std::ostream& out, void* srcArray, size_t arraySize) {
+void PgSAHelpers::writeArray(std::ostream& out, void* srcArray, size_t arraySize, bool verbose) {
     size_t bytesLeft = arraySize;
     if (out) {
         while (bytesLeft > chunkSize) {
@@ -55,8 +55,8 @@ void PgSAHelpers::writeArray(std::ostream& out, void* srcArray, size_t arraySize
 
     } else
         throw(errno);
-    
-    cout << "Written " << arraySize << " bytes\n";
+    if (verbose)
+        cout << "Written " << arraySize << " bytes\n";
 }
 
 void* PgSAHelpers::readWholeArray(std::istream& in, size_t& arraySizeInBytes) {

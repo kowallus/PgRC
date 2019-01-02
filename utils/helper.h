@@ -83,7 +83,7 @@ namespace PgSAHelpers {
 
     void* readArray(std::istream&, size_t arraySizeInBytes);
     void readArray(std::istream&, void* destArray, size_t arraySizeInBytes);
-    void writeArray(std::ostream&, void* srcArray, size_t arraySize);
+    void writeArray(std::ostream&, void* srcArray, size_t arraySize, bool verbose = false);
 
     void* readWholeArray(std::istream&, size_t& arraySizeInBytes);
     void* readWholeArrayFromFile(string srcFile, size_t& arraySizeInBytes);

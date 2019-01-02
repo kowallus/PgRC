@@ -87,6 +87,9 @@ namespace PgTools {
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX, clearReadsListDescriptionIfOverride);
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX, clearReadsListDescriptionIfOverride);
         acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX, clearReadsListDescriptionIfOverride);
+
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX, false);
+        acceptTemporaryPseudoGenomeElement(pseudoGenomePrefix, PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX, false);
     }
 
     const string SeparatedPseudoGenomePersistence::PG_FILES_EXTENSION = ".pg";
@@ -107,6 +110,9 @@ namespace PgTools {
     const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX = "_rl_pr_idx" + PG_FILES_EXTENSION;
     const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX = "_rl_pr_off" + PG_FILES_EXTENSION;
     const string SeparatedPseudoGenomePersistence::READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX = "_rl_pr_sf" + PG_FILES_EXTENSION;
+
+    const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX = "_map_off" + PG_FILES_EXTENSION;
+    const string SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX = "_map_len" + PG_FILES_EXTENSION;
 
     const string SeparatedPseudoGenomePersistence::TEMPORARY_FILE_SUFFIX = ".temp";
 

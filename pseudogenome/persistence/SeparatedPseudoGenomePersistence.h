@@ -48,6 +48,9 @@ namespace PgTools {
         const static string READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX;
         const static string READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX;
 
+        const static string PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX;
+        const static string PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX;
+
         const static string TEMPORARY_FILE_SUFFIX;
         const static string PG_FILES_EXTENSION;
 
