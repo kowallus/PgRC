@@ -2,7 +2,7 @@
 #include <unistd.h>
 
 #include "matching/ReadsMatchers.h"
-#include "matching/DefaultPgMatcher.h"
+#include "matching/SimplePgMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "readsset/tools/division.h"
@@ -15,6 +15,7 @@ static const char *const GOOD_INFIX = "_good";
 static const char *const N_INFIX = "_N";
 static const char *const DIVISION_EXTENSION = ".div";
 
+static const int MIN_CHARS_PER_PGMATCH = 20;
 static const int MIN_CHARS_PER_MISMATCH = 4;
 
 uint_read_len_max getReadsLength(const string &srcFastqFile);
@@ -26,7 +27,7 @@ using namespace PgTools;
 
 void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool filterNReads2Bad, string srcFastqFile, string pairFastqFile,
                             bool ignoreNReads, uint16_t targetCharsPerMismatch, uint16_t maxCharsPerMismatch, char mismatchesMode,
-                            string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput,
+                            uint32_t minimalPgMatchLength, string pgFilesPrefixes, bool revComplPairFile, bool skipIntermediateOutput,
                             uint8_t skipStages, uint8_t endAtStage) {
     clock_t start_t = clock();
 
@@ -49,7 +50,7 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
     string badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
     string pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
     string pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
-            + "_M" + mismatchesMode + toString(maxCharsPerMismatch);
+            + "_M" + mismatchesMode + toString(maxCharsPerMismatch) + "_p" + toString(minimalPgMatchLength);
     string pgMappedGoodPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
     string pgMappedBadPrefix = pgFilesPrefixesWithM + BAD_INFIX;
     string pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
@@ -105,10 +106,6 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
     }
     clock_t match_t = clock();
     if (skipStages < ++stageCount && endAtStage >= stageCount) {
-        matchPgInPgFile(pgGoodPrefix, pgGoodPrefix, readsLength, pgGoodPrefix, true, false);
-    }
-    clock_t gooder_t = clock();
-    if (skipStages < ++stageCount && endAtStage >= stageCount) {
         {
             ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                     srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
@@ -133,7 +130,11 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
         }
     }
     clock_t bad_t = clock();
-
+    if (skipStages < ++stageCount && endAtStage >= stageCount) {
+        //DefaultPgMatcher::matchPgInPgFile(pgMappedGoodPrefix, pgMappedGoodPrefix, readsLength, pgGoodPrefix, true, false);
+        SimplePgMatcher::matchPgInPgFiles(pgMappedGoodPrefix, pgMappedBadPrefix, minimalPgMatchLength, true);
+    }
+    clock_t gooder_t = clock();
     if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
         if (ignoreNReads)
             SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix, pgNPrefix});
@@ -145,19 +146,19 @@ void divideGenerateAndMatch(string err_limit_str, string gen_quality_str, bool f
     bool hasHeader = (bool) std::ifstream(outputfile);
     fstream fout(outputfile, ios::out | ios::binary | ios::app);
     if (!hasHeader)
-        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\tmatch[s]\tgooder[s]\tbad[s]\tpost[s]" << endl;
+        fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad[s]\tpgMatch[s]\tpost[s]" << endl;
 
     fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
          << pgFilesPrefixes << "\t" << err_limit_str << "\t" << gen_quality_str << "\t"
-         << (int) targetMismatches << "\t" << mismatchesMode << (int) maxMismatches << "\t";
+         << (int) targetMismatches << "\t" << mismatchesMode << (int) maxMismatches << "\t" << minimalPgMatchLength << "\t";
     fout << getTimeInSec(clock(), start_t) << "\t";
     fout << getTimeInSec(div_t, start_t) << "\t";
     fout << getTimeInSec(pgDiv_t, div_t) << "\t";
     fout << getTimeInSec(good_t, pgDiv_t) << "\t";
     fout << getTimeInSec(match_t, good_t) << "\t";
-    fout << getTimeInSec(gooder_t, match_t) << "\t";
-    fout << getTimeInSec(bad_t, gooder_t) << "\t";
-    fout << getTimeInSec(clock(), bad_t) << endl;
+    fout << getTimeInSec(bad_t, match_t) << "\t";
+    fout << getTimeInSec(gooder_t, bad_t) << "\t";
+    fout << getTimeInSec(clock(), gooder_t) << endl;
 }
 
 uint_read_len_max getReadsLength(const string &srcFastqFile) {
@@ -174,6 +175,7 @@ int main(int argc, char *argv[])
     int opt; // current option
     uint16_t maxCharsPerMismatch = UINT16_MAX;
     uint16_t targetCharsPerMismatch = UINT16_MAX;
+    uint32_t minimalPgMatchLength = 50;
     bool skipIntermediateOutput = true;
     bool revComplPairFile = false;
     bool ignoreNReads = false;
@@ -182,7 +184,7 @@ int main(int argc, char *argv[])
     uint8_t endAtStage = UINT8_MAX;
     char mismatchesMode = 'd';
 
-    while ((opt = getopt(argc, argv, "m:M:S:E:rsnNitaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:M:p:S:E:rsnNitaA?")) != -1) {
         char* valPtr;
         switch (opt) {
         case 'r':
@@ -209,6 +211,9 @@ int main(int argc, char *argv[])
             }
             maxCharsPerMismatch = atoi(valPtr);
             break;
+        case 'p':
+            minimalPgMatchLength = atoi(optarg);
+            break;
         case 'S':
             skipStages = atoi(optarg);
             break;
@@ -226,7 +231,7 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M [mismatchesMode]allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-e] [-t] [-s] \n"
+            fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M [mismatchesMode]allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-A] [-t] [-s] \n"
                             "error_probability*1000 gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                     argv[0]);
             fprintf(stderr, "-r reverse compliment reads in a pair file\n");
@@ -235,7 +240,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
             fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
             fprintf(stderr, "Mismatches modes: d:default; i:interleaved\n");
-            fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(gooder); 6:Pg(bad); 7:pairDump\n");
+            fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad); 6:PgMatching; 7:pairDump\n");
             fprintf(stderr, "\n\n");
             exit(EXIT_FAILURE);
         }
@@ -257,6 +262,10 @@ int main(int argc, char *argv[])
         fprintf(stdout, "allowedMaxMismatches cannot be smaller than targetMaxMismatches.\n");
         exit(EXIT_FAILURE);
     }
+    if (minimalPgMatchLength < MIN_CHARS_PER_PGMATCH) {
+        fprintf(stderr, "Minimal Pg match length cannot be lower than %d.\n", MIN_CHARS_PER_PGMATCH);
+        exit(EXIT_FAILURE);
+    }
     if (skipStages >= endAtStage) {
         fprintf(stdout, "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",
                 skipStages, endAtStage);
@@ -272,7 +281,7 @@ int main(int argc, char *argv[])
     string pgFilesPrefixes(argv[optind++]);
 
     divideGenerateAndMatch(error_limit, gen_quality, filterNReads2Bad, srcFastqFile, pairFastqFile, ignoreNReads,
-            targetCharsPerMismatch, maxCharsPerMismatch, mismatchesMode, pgFilesPrefixes,
+            targetCharsPerMismatch, maxCharsPerMismatch, mismatchesMode, minimalPgMatchLength, pgFilesPrefixes,
             revComplPairFile, skipIntermediateOutput, skipStages, endAtStage);
 
     exit(EXIT_SUCCESS);

@@ -138,6 +138,16 @@ void PgSAHelpers::readValue(std::istream &src, uint8_t &value, bool plainTextRea
         src.read((char *) &value, sizeof(uint8_t));
 }
 
+void PgSAHelpers::writeUIntByteFrugal(std::ostream &dest, uint64_t value) {
+    while (value >= 128) {
+        uint8_t yByte = 128 + (value % 128);
+        dest.write((char *) &yByte, sizeof(uint8_t));
+        value = value / 128;
+    }
+    uint8_t yByte = value;
+    dest.write((char *) &yByte, sizeof(uint8_t));
+}
+
 bool PgSAHelpers::bytePerReadLengthMode = false;
 
 void PgSAHelpers::readReadLengthValue(std::istream &src, uint16_t &value, bool plainTextReadMode) {

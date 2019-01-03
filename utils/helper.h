@@ -121,6 +121,8 @@ namespace PgSAHelpers {
         writeValue(dest, value, plainTextWriteMode);
     }
 
+    void writeUIntByteFrugal(std::ostream &dest, uint64_t value);
+
     extern bool bytePerReadLengthMode;
 
     void readReadLengthValue(std::istream &src, uint16_t& value, bool plainTextReadMode);

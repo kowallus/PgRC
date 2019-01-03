@@ -79,7 +79,7 @@ set(MATCHER_FILES
         matching/ReadsMatchers.cpp matching/ReadsMatchers.h
         matching/ConstantLengthPatternsOnTextHashMatcher.cpp
         matching/ConstantLengthPatternsOnTextHashMatcher.h
-        matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h matching/TextMatchers.cpp matching/TextMatchers.h)
+        matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h matching/TextMatchers.cpp matching/TextMatchers.h matching/SimplePgMatcher.cpp matching/SimplePgMatcher.h)
 
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})

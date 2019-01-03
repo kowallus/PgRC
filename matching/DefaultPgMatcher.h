@@ -11,9 +11,6 @@ namespace PgTools {
 
     struct PgMatch;
 
-    void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
-                         const string &destPgPrefix, bool revComplPg, bool dumpInfo);
-
     class DefaultPgMatcher {
     private:
 
@@ -47,7 +44,6 @@ namespace PgTools {
         void transferMatchesFromSrcToDest(const string &destPgPrefix);
 
         void fillPgMatches();
-        void applyForwardMappingInTheSameText();
 
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
@@ -61,7 +57,9 @@ namespace PgTools {
         void writeMatchesInfo(const string &dumpFilePrefix);
 
         void transferMatchedReads(const string &destPgFilePrefix);
-        void markAndRemoveMatches(const string &destPgPrefix, uint_pg_len_max targetMatchLength);
+
+        static void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
+                             const string &destPgPrefix, bool revComplPg, bool dumpInfo);
 
     };
 

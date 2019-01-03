@@ -4,7 +4,6 @@
 #include "../pseudogenome/PackedPseudoGenome.h"
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
-#include <list>
 
 namespace PgTools {
 
@@ -381,75 +380,7 @@ namespace PgTools {
         newRlPos.clear();
     }
 
-    void DefaultPgMatcher::markAndRemoveMatches(const string &destPgFilePrefix, uint_pg_len_max minMatchLength) {
-
-        if (destPgIsSrcPg)
-            applyForwardMappingInTheSameText();
-
-        ofstream pgDest = SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(destPgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX, true);
-        ofstream pgMapOffDest = SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(destPgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX, true);
-        ofstream pgMapLenDest = SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(destPgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX, true);
-
-        sort(textMatches.begin(), textMatches.end(), [this](const TextMatch& match1, const TextMatch& match2) -> bool
-        { return match1.posDestText < match2.posDestText; });
-        uint_pg_len_max pos = 0;
-        uint_pg_len_max totalDestOverlap = 0;
-        uint_pg_len_max totalMatched = 0;
-        for(TextMatch& match: textMatches) {
-            if (match.posDestText < pos) {
-                uint_pg_len_max overflow = pos - match.posDestText;
-                if (overflow > match.length) {
-                    totalDestOverlap += match.length;
-                    match.length = 0;
-                    continue;
-                }
-                totalDestOverlap += overflow;
-                match.length -= overflow;
-                match.posDestText += overflow;
-                match.posSrcText += overflow;
-            }
-            totalMatched += match.length;
-            PgSAHelpers::writeArray(pgDest, (void*) (destPg.data() + pos), match.posDestText - pos);
-            uint_pg_len_max matchLeft = match.length;
-            uint_pg_len_max matchPos = match.posSrcText;
-            while(matchLeft > UINT16_MAX + minMatchLength) {
-                pgDest.put(128);
-                PgSAHelpers::writeValue(pgMapOffDest, matchPos);
-                PgSAHelpers::writeValue<uint16_t>(pgMapLenDest, UINT16_MAX);
-                matchPos += UINT16_MAX + minMatchLength;
-                matchLeft -= UINT16_MAX + minMatchLength;
-            }
-            if (matchLeft < minMatchLength) {
-                totalMatched -= matchLeft;
-                totalDestOverlap += matchLeft;
-                continue;
-            }
-            pgDest.put(128);
-            PgSAHelpers::writeValue(pgMapOffDest, matchPos);
-            PgSAHelpers::writeValue<uint16_t>(pgMapLenDest, matchLeft - minMatchLength);
-            pos = match.endPosDestText();
-        }
-        PgSAHelpers::writeArray(pgDest, (void*) (destPg.data() + pos), destPg.length() - pos);
-        pgDest.close();
-        pgMapOffDest.close();
-        pgMapLenDest.close();
-        SeparatedPseudoGenomePersistence::acceptTemporaryPseudoGenomeElements(destPgFilePrefix, false);
-
-        cout << "Final size of Pg: " << (srcPgh->getPseudoGenomeLength() - totalMatched) << " (removed: " <<
-            getTotalMatchStat(totalMatched) << "; " << totalDestOverlap << " chars in overlapped dest symbol)" << endl;
-    }
-
-    void DefaultPgMatcher::applyForwardMappingInTheSameText() {
-        for (TextMatch& match: textMatches) {
-            if (match.posSrcText > match.posDestText) {
-                uint64_t tmp = match.posSrcText;
-                match.posSrcText = match.posDestText;
-                match.posDestText = tmp;
-            }
-        }
-    }
-
-    void matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
+    void DefaultPgMatcher::matchPgInPgFile(const string &srcPgPrefix, const string &targetPgPrefix, uint_pg_len_max targetMatchLength,
                          const string &destPgPrefix, bool revComplPg, bool dumpInfo) {
 
         PgTools::DefaultPgMatcher matcher(srcPgPrefix, targetPgPrefix, revComplPg);
@@ -459,8 +390,7 @@ namespace PgTools {
         if (dumpInfo)
             matcher.writeMatchesInfo(destPgPrefix);
 
-        //matcher.transferMatchedReads(destPgPrefix);
-        matcher.markAndRemoveMatches(destPgPrefix, targetMatchLength);
+        matcher.transferMatchedReads(destPgPrefix);
     }
 }
 
