@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <unistd.h>
 
+#include "matching/SimplePgMatcher.h"
 #include "matching/DefaultPgMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
@@ -48,7 +49,9 @@ int main(int argc, char *argv[])
     string targetPgFilePrefix(argv[optind++]);
     string destPgFilePrefix(argv[optind++]);
 
-    PgTools::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
+//    PgTools::SimplePgMatcher::matchPgInPgFiles("1", "2", 40, true);
+
+    PgTools::DefaultPgMatcher::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
 
     exit(EXIT_SUCCESS);
 }

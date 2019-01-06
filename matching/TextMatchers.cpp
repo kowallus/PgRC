@@ -65,7 +65,7 @@ namespace PgTools {
             uint64_t matchDestPos = hashMatcher.getHashMatchTextPosition();
             const uint32_t matchPatternIndex = hashMatcher.getHashMatchPatternIndex();
             uint64_t matchSrcPos = matchPatternIndex * matchingLength;
-            if (destIsSrc && revComplMatching ? destText.length() - matchSrcPos < matchDestPos : matchDestPos >= matchSrcPos)
+            if (destIsSrc && (revComplMatching ? destText.length() - matchSrcPos < matchDestPos : matchDestPos >= matchSrcPos))
                 continue;
             auto cmIt = currentMatches.begin();
             bool continueMatch = false;
@@ -90,12 +90,13 @@ namespace PgTools {
                 forwardMatchExpand(destText, matchDestPos, srcText, matchSrcPos, matchLength);
                 if (matchLength >= minMatchLength) {
                     matchCount++;
-                    matchCharsWithOverlapCount += matchLength;
-                    matchCharsCount += matchLength - (matchDestPos < furthestMatchEndPos ?
-                                                      furthestMatchEndPos - matchDestPos : 0);
                     const TextMatch &matchInfo = TextMatch(matchSrcPos, matchLength, matchDestPos);
-                    if (furthestMatchEndPos < matchDestPos + matchLength)
-                        furthestMatchEndPos = matchDestPos + matchLength;
+                    matchCharsWithOverlapCount += matchLength;
+                    if (furthestMatchEndPos < matchInfo.endPosDestText()) {
+                        matchCharsCount += matchLength - (matchInfo.posDestText < furthestMatchEndPos ?
+                                                           furthestMatchEndPos - matchInfo.posDestText : 0);
+                        furthestMatchEndPos = matchInfo.endPosDestText();
+                    }
                     resMatches.push_back(matchInfo);
                     currentMatches.push_back(matchInfo);
                 } else
@@ -125,7 +126,7 @@ namespace PgTools {
         }
         cout << "Finished matching in  " << clock_millis() << " msec. " << endl;
         cout << "Exact matched " << matchCount << " parts (too short matches: " << shorterMatchCount << "). False matches reported: " << falseMatchCount << "." << endl;
-        cout << "Stage 1: Matched " << toString(matchCharsCount) << " (" << (toString((matchCharsCount * 100.0) / srcText.length(), 1)) << "%)" <<
+        cout << "Stage 1: Matched " << toString(matchCharsCount) << " (" << (toString((matchCharsCount * 100.0) / destText.length(), 1)) << "%)" <<
              " Pg characters. Sum length of all matches is " << matchCharsWithOverlapCount << "." << endl;
 
         std::sort(resMatches.begin(), resMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool { return match1.length > match2.length; });

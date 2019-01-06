@@ -8,12 +8,8 @@ namespace PgTools {
             :srcPgPrefix(srcPgPrefix), targetMatchLength(minMatchLength), minMatchLength(minMatchLength) {
 
         cout << "Reading source pseudogenome..." << endl;
-        PseudoGenomeHeader* pgh;
-        bool plainTextReadMode;
-        PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, pgh, plainTextReadMode);
         srcPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
-        cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
-        delete(pgh);
+        cout << "Pseudogenome length: " << srcPg.length() << endl;
 
         matcher = new DefaultTextMatcher(srcPg, minMatchLength);
     }
@@ -27,12 +23,9 @@ namespace PgTools {
 
         if (!destPgIsSrcPg) {
             cout << "Reading target pseudogenome..." << endl;
-            PseudoGenomeHeader *pgh = 0;
-            bool plainTextReadMode = false;
-            PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(targetPgPrefix, pgh,
-                                                                                 plainTextReadMode);
+
             destPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(targetPgPrefix);
-            cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
+            cout << "Pseudogenome length: " << destPg.length() << endl;
         } else
             destPg = srcPg;
 
