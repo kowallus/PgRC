@@ -31,7 +31,7 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::isQualityGood() {
-        return (1 - qualityScore2correctProb(getQualityInfoVirtual()) < error_level) &&
+        return (1 - qualityScore2correctProb(getQualityInfoVirtual()) <= error_level) &&
                 (!filterNReads || coreIterator->getReadVirtual().find('N') == string::npos);
     }
 
