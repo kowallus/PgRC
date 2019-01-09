@@ -405,7 +405,7 @@ namespace PgTools {
         pg.clear();
     }
 
-    void DefaultReadsMatcher::writeIntoPseudoGenome(const string &outPgPrefix, const vector<uint_reads_cnt_max> &orgIndexesMapping) {
+    void DefaultReadsMatcher::writeIntoPseudoGenome(const string &outPgPrefix, IndexesMapping* orgIndexesMapping) {
         clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
@@ -426,7 +426,7 @@ namespace PgTools {
             uint_reads_cnt_max matchIdx = idxs[i];
             uint64_t currPos = builder->writeReadsFromIterator(readMatchPos[matchIdx]);
             DefaultReadsListEntry entry(currPos);
-            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIndexesMapping[matchIdx], readMatchRC[matchIdx]);
+            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIndexesMapping->getReadOriginalIndex(matchIdx), readMatchRC[matchIdx]);
             this->updateEntry(entry, matchIdx);
             builder->writeExtraReadEntry(entry);
         }
@@ -441,7 +441,7 @@ namespace PgTools {
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
-                        const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
+                        IndexesMapping* orgIndexesMapping, bool divisionComplement,
                         const string &outDivisionFile) {
         DefaultReadsMatcher* matcher;
         cout << "targetMismatches (maxMismatches): " << (int) targetMismatches << "(" << (int) maxMismatches << ")" << endl;

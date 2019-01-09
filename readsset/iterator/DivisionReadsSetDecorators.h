@@ -9,12 +9,13 @@ namespace PgTools {
     class QualityDividingReadsSetIterator: public ReadsSourceIteratorTemplate< uint_read_len > {
     private:
         ReadsSourceIteratorTemplate< uint_read_len >* coreIterator;
-        int64_t counter = -1;
+        int64_t allCounter = -1;
         double error_level;
         bool filterNReads;
         bool visitGoodReads;
         bool isQualityGood();
         bool containsN();
+        vector<uint_reads_cnt_max> indexesMapping;
 
     public:
 
@@ -23,20 +24,22 @@ namespace PgTools {
 
         virtual ~QualityDividingReadsSetIterator();
 
-        uint64_t getReadOriginalIndex();
+        uint_reads_cnt_max getReadOriginalIndex();
 
         bool moveNextVirtual();
         string getReadVirtual();
         string getQualityInfoVirtual();
         uint_read_len getReadLengthVirtual();
         void rewindVirtual();
+
+        IndexesMapping* retainVisitedIndexesMapping() override;
     };
 
     template < typename uint_read_len >
     class DividedReadsSetIterator: public ReadsSourceIteratorTemplate< uint_read_len > {
     private:
         ReadsSourceIteratorTemplate<uint_read_len>* coreIterator;
-        int64_t counter = -1;
+        int64_t allCounter = -1;
         uint64_t currentDivIdx;
         std::istream* divSource;
         bool visitComplement;
@@ -56,7 +59,7 @@ namespace PgTools {
         uint_read_len getReadLengthVirtual();
         void rewindVirtual();
 
-        const vector<uint_reads_cnt_max> getVisitedIndexesMapping() override;
+        IndexesMapping* retainVisitedIndexesMapping() override;
     };
 
 }

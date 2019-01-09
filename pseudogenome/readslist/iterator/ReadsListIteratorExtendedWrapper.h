@@ -12,7 +12,7 @@ namespace PgTools {
 
     class ReadsListIteratorExtendedWrapperBase: public DefaultReadsListIteratorInterface {
     public:
-        virtual void applyIndexesMapping(const vector<uint_reads_cnt_max>& orgIndexesMapping) = 0;
+        virtual void applyIndexesMapping(IndexesMapping* orgIndexesMapping) = 0;
 
         virtual void applyRevComplPairFileFlag() = 0;
     };
@@ -23,22 +23,21 @@ namespace PgTools {
         ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass> *readsList;
         uint_reads_cnt currentIdx = 0;
         DefaultReadsListEntry entry;
-        bool mapping = false;
         bool revComplPairFile = false;
-        vector<uint_reads_cnt_max> orgIndexesMapping;
+        IndexesMapping* orgIndexesMapping;;
 
     public:
         ReadsListIteratorExtendedWrapper(ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass> *readsList)
-        : readsList(readsList) {}
+        : readsList(readsList), orgIndexesMapping(new DirectMapping(readsList->getReadsCount()))  {}
 
         ~ReadsListIteratorExtendedWrapper() { }
 
         inline uint_reads_cnt_max mapIndex(uint_reads_cnt idx) {
-            return mapping?orgIndexesMapping[idx]:idx;
+            return orgIndexesMapping->getReadOriginalIndex(idx);
         }
 
-        void applyIndexesMapping(const vector<uint_reads_cnt_max>& orgIndexesMapping) {
-            mapping = true;
+        void applyIndexesMapping(IndexesMapping* orgIndexesMapping) {
+            delete(this->orgIndexesMapping);
             this->orgIndexesMapping = orgIndexesMapping;
         }
 

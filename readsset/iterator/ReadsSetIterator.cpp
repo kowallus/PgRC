@@ -40,11 +40,13 @@ namespace PgSAReadsSet {
             if (!isalpha(line[length]))
                 break;
 
+        counter++;
         return true;
     }
     
     template<typename uint_read_len>
     void ConcatenatedReadsSourceIterator<uint_read_len>::rewind() {
+        counter = -1;
         source->clear();
         source->seekg(0);
     }
@@ -57,6 +59,11 @@ namespace PgSAReadsSet {
     template<typename uint_read_len>
     void ConcatenatedReadsSourceIterator<uint_read_len>::rewindVirtual() {
         rewind();
+    }
+
+    template<typename uint_read_len>
+    IndexesMapping* ConcatenatedReadsSourceIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        return new DirectMapping(counter + 1);
     }
 
     template<typename uint_read_len>
@@ -110,11 +117,13 @@ namespace PgSAReadsSet {
             if (!isalpha(line[length]))
                 break;
 
+        counter++;
         return true;
     }
 
     template<typename uint_read_len>
     void FASTAReadsSourceIterator<uint_read_len>::rewind() {
+        counter = -1;
         source->clear();
         source->seekg(0);
         if (pairSource) { 
@@ -132,6 +141,11 @@ namespace PgSAReadsSet {
     template<typename uint_read_len>
     void FASTAReadsSourceIterator<uint_read_len>::rewindVirtual() {
         rewind();
+    }
+
+    template<typename uint_read_len>
+    IndexesMapping* FASTAReadsSourceIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        return new DirectMapping(counter + 1);
     }
 
     template<typename uint_read_len>
@@ -191,11 +205,13 @@ namespace PgSAReadsSet {
             if (!isalpha(line[length]))
                 break;
 
+        counter++;
         return true;
     }
 
     template<typename uint_read_len>
     void FASTQReadsSourceIterator<uint_read_len>::rewind() {
+        counter = -1;
         source->clear();
         source->seekg(0);
         if (pairSource) { 
@@ -214,6 +230,13 @@ namespace PgSAReadsSet {
     void FASTQReadsSourceIterator<uint_read_len>::rewindVirtual() {
         rewind();
     }
+
+
+    template<typename uint_read_len>
+    IndexesMapping* FASTQReadsSourceIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        return new DirectMapping(counter + 1);
+    }
+
 
     template<typename uint_read_len>
     ReadsSourceIteratorTemplate<uint_read_len>::~ReadsSourceIteratorTemplate() {
@@ -261,6 +284,12 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
+    IndexesMapping *RevComplPairReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        return coreIterator->retainVisitedIndexesMapping();
+    }
+
+
+    template<typename uint_read_len>
     IgnoreNReadsSetIterator<uint_read_len>::IgnoreNReadsSetIterator(
             ReadsSourceIteratorTemplate<uint_read_len> *coreIterator): coreIterator(coreIterator) {
     }
@@ -268,11 +297,11 @@ namespace PgSAReadsSet {
     template<typename uint_read_len>
     bool IgnoreNReadsSetIterator<uint_read_len>::moveNextVirtual() {
         while (coreIterator->moveNextVirtual()) {
-            counter++;
-            if (isFreeOfN())
+            if (isFreeOfN()) {
+                indexesMapping.push_back(++counter);
                 return true;
+            }
         }
-        counter++;
         return false;
     }
 
@@ -294,6 +323,7 @@ namespace PgSAReadsSet {
     template<typename uint_read_len>
     void IgnoreNReadsSetIterator<uint_read_len>::rewindVirtual() {
         counter = -1;
+        indexesMapping.clear();
         coreIterator->rewindVirtual();
     }
 
@@ -301,6 +331,15 @@ namespace PgSAReadsSet {
     bool IgnoreNReadsSetIterator<uint_read_len>::isFreeOfN() {
         return coreIterator->getReadVirtual().find('N') == string::npos;
     }
+
+    template<typename uint_read_len>
+    IndexesMapping* IgnoreNReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        IndexesMapping *const coreMapping = coreIterator->retainVisitedIndexesMapping();
+        uint_reads_cnt_max readsTotalCount = coreMapping->getReadsTotalCount();
+        delete(coreMapping);
+        return new VectorMapping(indexesMapping, readsTotalCount);
+    }
+
 
     template class ReadsSourceIteratorTemplate<uint_read_len_min>;
     template class ReadsSourceIteratorTemplate<uint_read_len_std>;
@@ -314,5 +353,4 @@ namespace PgSAReadsSet {
     template class RevComplPairReadsSetIterator<uint_read_len_std>;
     template class IgnoreNReadsSetIterator<uint_read_len_min>;
     template class IgnoreNReadsSetIterator<uint_read_len_std>;
-
 }

@@ -90,7 +90,7 @@ namespace PgSAReadsSet {
         readsIterator->rewindVirtual();
     }
 
-    const vector<uint_reads_cnt_max> ReadsSetPersistence::ManagedReadsSetIterator::getVisitedIndexesMapping() {
-        return readsIterator->getVisitedIndexesMapping();
+    IndexesMapping* ReadsSetPersistence::ManagedReadsSetIterator::retainVisitedIndexesMapping() {
+        return readsIterator->retainVisitedIndexesMapping();
     }
 }

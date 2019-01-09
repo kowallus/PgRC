@@ -19,11 +19,13 @@ namespace PgTools {
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::moveNextVirtual() {
         while (coreIterator->moveNextVirtual()) {
-            counter++;
-            if (isQualityGood() == visitGoodReads)
+            allCounter++;
+            if (isQualityGood() == visitGoodReads) {
+                indexesMapping.push_back(allCounter);
                 return true;
+            }
         }
-        counter++;
+        allCounter++;
         return false;
     }
 
@@ -50,18 +52,24 @@ namespace PgTools {
 
     template<typename uint_read_len>
     void QualityDividingReadsSetIterator<uint_read_len>::rewindVirtual() {
-        counter = -1;
+        allCounter = -1;
+        indexesMapping.clear();
         coreIterator->rewindVirtual();
     }
 
     template<typename uint_read_len>
-    uint64_t QualityDividingReadsSetIterator<uint_read_len>::getReadOriginalIndex() {
-        return (uint64_t) counter;
+    uint_reads_cnt_max QualityDividingReadsSetIterator<uint_read_len>::getReadOriginalIndex() {
+        return allCounter;
     }
 
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::containsN() {
         return coreIterator->getReadVirtual().find('N') != string::npos;
+    }
+
+    template<typename uint_read_len>
+    IndexesMapping *QualityDividingReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        return new VectorMapping(indexesMapping, allCounter);
     }
 
     template<typename uint_read_len>
@@ -76,30 +84,31 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool DividedReadsSetIterator<uint_read_len>::moveNextVirtual() {
-        if (counter >= 0)
-            indexesMapping.push_back(counter);
         while (coreIterator->moveNextVirtual()) {
-            counter++;
+            allCounter++;
             if (visitComplement) {
-                if ((counter != currentDivIdx) && !isIgnored())
+                if ((allCounter != currentDivIdx) && !isIgnored()) {
+                    indexesMapping.push_back(allCounter);
                     return true;
+                }
 
                 readValue(*divSource, currentDivIdx, plainTextReadMode);
             } else {
-                if (counter == currentDivIdx) {
+                if (allCounter == currentDivIdx) {
                     readValue(*divSource, currentDivIdx, plainTextReadMode);
-                    if (!isIgnored())
+                    if (!isIgnored()) {
+                        indexesMapping.push_back(allCounter);
                         return true;
+                    }
                 }
             }
         }
-        indexesMapping.push_back(++counter);
         return false;
     }
 
     template<typename uint_read_len>
-    const vector<uint_reads_cnt_max> DividedReadsSetIterator<uint_read_len>::getVisitedIndexesMapping() {
-        return indexesMapping;
+    IndexesMapping* DividedReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
+        return new VectorMapping(indexesMapping, allCounter);
     }
 
     template<typename uint_read_len>
@@ -125,7 +134,7 @@ namespace PgTools {
 
     template<typename uint_read_len>
     void DividedReadsSetIterator<uint_read_len>::rewindVirtual() {
-        counter = -1;
+        allCounter = -1;
         indexesMapping.clear();
         divSource->clear();
         divSource->seekg(0);

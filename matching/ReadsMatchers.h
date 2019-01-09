@@ -69,7 +69,7 @@ namespace PgTools {
         const vector<uint32_t> &getReadMatchPos() const;
         const vector<uint8_t> &getReadMismatches() const;
 
-        void writeIntoPseudoGenome(const string &outPgPrefix, const vector<uint_reads_cnt_max> &orgIndexesMapping);
+        void writeIntoPseudoGenome(const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
     };
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
@@ -156,7 +156,7 @@ namespace PgTools {
     void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
-                        const vector<uint_reads_cnt_max>& orgIndexesMapping, bool divisionComplement,
+                        IndexesMapping* orgIndexesMapping, bool divisionComplement,
                         const string &outDivisionFile);
 }
 

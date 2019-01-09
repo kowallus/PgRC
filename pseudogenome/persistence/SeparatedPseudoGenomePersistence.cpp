@@ -7,7 +7,7 @@
 namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix,
-            const vector<uint_reads_cnt_max>& orgIndexesMapping, bool revComplPairFile) {
+            IndexesMapping* orgIndexesMapping, bool revComplPairFile) {
         clock_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix, !revComplPairFile, true);
         builder.writePseudoGenome(pgb, orgIndexesMapping, revComplPairFile);
@@ -310,7 +310,7 @@ namespace PgTools {
         }
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, const vector<uint_reads_cnt_max>& orgIndexesMapping, bool revComplPairFile) {
+    void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, IndexesMapping* orgIndexesMapping, bool revComplPairFile) {
 
         initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
         string pg = pgb->getPseudoGenomeVirtual();
@@ -318,8 +318,7 @@ namespace PgTools {
 
         ReadsListIteratorExtendedWrapperBase* rlIt =
                 TemplateUserGenerator::generateReadsListUser<ReadsListIteratorExtendedWrapper, ReadsListIteratorExtendedWrapperBase>(pgb);
-        if (orgIndexesMapping.size() > 0)
-            rlIt->applyIndexesMapping(orgIndexesMapping);
+        rlIt->applyIndexesMapping(orgIndexesMapping);
         if (revComplPairFile)
             rlIt->applyRevComplPairFileFlag();
         if (pgb->isReadLengthMin())

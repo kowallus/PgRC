@@ -23,7 +23,7 @@ void prepareAndWritePg(string srcFile, string pairFile, string divisionFile, boo
         ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFile, pairFile, divisionFile, divisionComplement);
         pgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(readsIterator);
-        indexesMapping = readsIterator->getVisitedIndexesMapping();
+        indexesMapping = readsIterator->retainVisitedIndexesMapping();
         delete (readsIterator);
     }
 

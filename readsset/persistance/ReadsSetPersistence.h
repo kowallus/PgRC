@@ -32,7 +32,7 @@ namespace PgSAReadsSet {
 
             virtual ~ManagedReadsSetIterator();
 
-            const vector<uint_reads_cnt_max> getVisitedIndexesMapping() override;
+            IndexesMapping* retainVisitedIndexesMapping() override;
         };
 
     public:
@@ -45,7 +45,7 @@ namespace PgSAReadsSet {
                                                                                           bool ignoreNoNReads = false);
 
         template<typename filter_res_t>
-        static void writeOutputDivision(const vector<uint_reads_cnt_max> &orgIndexesMapping, const vector<filter_res_t> &readsFilterResult,
+        static void writeOutputDivision(IndexesMapping* orgIndexesMapping, const vector<filter_res_t> &readsFilterResult,
                         const filter_res_t readSelectedValue, string divisionFile, bool divisionComplement) {
             std::ofstream divDest(divisionFile, std::ios::out | std::ios::binary);
             if (divDest.fail()) {
@@ -55,22 +55,22 @@ namespace PgSAReadsSet {
             divDest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << endl;
 
             int64_t i = -1;
-            uint64_t visitedReadsCount = orgIndexesMapping.size() - 1;
+            uint_reads_cnt_max visitedReadsCount = orgIndexesMapping->getMappedReadsCount();
 
             if (divisionComplement) {
                 int64_t counter = -1;
                 while (++i < visitedReadsCount) {
-                    while (++counter != orgIndexesMapping[i])
+                    while (++counter != orgIndexesMapping->getReadOriginalIndex(i))
                         writeValue(divDest, counter);
                     if (readsFilterResult[i] != readSelectedValue)
-                        writeValue(divDest, orgIndexesMapping[i]);
+                        writeValue(divDest, orgIndexesMapping->getReadOriginalIndex(i));
                 }
-                while (++counter != orgIndexesMapping[i])
+                while (++counter != orgIndexesMapping->getReadsTotalCount())
                     writeValue(divDest, counter);
             } else {
                 for(uint64_t i = 0; i < visitedReadsCount; i++)
                     if (readsFilterResult[i] == readSelectedValue)
-                        writeValue(divDest, orgIndexesMapping[i]);
+                        writeValue(divDest, orgIndexesMapping->getReadOriginalIndex(i));
             }
 
             writeValue(divDest, UINT64_MAX);
