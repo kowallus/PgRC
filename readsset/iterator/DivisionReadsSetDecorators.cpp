@@ -103,6 +103,7 @@ namespace PgTools {
                 }
             }
         }
+        allCounter++;
         return false;
     }
 
