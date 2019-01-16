@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
     ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator = ReadsSetPersistence::createManagedReadsIterator(
             readsFile, pairFile, divisionFile, divisionComplement);
     cout << "Reading reads set\n";
-    PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+    PackedConstantLengthReadsSet *readsSet = new PackedConstantLengthReadsSet(readsIterator);
     readsSet->printout();
     const vector<uint_reads_cnt_max> indexesMapping = readsIterator->retainVisitedIndexesMapping();
     mapReadsIntoPg(

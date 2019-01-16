@@ -70,24 +70,24 @@ namespace PgSAReadsSet {
         delete(divSource);
     }
 
-    bool ReadsSetPersistence::ManagedReadsSetIterator::moveNextVirtual() {
-        return readsIterator->moveNextVirtual();
+    bool ReadsSetPersistence::ManagedReadsSetIterator::moveNext() {
+        return readsIterator->moveNext();
     }
 
-    string ReadsSetPersistence::ManagedReadsSetIterator::getReadVirtual() {
-        return readsIterator->getReadVirtual();
+    string ReadsSetPersistence::ManagedReadsSetIterator::getRead() {
+        return readsIterator->getRead();
     }
 
-    string ReadsSetPersistence::ManagedReadsSetIterator::getQualityInfoVirtual() {
-        return readsIterator->getQualityInfoVirtual();
+    string ReadsSetPersistence::ManagedReadsSetIterator::getQualityInfo() {
+        return readsIterator->getQualityInfo();
     }
 
-    uint_read_len_max ReadsSetPersistence::ManagedReadsSetIterator::getReadLengthVirtual() {
-        return readsIterator->getReadLengthVirtual();
+    uint_read_len_max ReadsSetPersistence::ManagedReadsSetIterator::getReadLength() {
+        return readsIterator->getReadLength();
     }
 
-    void ReadsSetPersistence::ManagedReadsSetIterator::rewindVirtual() {
-        readsIterator->rewindVirtual();
+    void ReadsSetPersistence::ManagedReadsSetIterator::rewind() {
+        readsIterator->rewind();
     }
 
     IndexesMapping* ReadsSetPersistence::ManagedReadsSetIterator::retainVisitedIndexesMapping() {

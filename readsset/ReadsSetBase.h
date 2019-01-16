@@ -17,6 +17,7 @@ namespace PgSAReadsSet {
             uint_reads_total_len allReadsLength = 0;
 
             bool constantReadLength = true;
+            uint_read_len_max minReadLength = -1;
             uint_read_len_max maxReadLength = 0;
 
             uint_symbols_cnt symbolsCount = 0;
@@ -29,6 +30,7 @@ namespace PgSAReadsSet {
                 source >> readsCount;
                 source >> allReadsLength;
                 source >> constantReadLength;
+                source >> minReadLength;
                 source >> maxReadLength;
                 int srchelper;
                 source >> srchelper;
@@ -42,6 +44,7 @@ namespace PgSAReadsSet {
                 allReadsLength = properties->allReadsLength;
 
                 constantReadLength = properties->constantReadLength;
+                minReadLength = properties->minReadLength;
                 maxReadLength = properties->maxReadLength;
 
                 symbolsCount = properties->symbolsCount;
@@ -53,6 +56,7 @@ namespace PgSAReadsSet {
                 return (readsCount == properties->readsCount &&
                         allReadsLength == properties->allReadsLength &&
                         constantReadLength == properties->constantReadLength &&
+                        minReadLength == properties->minReadLength &&
                         maxReadLength == properties->maxReadLength &&
                         symbolsCount == properties->symbolsCount &&
                         std::equal(std::begin(properties->symbolsList), std::end(properties->symbolsList), std::begin(symbolsList)) &&
@@ -63,6 +67,7 @@ namespace PgSAReadsSet {
                 dest << readsCount << "\n"
                         << allReadsLength << "\n"
                         << constantReadLength << "\n"
+                        << minReadLength << "\n"
                         << maxReadLength << "\n"
                         << (int) symbolsCount << "\n"
                         << symbolsList << "\n";
@@ -77,6 +82,7 @@ namespace PgSAReadsSet {
                 std::cout << "reads count: " << readsCount << "\n";
                 std::cout << "all reads length: " << allReadsLength << "\n";
                 std::cout << "reads length is " << (constantReadLength?"constant":"variable") << "\n";
+                std::cout << "minReadLength: " << minReadLength << "\n";
                 std::cout << "maxReadLength: " << maxReadLength << "\n";
                 std::cout << "symbolsCount: " << (int) symbolsCount << "\n";
                 std::cout << "symbols: ";

@@ -26,11 +26,11 @@ namespace PgTools {
 
         uint_reads_cnt_max getReadOriginalIndex();
 
-        bool moveNextVirtual();
-        string getReadVirtual();
-        string getQualityInfoVirtual();
-        uint_read_len getReadLengthVirtual();
-        void rewindVirtual();
+        bool moveNext();
+        string getRead();
+        string getQualityInfo();
+        uint_read_len getReadLength();
+        void rewind();
 
         IndexesMapping* retainVisitedIndexesMapping() override;
     };
@@ -53,11 +53,11 @@ namespace PgTools {
         DividedReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream* divSource,
                 bool visitComplement = false, bool ignoreNReads = false, bool ignoreNoNReads = false);
 
-        bool moveNextVirtual();
-        string getReadVirtual();
-        string getQualityInfoVirtual();
-        uint_read_len getReadLengthVirtual();
-        void rewindVirtual();
+        bool moveNext();
+        string getRead();
+        string getQualityInfo();
+        uint_read_len getReadLength();
+        void rewind();
 
         IndexesMapping* retainVisitedIndexesMapping() override;
     };

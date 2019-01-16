@@ -1,6 +1,6 @@
 #include "ReadsMatchers.h"
 
-#include "../readsset/PackedReadsSet.h"
+#include "../readsset/PackedConstantLengthReadsSet.h"
 #include "../readsset/persistance/ReadsSetPersistence.h"
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
@@ -44,7 +44,7 @@ namespace PgTools {
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
     const uint32_t DefaultReadsMatcher::NOT_MATCHED_VALUE = UINT32_MAX;
 
-    DefaultReadsMatcher::DefaultReadsMatcher(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+    DefaultReadsMatcher::DefaultReadsMatcher(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                                              uint32_t matchPrefixLength) :
                                              pgFilePrefix(pgFilePrefix), revComplPg(revComplPg), readsSet(readsSet),
                                              matchPrefixLength(matchPrefixLength) {
@@ -125,7 +125,7 @@ namespace PgTools {
     }
 
     DefaultReadsExactMatcher::DefaultReadsExactMatcher(const string &pgFilePrefix, bool revComplPg,
-                                                       PackedReadsSet *readsSet, uint32_t matchPrefixLength)
+                                                       PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength)
             : DefaultReadsMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength) {}
 
     void DefaultReadsExactMatcher::initMatching() {
@@ -173,7 +173,7 @@ namespace PgTools {
     }
 
     AbstractReadsApproxMatcher::AbstractReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
-                                                           PackedReadsSet *readsSet, uint32_t matchPrefixLength,
+                                                           PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength,
                                                            uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches)
             : DefaultReadsMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength), targetMismatches(targetMismatches),
             maxMismatches(maxMismatches), minMismatches(minMismatches){
@@ -181,13 +181,13 @@ namespace PgTools {
     }
 
     InterleavedReadsApproxMatcher::InterleavedReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
-                                                                 PackedReadsSet *readsSet, uint32_t matchPrefixLength,
+                                                                 PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength,
                                                 uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches)
             : AbstractReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches,
                     maxMismatches, minMismatches)  {}
 
     DefaultReadsApproxMatcher::DefaultReadsApproxMatcher(const string &pgFilePrefix, bool revComplPg,
-                                                         PackedReadsSet *readsSet, uint32_t matchPrefixLength,
+                                                         PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength,
                                                          uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches)
              :AbstractReadsApproxMatcher(pgFilePrefix, revComplPg, readsSet, matchPrefixLength, targetMismatches,
                      maxMismatches, minMismatches) {}
@@ -438,7 +438,7 @@ namespace PgTools {
         cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
-    void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedReadsSet *readsSet,
+    void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
                         IndexesMapping* orgIndexesMapping, bool divisionComplement,

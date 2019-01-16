@@ -17,7 +17,7 @@ void PgTools::divideReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsI
     cout << "Starting division... " << endl;
     writeReadMode(filteredIndexesDest, PgSAHelpers::plainTextWriteMode);
     uint64_t hitCounter = 0;
-    while (badReadsIterator->moveNextVirtual()) {
+    while (badReadsIterator->moveNext()) {
         hitCounter++;
         writeValue(filteredIndexesDest, badReadsIterator->getReadOriginalIndex());
     }

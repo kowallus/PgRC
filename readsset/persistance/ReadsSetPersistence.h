@@ -2,7 +2,7 @@
 #define PGTOOLS_READSSETPERSISTENCE_H
 
 #include "../DefaultReadsSet.h"
-#include "../PackedReadsSet.h"
+#include "../PackedConstantLengthReadsSet.h"
 #include "../iterator/ReadsSetIterator.h"
 
 namespace PgSAReadsSet {
@@ -24,11 +24,11 @@ namespace PgSAReadsSet {
                     bool ignoreNReads = false, bool ignoreNoNReads = false);
 
         public:
-            bool moveNextVirtual();
-            string getReadVirtual();
-            string getQualityInfoVirtual();
-            uint_read_len_max getReadLengthVirtual();
-            void rewindVirtual();
+            bool moveNext();
+            string getRead();
+            string getQualityInfo();
+            uint_read_len_max getReadLength();
+            void rewind();
 
             virtual ~ManagedReadsSetIterator();
 

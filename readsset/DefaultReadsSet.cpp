@@ -8,12 +8,12 @@ namespace PgSAReadsSet {
         bool symbolOccured[UCHAR_MAX] = {0};
         uint_read_len_max minReadLength = 0;
         
-        while (readsIterator->moveNextVirtual()) {
+        while (readsIterator->moveNext()) {
 
             properties->readsCount++;
 
             // analize read length
-            uint_read_len_max length = readsIterator->getReadLengthVirtual();
+            uint_read_len_max length = readsIterator->getReadLength();
             if (properties->maxReadLength == 0) {
                 properties->maxReadLength = length;
                 minReadLength = length;
@@ -28,7 +28,7 @@ namespace PgSAReadsSet {
             properties->allReadsLength += length;
 
             //analize symbols
-            string read(readsIterator->getReadVirtual());
+            string read(readsIterator->getRead());
 
             for (uint_read_len_max i = 0; i < length; i++) {
                 read[i] = toupper(read[i]);

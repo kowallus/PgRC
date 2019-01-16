@@ -32,7 +32,7 @@ validatePg(const string &srcFastqFile, const string &pairFastqFile, const string
     ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile, pairFastqFile);
     cout << "Reading reads set\n";
-    PackedReadsSet *readsSet = new PackedReadsSet(allReadsIterator);
+    PackedConstantLengthReadsSet *readsSet = new PackedConstantLengthReadsSet(allReadsIterator);
     readsSet->printout();
     delete (allReadsIterator);
     uint_reads_cnt_max pgReadsCounter = 0;

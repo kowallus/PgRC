@@ -97,7 +97,7 @@ void divideGenerateAndMatch(uint16_t error_limit_in_promils, string gen_quality_
         ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, badDivisionFile, false);
         cout << "Reading (div: " << badDivisionFile << ") reads set\n";
-        PackedReadsSet *badReadsSet = new PackedReadsSet(badReadsIterator);
+        PackedConstantLengthReadsSet *badReadsSet = PackedConstantLengthReadsSet::loadReadsSet(badReadsIterator);
         badReadsSet->printout();
         IndexesMapping* badIndexesMapping = badReadsIterator->retainVisitedIndexesMapping();
         delete (badReadsIterator);
@@ -171,8 +171,8 @@ void divideGenerateAndMatch(uint16_t error_limit_in_promils, string gen_quality_
 uint_read_len_max getReadsLength(const string &srcFastqFile) {
     ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile);
-    readsIt->moveNextVirtual();
-    uint_read_len_max readsLength = readsIt->getReadLengthVirtual();
+    readsIt->moveNext();
+    uint_read_len_max readsLength = readsIt->getReadLength();
     delete(readsIt);
     return readsLength;
 }

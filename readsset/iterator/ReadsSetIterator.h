@@ -49,11 +49,11 @@ namespace PgSAReadsSet {
 
             virtual ~ReadsSourceIteratorTemplate();
 
-            virtual bool moveNextVirtual() = 0;
-            virtual string getReadVirtual() = 0;
-            virtual string getQualityInfoVirtual() { return std::string(); };
-            virtual uint_read_len getReadLengthVirtual() = 0;
-            virtual void rewindVirtual() = 0;
+            virtual bool moveNext() = 0;
+            virtual string getRead() = 0;
+            virtual string getQualityInfo() { return std::string(); };
+            virtual uint_read_len getReadLength() = 0;
+            virtual void rewind() = 0;
 
             virtual IndexesMapping* retainVisitedIndexesMapping() = 0;
     };
@@ -74,17 +74,10 @@ namespace PgSAReadsSet {
             ~ConcatenatedReadsSourceIterator();
 
             bool moveNext();
-
             string getRead();
-
             uint_read_len getReadLength();
-
             void rewind();
-            
-            bool moveNextVirtual();
-            string getReadVirtual();
-            uint_read_len getReadLengthVirtual();
-            void rewindVirtual();
+
             IndexesMapping* retainVisitedIndexesMapping() override;
     };
     
@@ -108,17 +101,10 @@ namespace PgSAReadsSet {
             ~FASTAReadsSourceIterator();
 
             bool moveNext();
-
             string getRead();
-
             uint_read_len getReadLength();
-
             void rewind();
-            
-            bool moveNextVirtual();
-            string getReadVirtual();
-            uint_read_len getReadLengthVirtual();
-            void rewindVirtual();
+
             IndexesMapping* retainVisitedIndexesMapping() override;
     };
     
@@ -140,19 +126,11 @@ namespace PgSAReadsSet {
             ~FASTQReadsSourceIterator();
 
             bool moveNext();
-
             string getRead();
             string getQualityInfo();
-
             uint_read_len getReadLength();
-
             void rewind();
-            
-            bool moveNextVirtual();
-            string getReadVirtual();
-            string getQualityInfoVirtual();
-            uint_read_len getReadLengthVirtual();
-            void rewindVirtual();
+
             IndexesMapping* retainVisitedIndexesMapping() override;
     };
 
@@ -165,11 +143,11 @@ namespace PgSAReadsSet {
     public:
         RevComplPairReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator);
 
-        bool moveNextVirtual();
-        string getReadVirtual();
-        string getQualityInfoVirtual();
-        uint_read_len getReadLengthVirtual();
-        void rewindVirtual();
+        bool moveNext();
+        string getRead();
+        string getQualityInfo();
+        uint_read_len getReadLength();
+        void rewind();
         IndexesMapping* retainVisitedIndexesMapping() override;
     };
 
@@ -184,11 +162,11 @@ namespace PgSAReadsSet {
     public:
         IgnoreNReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator);
 
-        bool moveNextVirtual();
-        string getReadVirtual();
-        string getQualityInfoVirtual();
-        uint_read_len getReadLengthVirtual();
-        void rewindVirtual();
+        bool moveNext();
+        string getRead();
+        string getQualityInfo();
+        uint_read_len getReadLength();
+        void rewind();
         IndexesMapping* retainVisitedIndexesMapping() override;
     };
 }

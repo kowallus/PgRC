@@ -15,13 +15,13 @@ namespace PgSAReadsSet {
 
             virtual ~ReadsSetInterface() {};
 
-            virtual bool isReadLengthConstantVirtual() = 0;
-            virtual uint_read_len maxReadLengthVirtual() = 0;
+            virtual bool isReadLengthConstant() = 0;
+            virtual uint_read_len maxReadLength() = 0;
 
-            virtual uint_reads_cnt readsCountVirtual() = 0;
+            virtual uint_reads_cnt readsCount() = 0;
 
-            virtual const string getReadVirtual(uint_reads_cnt) = 0;
-            virtual uint_read_len readLengthVirtual(uint_reads_cnt) = 0;
+            virtual const string getRead(uint_reads_cnt) = 0;
+            virtual uint_read_len readLength(uint_reads_cnt) = 0;
     };
 
     typedef ReadsSetInterface< uint_read_len_std, uint_reads_cnt_std > StandardReadsSetInterface;

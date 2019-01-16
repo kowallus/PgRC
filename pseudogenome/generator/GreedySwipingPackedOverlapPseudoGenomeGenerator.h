@@ -3,7 +3,7 @@
 
 #include "PseudoGenomeGeneratorBase.h"
 #include "AbstractOverlapPseudoGenomeGenerator.h"
-#include "../../readsset/PackedReadsSet.h"
+#include "../../readsset/PackedConstantLengthReadsSet.h"
 #include <algorithm>
 #include <list>
 
@@ -19,7 +19,7 @@ namespace PgSAIndex {
             // auxiliary structures
             uint_reads_cnt dupsTotal;
 
-            PackedReadsSet* packedReadsSet = 0;
+            PackedConstantLengthReadsSet* packedReadsSet = 0;
             
             vector<uint_reads_cnt> sortedReadsIdxs;
                         
@@ -56,7 +56,7 @@ namespace PgSAIndex {
             
         public:
 
-            GreedySwipingPackedOverlapGeneratorTemplate(PackedReadsSet* readsSet);
+            GreedySwipingPackedOverlapGeneratorTemplate(PackedConstantLengthReadsSet* readsSet);
             virtual ~GreedySwipingPackedOverlapGeneratorTemplate();
 
             bool isPseudoGenomeLengthStandardVirtual();
@@ -69,10 +69,10 @@ namespace PgSAIndex {
         private:
 
             template<typename uint_read_len, typename uint_reads_cnt>
-            PseudoGenomeGeneratorBase* getGeneratorFullTemplate(PackedReadsSet* readsSet);
+            PseudoGenomeGeneratorBase* getGeneratorFullTemplate(PackedConstantLengthReadsSet* readsSet);
 
             template<typename uint_read_len>
-            PseudoGenomeGeneratorBase* getGeneratorPartialTemplate(PackedReadsSet* readsSet);
+            PseudoGenomeGeneratorBase* getGeneratorPartialTemplate(PackedConstantLengthReadsSet* readsSet);
 
         public:
 

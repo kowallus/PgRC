@@ -22,16 +22,6 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    uint_read_len ConcatenatedReadsSourceIterator<uint_read_len>::getReadLengthVirtual() {
-        return getReadLength();
-    }
-
-    template<typename uint_read_len>
-    string ConcatenatedReadsSourceIterator<uint_read_len>::getReadVirtual() {
-        return getRead();
-    }
-
-    template<typename uint_read_len>
     bool ConcatenatedReadsSourceIterator<uint_read_len>::moveNext() {
         if (!std::getline(*source, line)) 
             return false;
@@ -49,16 +39,6 @@ namespace PgSAReadsSet {
         counter = -1;
         source->clear();
         source->seekg(0);
-    }
-
-    template<typename uint_read_len>
-    bool ConcatenatedReadsSourceIterator<uint_read_len>::moveNextVirtual() {
-        return moveNext();
-    }
-
-    template<typename uint_read_len>
-    void ConcatenatedReadsSourceIterator<uint_read_len>::rewindVirtual() {
-        rewind();
     }
 
     template<typename uint_read_len>
@@ -93,16 +73,6 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    uint_read_len FASTAReadsSourceIterator<uint_read_len>::getReadLengthVirtual() {
-        return getReadLength();
-    }
-
-    template<typename uint_read_len>
-    string FASTAReadsSourceIterator<uint_read_len>::getReadVirtual() {
-        return getRead();
-    }
-
-    template<typename uint_read_len>
     bool FASTAReadsSourceIterator<uint_read_len>::moveNext() {
         std::istream* src = source;
         if (pair && pairSource)
@@ -134,16 +104,6 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    bool FASTAReadsSourceIterator<uint_read_len>::moveNextVirtual() {
-        return moveNext();
-    }
-
-    template<typename uint_read_len>
-    void FASTAReadsSourceIterator<uint_read_len>::rewindVirtual() {
-        rewind();
-    }
-
-    template<typename uint_read_len>
     IndexesMapping* FASTAReadsSourceIterator<uint_read_len>::retainVisitedIndexesMapping() {
         return new DirectMapping(counter + 1);
     }
@@ -171,21 +131,6 @@ namespace PgSAReadsSet {
     template<typename uint_read_len>
     uint_read_len FASTQReadsSourceIterator<uint_read_len>::getReadLength() {
         return length;
-    }
-
-    template<typename uint_read_len>
-    uint_read_len FASTQReadsSourceIterator<uint_read_len>::getReadLengthVirtual() {
-        return getReadLength();
-    }
-
-    template<typename uint_read_len>
-    string FASTQReadsSourceIterator<uint_read_len>::getReadVirtual() {
-        return getRead();
-    }
-
-    template<typename uint_read_len>
-    string FASTQReadsSourceIterator<uint_read_len>::getQualityInfoVirtual() {
-        return getQualityInfo();
     }
 
     template<typename uint_read_len>
@@ -220,16 +165,6 @@ namespace PgSAReadsSet {
         }
         pair = false;
     }
-    
-    template<typename uint_read_len>
-    bool FASTQReadsSourceIterator<uint_read_len>::moveNextVirtual() {
-        return moveNext();
-    }
-
-    template<typename uint_read_len>
-    void FASTQReadsSourceIterator<uint_read_len>::rewindVirtual() {
-        rewind();
-    }
 
 
     template<typename uint_read_len>
@@ -248,8 +183,8 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    bool RevComplPairReadsSetIterator<uint_read_len>::moveNextVirtual() {
-        if (coreIterator->moveNextVirtual()) {
+    bool RevComplPairReadsSetIterator<uint_read_len>::moveNext() {
+        if (coreIterator->moveNext()) {
             counter++;
             return true;
         }
@@ -257,30 +192,30 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    string RevComplPairReadsSetIterator<uint_read_len>::getReadVirtual() {
-        string read = coreIterator->getReadVirtual();
+    string RevComplPairReadsSetIterator<uint_read_len>::getRead() {
+        string read = coreIterator->getRead();
         if (counter % 2)
             return PgSAHelpers::reverseComplement(read);
         return read;
     }
 
     template<typename uint_read_len>
-    string RevComplPairReadsSetIterator<uint_read_len>::getQualityInfoVirtual() {
-        string q = coreIterator->getQualityInfoVirtual();
+    string RevComplPairReadsSetIterator<uint_read_len>::getQualityInfo() {
+        string q = coreIterator->getQualityInfo();
         if (counter % 2)
             std::reverse(q.begin(), q.end());
         return q;
     }
 
     template<typename uint_read_len>
-    uint_read_len RevComplPairReadsSetIterator<uint_read_len>::getReadLengthVirtual() {
-        return coreIterator->getReadLengthVirtual();
+    uint_read_len RevComplPairReadsSetIterator<uint_read_len>::getReadLength() {
+        return coreIterator->getReadLength();
     }
 
     template<typename uint_read_len>
-    void RevComplPairReadsSetIterator<uint_read_len>::rewindVirtual() {
+    void RevComplPairReadsSetIterator<uint_read_len>::rewind() {
         counter = -1;
-        coreIterator->rewindVirtual();
+        coreIterator->rewind();
     }
 
     template<typename uint_read_len>
@@ -295,8 +230,8 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    bool IgnoreNReadsSetIterator<uint_read_len>::moveNextVirtual() {
-        while (coreIterator->moveNextVirtual()) {
+    bool IgnoreNReadsSetIterator<uint_read_len>::moveNext() {
+        while (coreIterator->moveNext()) {
             if (isFreeOfN()) {
                 indexesMapping.push_back(++counter);
                 return true;
@@ -306,30 +241,30 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    string IgnoreNReadsSetIterator<uint_read_len>::getReadVirtual() {
-        return coreIterator->getReadVirtual();
+    string IgnoreNReadsSetIterator<uint_read_len>::getRead() {
+        return coreIterator->getRead();
     }
 
     template<typename uint_read_len>
-    string IgnoreNReadsSetIterator<uint_read_len>::getQualityInfoVirtual() {
-        return coreIterator->getQualityInfoVirtual();
+    string IgnoreNReadsSetIterator<uint_read_len>::getQualityInfo() {
+        return coreIterator->getQualityInfo();
     }
 
     template<typename uint_read_len>
-    uint_read_len IgnoreNReadsSetIterator<uint_read_len>::getReadLengthVirtual() {
-        return coreIterator->getReadLengthVirtual();
+    uint_read_len IgnoreNReadsSetIterator<uint_read_len>::getReadLength() {
+        return coreIterator->getReadLength();
     }
 
     template<typename uint_read_len>
-    void IgnoreNReadsSetIterator<uint_read_len>::rewindVirtual() {
+    void IgnoreNReadsSetIterator<uint_read_len>::rewind() {
         counter = -1;
         indexesMapping.clear();
-        coreIterator->rewindVirtual();
+        coreIterator->rewind();
     }
 
     template<typename uint_read_len>
     bool IgnoreNReadsSetIterator<uint_read_len>::isFreeOfN() {
-        return coreIterator->getReadVirtual().find('N') == string::npos;
+        return coreIterator->getRead().find('N') == string::npos;
     }
 
     template<typename uint_read_len>

@@ -17,8 +17,8 @@ namespace PgTools {
     QualityDividingReadsSetIterator<uint_read_len>::~QualityDividingReadsSetIterator() {}
 
     template<typename uint_read_len>
-    bool QualityDividingReadsSetIterator<uint_read_len>::moveNextVirtual() {
-        while (coreIterator->moveNextVirtual()) {
+    bool QualityDividingReadsSetIterator<uint_read_len>::moveNext() {
+        while (coreIterator->moveNext()) {
             allCounter++;
             if (isQualityGood() == visitGoodReads) {
                 indexesMapping.push_back(allCounter);
@@ -31,30 +31,30 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::isQualityGood() {
-        return (1 - qualityScore2correctProb(getQualityInfoVirtual()) <= error_level) &&
-                (!filterNReads || coreIterator->getReadVirtual().find('N') == string::npos);
+        return (1 - qualityScore2correctProb(getQualityInfo()) <= error_level) &&
+                (!filterNReads || coreIterator->getRead().find('N') == string::npos);
     }
 
     template<typename uint_read_len>
-    string QualityDividingReadsSetIterator<uint_read_len>::getReadVirtual() {
-        return coreIterator->getReadVirtual();
+    string QualityDividingReadsSetIterator<uint_read_len>::getRead() {
+        return coreIterator->getRead();
     }
 
     template<typename uint_read_len>
-    string QualityDividingReadsSetIterator<uint_read_len>::getQualityInfoVirtual() {
-        return coreIterator->getQualityInfoVirtual();
+    string QualityDividingReadsSetIterator<uint_read_len>::getQualityInfo() {
+        return coreIterator->getQualityInfo();
     }
 
     template<typename uint_read_len>
-    uint_read_len QualityDividingReadsSetIterator<uint_read_len>::getReadLengthVirtual() {
-        return coreIterator->getReadLengthVirtual();
+    uint_read_len QualityDividingReadsSetIterator<uint_read_len>::getReadLength() {
+        return coreIterator->getReadLength();
     }
 
     template<typename uint_read_len>
-    void QualityDividingReadsSetIterator<uint_read_len>::rewindVirtual() {
+    void QualityDividingReadsSetIterator<uint_read_len>::rewind() {
         allCounter = -1;
         indexesMapping.clear();
-        coreIterator->rewindVirtual();
+        coreIterator->rewind();
     }
 
     template<typename uint_read_len>
@@ -64,7 +64,7 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::containsN() {
-        return coreIterator->getReadVirtual().find('N') != string::npos;
+        return coreIterator->getRead().find('N') != string::npos;
     }
 
     template<typename uint_read_len>
@@ -83,8 +83,8 @@ namespace PgTools {
     }
 
     template<typename uint_read_len>
-    bool DividedReadsSetIterator<uint_read_len>::moveNextVirtual() {
-        while (coreIterator->moveNextVirtual()) {
+    bool DividedReadsSetIterator<uint_read_len>::moveNext() {
+        while (coreIterator->moveNext()) {
             allCounter++;
             if (visitComplement) {
                 if ((allCounter != currentDivIdx) && !isIgnored()) {
@@ -114,34 +114,34 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool DividedReadsSetIterator<uint_read_len>::isIgnored() {
-        return (ignoreNReads && coreIterator->getReadVirtual().find('N') != string::npos)
-            || (ignoreNoNReads && coreIterator->getReadVirtual().find('N') == string::npos);
+        return (ignoreNReads && coreIterator->getRead().find('N') != string::npos)
+            || (ignoreNoNReads && coreIterator->getRead().find('N') == string::npos);
     }
 
     template<typename uint_read_len>
-    string DividedReadsSetIterator<uint_read_len>::getReadVirtual() {
-        return coreIterator->getReadVirtual();
+    string DividedReadsSetIterator<uint_read_len>::getRead() {
+        return coreIterator->getRead();
     }
 
     template<typename uint_read_len>
-    string DividedReadsSetIterator<uint_read_len>::getQualityInfoVirtual() {
-        return coreIterator->getQualityInfoVirtual();
+    string DividedReadsSetIterator<uint_read_len>::getQualityInfo() {
+        return coreIterator->getQualityInfo();
     }
 
     template<typename uint_read_len>
-    uint_read_len DividedReadsSetIterator<uint_read_len>::getReadLengthVirtual() {
-        return coreIterator->getReadLengthVirtual();
+    uint_read_len DividedReadsSetIterator<uint_read_len>::getReadLength() {
+        return coreIterator->getReadLength();
     }
 
     template<typename uint_read_len>
-    void DividedReadsSetIterator<uint_read_len>::rewindVirtual() {
+    void DividedReadsSetIterator<uint_read_len>::rewind() {
         allCounter = -1;
         indexesMapping.clear();
         divSource->clear();
         divSource->seekg(0);
         readReadMode(*divSource);
         readValue(*divSource, currentDivIdx, plainTextReadMode);
-        coreIterator->rewindVirtual();
+        coreIterator->rewind();
     }
 
     template class QualityDividingReadsSetIterator<uint_read_len_min>;

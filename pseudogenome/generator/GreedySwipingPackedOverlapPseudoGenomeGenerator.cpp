@@ -9,7 +9,7 @@ using namespace PgSAHelpers;
 namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::GreedySwipingPackedOverlapGeneratorTemplate(PackedReadsSet* orgReadsSet)
+    GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::GreedySwipingPackedOverlapGeneratorTemplate(PackedConstantLengthReadsSet* orgReadsSet)
     {
         if (!orgReadsSet->isReadLengthConstant())
             cout << "Unsupported: variable length reads :(";
@@ -221,12 +221,12 @@ namespace PgSAIndex {
 // FACTORY
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorFullTemplate(PackedReadsSet* readsSet) {
+    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorFullTemplate(PackedConstantLengthReadsSet* readsSet) {
         return new GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>(readsSet);
     }
 
     template<typename uint_read_len>
-    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorPartialTemplate(PackedReadsSet* readsSet) {
+    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorPartialTemplate(PackedConstantLengthReadsSet* readsSet) {
 
         if (isReadsCountStd(readsSet->readsCount()))
             return getGeneratorFullTemplate<uint_read_len, uint_reads_cnt_std>(readsSet);
@@ -241,7 +241,7 @@ namespace PgSAIndex {
         cout << "Reading reads set\n";
 
         // readsSet will be freed during generator destruction.
-        PackedReadsSet *readsSet = new PackedReadsSet(readsIterator);
+        PackedConstantLengthReadsSet *readsSet = PackedConstantLengthReadsSet::loadReadsSet(readsIterator);
           
         readsSet->printout();
 
