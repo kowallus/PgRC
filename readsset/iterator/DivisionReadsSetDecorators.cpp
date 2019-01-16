@@ -69,7 +69,7 @@ namespace PgTools {
 
     template<typename uint_read_len>
     IndexesMapping *QualityDividingReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
-        return new VectorMapping(indexesMapping, allCounter);
+        return new VectorMapping(std::move(indexesMapping), allCounter);
     }
 
     template<typename uint_read_len>
@@ -109,7 +109,7 @@ namespace PgTools {
 
     template<typename uint_read_len>
     IndexesMapping* DividedReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
-        return new VectorMapping(indexesMapping, allCounter);
+        return new VectorMapping(std::move(indexesMapping), allCounter);
     }
 
     template<typename uint_read_len>

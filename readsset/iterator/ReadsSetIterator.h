@@ -34,7 +34,7 @@ namespace PgSAReadsSet {
         std::vector<uint_reads_cnt_max> mapping;
         uint_reads_cnt_max readsCount;
     public:
-        VectorMapping(const vector<uint_reads_cnt_max> &mapping, uint_reads_cnt_max readsCount) :
+        VectorMapping(vector<uint_reads_cnt_max> &&mapping, uint_reads_cnt_max readsCount) :
         mapping(std::move(mapping)), readsCount(readsCount) {}
 
         uint_reads_cnt_max getReadOriginalIndex(uint_reads_cnt_max idx) override { return mapping[idx]; }

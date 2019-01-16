@@ -297,7 +297,7 @@ namespace PgSAReadsSet {
         IndexesMapping *const coreMapping = coreIterator->retainVisitedIndexesMapping();
         uint_reads_cnt_max readsTotalCount = coreMapping->getReadsTotalCount();
         delete(coreMapping);
-        return new VectorMapping(indexesMapping, readsTotalCount);
+        return new VectorMapping(std::move(indexesMapping), readsTotalCount);
     }
 
 
