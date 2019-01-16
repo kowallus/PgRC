@@ -47,6 +47,7 @@ namespace PgTools {
         uint_read_len_max readsLength;
         uint8_t targetMismatches;
         uint8_t maxMismatches;
+        uint8_t stageCount;
 
         bool qualityDivision;
         string badDivisionFile;
@@ -160,6 +161,43 @@ namespace PgTools {
             PgRCManager::endAtStage = endAtStage;
         }
 
+        void runQualityBasedDivision() const;
+
+        void runPgGeneratorBasedReadsDivision() const;
+
+        void runHQPgGeneration() const;
+
+        void runMappingLQReadsOnHQPg() const;
+
+        void runLQPgGeneration() const;
+
+        void runNPgGeneration() const;
+
+        void saveQualityBasedDivision();
+
+        void savePgGeneratorBasedReadsDivision();
+
+        void saveHQPg();
+
+        void saveHQPgReadsList();
+
+        void saveLQPg();
+
+        void saveLQPgReadsList();
+
+        void saveHQPgSequence();
+
+        void saveNPg();
+
+        void saveMEMMappedPgSequences();
+
+        void extractHQPgSequence();
+
+        void freeHQPg();
+
+        void extractLQPgSequence();
+
+        void freeLQPg();
     };
 }
 

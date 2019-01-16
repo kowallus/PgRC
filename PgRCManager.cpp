@@ -48,90 +48,59 @@ namespace PgTools {
 
         prepareChainData();
 
-        uint8_t stageCount = 0;
+        stageCount = 0;
         if (skipStages < ++stageCount && qualityDivision) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                    srcFastqFile, pairFastqFile);
-            divideReads(allReadsIterator, badDivisionFile, error_limit_in_promils / 1000.0, filterNReads2Bad);
-            delete (allReadsIterator);
+            runQualityBasedDivision();
+            if (disableInMemoryMode || endAtStage == stageCount)
+                saveQualityBasedDivision();
         }
         div_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator;
-            if (qualityDivision) goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                        srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
-            else goodReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                        srcFastqFile, pairFastqFile);
-            const vector<bool> &badReads = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getBetterReads(
-                    goodReadsIterator, gen_quality_coef);
-            IndexesMapping* goodIndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
-            delete (goodReadsIterator);
-            ReadsSetPersistence::writeOutputDivision(goodIndexesMapping, badReads,
-                                                     true, badDivisionFile, true);
-
-            delete(goodIndexesMapping);
+            runPgGeneratorBasedReadsDivision();
+            if (disableInMemoryMode || endAtStage == stageCount)
+                savePgGeneratorBasedReadsDivision();
         }
         pgDiv_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                    srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
-            PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
-                    goodReadsIterator);
-            IndexesMapping* good2IndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
-            delete (goodReadsIterator);
-            SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, good2IndexesMapping,
-                                                                revComplPairFile);
-            delete (goodPgb);
-            delete(good2IndexesMapping);
+            runHQPgGeneration();
+            if (disableInMemoryMode || endAtStage == stageCount)
+                saveHQPg();
         }
         good_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                    srcFastqFile, pairFastqFile, badDivisionFile, false);
-            cout << "Reading (div: " << badDivisionFile << ") reads set\n";
-            PackedConstantLengthReadsSet *badReadsSet = PackedConstantLengthReadsSet::loadReadsSet(badReadsIterator);
-            badReadsSet->printout();
-            IndexesMapping* badIndexesMapping = badReadsIterator->retainVisitedIndexesMapping();
-            delete (badReadsIterator);
-            mapReadsIntoPg(
-                    pgGoodPrefix, true, badReadsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
-                    targetMismatches, maxMismatches, mismatchesMode, 0,
-                    false, pgMappedGoodPrefix, badIndexesMapping, false, mappedBadDivisionFile);
-
-            delete (badReadsSet);
-            delete(badIndexesMapping);
+            runMappingLQReadsOnHQPg();
+            if (disableInMemoryMode || endAtStage == stageCount)
+                saveHQPg();
+            else {
+                saveHQPgReadsList();
+                extractHQPgSequence();
+                freeHQPg();
+            }
         }
         match_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             {
-                ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                        srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
-                PseudoGenomeBase *badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
-                        mappedBadReadsIterator);
-                IndexesMapping* mappedBadIndexesMapping = mappedBadReadsIterator->retainVisitedIndexesMapping();
-                delete (mappedBadReadsIterator);
-                SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadIndexesMapping,
-                                                                    revComplPairFile);
-                delete (badPgb);
-                delete(mappedBadIndexesMapping);
+                runLQPgGeneration();
+                if (disableInMemoryMode || endAtStage == stageCount) {
+                    saveLQPg();
+                    if (skipStages < stageCount - 1)
+                        saveHQPgSequence();
+                } else {
+                    saveLQPgReadsList();
+                    extractLQPgSequence();
+                    freeLQPg();
+                }
             }
             if (ignoreNReads) {
-                ReadsSourceIteratorTemplate<uint_read_len_max> *mappedNReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                        srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, false, true);
-                PseudoGenomeBase *nPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
-                        mappedNReadsIterator);
-                IndexesMapping* mappedNIndexesMapping = mappedNReadsIterator->retainVisitedIndexesMapping();
-                delete (mappedNReadsIterator);
-                SeparatedPseudoGenomePersistence::writePseudoGenome(nPgb, pgNPrefix, mappedNIndexesMapping,
-                                                                    revComplPairFile);
-                delete (nPgb);
-                delete(mappedNIndexesMapping);
+                runNPgGeneration();
+                saveNPg();
             }
         }
         bad_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             //DefaultPgMatcher::matchPgInPgFile(pgMappedGoodPrefix, pgMappedGoodPrefix, readsLength, pgGoodPrefix, true, false);
             SimplePgMatcher::matchPgInPgFiles(pgMappedGoodPrefix, pgMappedBadPrefix, minimalPgMatchLength, true);
+            saveMEMMappedPgSequences();
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -142,6 +111,137 @@ namespace PgTools {
         }
 
         reportTimes();
+    }
+
+    void PgRCManager::runQualityBasedDivision() const {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
+                srcFastqFile, pairFastqFile);
+        divideReads(allReadsIterator, badDivisionFile, error_limit_in_promils / 1000.0, filterNReads2Bad);
+        delete (allReadsIterator);
+    }
+
+    void PgRCManager::saveQualityBasedDivision() {
+
+    }
+
+    void PgRCManager::runPgGeneratorBasedReadsDivision() const {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator;
+        if (qualityDivision) goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
+        else goodReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
+                    srcFastqFile, pairFastqFile);
+        const vector<bool> &badReads = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getBetterReads(
+                goodReadsIterator, gen_quality_coef);
+        IndexesMapping* goodIndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
+        delete (goodReadsIterator);
+        ReadsSetPersistence::writeOutputDivision(goodIndexesMapping, badReads,
+                                                 true, badDivisionFile, true);
+
+        delete(goodIndexesMapping);
+    }
+
+    void PgRCManager::savePgGeneratorBasedReadsDivision() {
+
+    }
+
+    void PgRCManager::runHQPgGeneration() const {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
+        PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+                goodReadsIterator);
+        IndexesMapping* good2IndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
+        delete (goodReadsIterator);
+        SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, good2IndexesMapping,
+                                                            revComplPairFile);
+        delete (goodPgb);
+        delete(good2IndexesMapping);
+    }
+
+    void PgRCManager::runMappingLQReadsOnHQPg() const {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile, badDivisionFile, false);
+        cout << "Reading (div: " << badDivisionFile << ") reads set\n";
+        PackedConstantLengthReadsSet *badReadsSet = PackedConstantLengthReadsSet::loadReadsSet(badReadsIterator);
+        badReadsSet->printout();
+        IndexesMapping* badIndexesMapping = badReadsIterator->retainVisitedIndexesMapping();
+        delete (badReadsIterator);
+        mapReadsIntoPg(
+                pgGoodPrefix, true, badReadsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
+                targetMismatches, maxMismatches, mismatchesMode, 0,
+                false, pgMappedGoodPrefix, badIndexesMapping, false, mappedBadDivisionFile);
+
+        delete (badReadsSet);
+        delete(badIndexesMapping);
+    }
+
+    void PgRCManager::saveHQPg() {
+
+    }
+
+    void PgRCManager::saveHQPgReadsList() {
+
+    }
+
+    void PgRCManager::saveHQPgSequence() {
+
+    }
+
+    void PgRCManager::extractHQPgSequence() {
+
+    }
+
+    void PgRCManager::freeHQPg() {
+
+    }
+
+    void PgRCManager::runLQPgGeneration() const {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
+        PseudoGenomeBase *badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+                mappedBadReadsIterator);
+        IndexesMapping* mappedBadIndexesMapping = mappedBadReadsIterator->retainVisitedIndexesMapping();
+        delete (mappedBadReadsIterator);
+        SeparatedPseudoGenomePersistence::writePseudoGenome(badPgb, pgMappedBadPrefix, mappedBadIndexesMapping,
+                                                            revComplPairFile);
+        delete (badPgb);
+        delete(mappedBadIndexesMapping);
+    }
+
+    void PgRCManager::saveLQPg() {
+
+    }
+
+    void PgRCManager::saveLQPgReadsList() {
+
+    }
+
+    void PgRCManager::extractLQPgSequence() {
+
+    }
+
+    void PgRCManager::freeLQPg() {
+
+    }
+
+    void PgRCManager::runNPgGeneration() const {
+        ReadsSourceIteratorTemplate<uint_read_len_max> *mappedNReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, false, true);
+        PseudoGenomeBase *nPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+                        mappedNReadsIterator);
+        IndexesMapping* mappedNIndexesMapping = mappedNReadsIterator->retainVisitedIndexesMapping();
+        delete (mappedNReadsIterator);
+        SeparatedPseudoGenomePersistence::writePseudoGenome(nPgb, pgNPrefix, mappedNIndexesMapping,
+                                                            revComplPairFile);
+        delete (nPgb);
+        delete(mappedNIndexesMapping);
+    }
+
+    void PgRCManager::saveNPg() {
+
+    }
+
+    void PgRCManager::saveMEMMappedPgSequences() {
+
     }
 
     void PgRCManager::reportTimes() {
