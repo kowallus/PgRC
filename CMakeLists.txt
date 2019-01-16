@@ -62,7 +62,7 @@ set(PG_GEN_FILES
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
         strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h
-        strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h readsset/DividedReadsSets.cpp readsset/DividedReadsSets.h)
+        strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h readsset/DividedReadsSets.cpp readsset/DividedReadsSets.h PgRCManager.cpp PgRCManager.h)
 
 set(ROLLING_HASH_FILES
         rollinghash/characterhash.h
@@ -92,5 +92,5 @@ add_executable(PgValidator PgValidator.cpp ${PG_FILES})
 add_executable(Pgs2Pairs Pgs2Pairs.cpp ${PG_FILES})
 
 set(CMAKE_EXE_LINKER_FLAGS " -static")
-add_executable(PgRC PgRC.cpp ${MATCHER_FILES} ${PG_GEN_FILES})
+add_executable(PgRC PgRC.cpp ${MATCHER_FILES} ${PG_GEN_FILES} PgRCManager.cpp PgRCManager.h)
 target_link_libraries(PgRC -static-libgcc -static-libstdc++)

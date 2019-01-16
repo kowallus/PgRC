@@ -44,6 +44,7 @@ namespace PgSAReadsSet {
                                                                                           bool ignoreNReads = false,
                                                                                           bool ignoreNoNReads = false);
 
+
         template<typename filter_res_t>
         static void writeOutputDivision(IndexesMapping* orgIndexesMapping, const vector<filter_res_t> &readsFilterResult,
                         const filter_res_t readSelectedValue, string divisionFile, bool divisionComplement) {

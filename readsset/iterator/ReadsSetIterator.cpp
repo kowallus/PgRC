@@ -109,13 +109,38 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    FASTQReadsSourceIterator<uint_read_len>::FASTQReadsSourceIterator(std::istream* source, std::istream* pairSource) {
+    FASTQReadsSourceIterator<uint_read_len>::FASTQReadsSourceIterator(const string &srcFile, const string &pairFile) {
+        ownStreams = true;
+        source = new ifstream(srcFile, ios_base::in | ios_base::binary);
+        if (source->fail()) {
+            fprintf(stderr, "cannot open reads file %s\n", srcFile.c_str());
+            exit(EXIT_FAILURE);
+        }
+        if (pairFile != "") {
+            pairSource = new ifstream(pairFile, ios_base::in | ios_base::binary);
+            if (pairSource->fail()) {
+                fprintf(stderr, "cannot open reads pair file %s\n", pairFile.c_str());
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    template<typename uint_read_len>
+    FASTQReadsSourceIterator<uint_read_len>::FASTQReadsSourceIterator(std::ifstream* source, std::ifstream* pairSource) {
+        ownStreams = false;
         this->source = source;
         this->pairSource = pairSource;
     }
 
     template<typename uint_read_len>
     FASTQReadsSourceIterator<uint_read_len>::~FASTQReadsSourceIterator() {
+        if (ownStreams) {
+            source->close();
+            if (pairSource)
+                pairSource->close();
+            delete(source);
+            delete(pairSource);
+        }
     }
 
     template<typename uint_read_len>

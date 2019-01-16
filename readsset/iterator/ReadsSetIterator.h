@@ -114,14 +114,16 @@ namespace PgSAReadsSet {
         private:
             std::string id, line, opt_id, quality;
             uint_read_len length;
-            std::istream* source = 0;
-            std::istream* pairSource = 0;
+            std::ifstream* source = 0;
+            std::ifstream* pairSource = 0;
+            bool ownStreams = false;
             bool pair = false;
             int64_t counter = -1;
             
         public:
-            
-            FASTQReadsSourceIterator(std::istream* source, std::istream* pairSource = std::string());
+
+            FASTQReadsSourceIterator(const string &srcFile, const string &pairFile = std::string());
+            FASTQReadsSourceIterator(std::ifstream* source, std::ifstream* pairSource);
 
             ~FASTQReadsSourceIterator();
 
