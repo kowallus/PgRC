@@ -19,6 +19,7 @@ namespace PgSAIndex {
             // auxiliary structures
             uint_reads_cnt dupsTotal;
 
+            bool ownReadsSet = false;
             PackedConstantLengthReadsSet* packedReadsSet = 0;
             
             vector<uint_reads_cnt> sortedReadsIdxs;
@@ -56,7 +57,7 @@ namespace PgSAIndex {
             
         public:
 
-            GreedySwipingPackedOverlapGeneratorTemplate(PackedConstantLengthReadsSet* readsSet);
+            GreedySwipingPackedOverlapGeneratorTemplate(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet = false);
             virtual ~GreedySwipingPackedOverlapGeneratorTemplate();
 
             bool isPseudoGenomeLengthStandardVirtual();
@@ -69,20 +70,23 @@ namespace PgSAIndex {
         private:
 
             template<typename uint_read_len, typename uint_reads_cnt>
-            PseudoGenomeGeneratorBase* getGeneratorFullTemplate(PackedConstantLengthReadsSet* readsSet);
+            PseudoGenomeGeneratorBase* getGeneratorFullTemplate(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet);
 
             template<typename uint_read_len>
-            PseudoGenomeGeneratorBase* getGeneratorPartialTemplate(PackedConstantLengthReadsSet* readsSet);
+            PseudoGenomeGeneratorBase* getGeneratorPartialTemplate(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet);
 
         public:
 
             GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory() {};
 
             PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
+            PseudoGenomeGeneratorBase* getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet);
 
             static PseudoGenomeBase* generatePg(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
-            static const vector<bool> getBetterReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator,
-                    double qualityCoef);
+            static const vector<bool> getHQReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator,
+                                                 double qualityCoef);
+            static const vector<bool> getHQReads(PackedConstantLengthReadsSet *readsSet,
+                                                 double qualityCoef);
     };
 
 }

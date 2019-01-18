@@ -9,18 +9,17 @@ using namespace PgSAHelpers;
 namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::GreedySwipingPackedOverlapGeneratorTemplate(PackedConstantLengthReadsSet* orgReadsSet)
+    GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::GreedySwipingPackedOverlapGeneratorTemplate(
+            PackedConstantLengthReadsSet* orgReadsSet, bool ownReadsSet):
+        packedReadsSet(orgReadsSet), ownReadsSet(ownReadsSet)
     {
         if (!orgReadsSet->isReadLengthConstant())
             cout << "Unsupported: variable length reads :(";
-
-        // warning: now generator handles orgReadsSet destruction
-        this->packedReadsSet = orgReadsSet;
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
     GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::~GreedySwipingPackedOverlapGeneratorTemplate() {
-        if (this->packedReadsSet)
+        if (ownReadsSet && this->packedReadsSet)
             delete(this->packedReadsSet);
     }
     
@@ -221,15 +220,15 @@ namespace PgSAIndex {
 // FACTORY
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorFullTemplate(PackedConstantLengthReadsSet* readsSet) {
-        return new GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>(readsSet);
+    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorFullTemplate(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet) {
+        return new GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>(readsSet, ownReadsSet);
     }
 
     template<typename uint_read_len>
-    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorPartialTemplate(PackedConstantLengthReadsSet* readsSet) {
+    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGeneratorPartialTemplate(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet) {
 
         if (isReadsCountStd(readsSet->readsCount()))
-            return getGeneratorFullTemplate<uint_read_len, uint_reads_cnt_std>(readsSet);
+            return getGeneratorFullTemplate<uint_read_len, uint_reads_cnt_std>(readsSet, ownReadsSet);
         else
             cout << "UNSUPPORTED READS COUNT!!!???";
 
@@ -237,20 +236,19 @@ namespace PgSAIndex {
     }
 
     PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) {
-
         cout << "Reading reads set\n";
-
         // readsSet will be freed during generator destruction.
         PackedConstantLengthReadsSet *readsSet = PackedConstantLengthReadsSet::loadReadsSet(readsIterator);
-          
         readsSet->printout();
+        return this->getGenerator(readsSet, true);
+    }
 
+    PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet) {
         PseudoGenomeGeneratorBase* generatorBase = 0;
-
         if (isReadLengthMin(readsSet->maxReadLength()))
-            generatorBase = getGeneratorPartialTemplate<uint_read_len_min>(readsSet);
+            generatorBase = getGeneratorPartialTemplate<uint_read_len_min>(readsSet, ownReadsSet);
         else if (isReadLengthStd(readsSet->maxReadLength()))
-            generatorBase = getGeneratorPartialTemplate<uint_read_len_std>(readsSet);
+            generatorBase = getGeneratorPartialTemplate<uint_read_len_std>(readsSet, ownReadsSet);
         else cout << "UNSUPPORTED READS LENGTH!!!";
         
         return generatorBase;
@@ -272,7 +270,7 @@ namespace PgSAIndex {
         return pgb;
     }
 
-    const vector<bool> GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getBetterReads(
+    const vector<bool> GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
             ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator, double qualityCoef) {
         PseudoGenomeGeneratorFactory* pggf = new GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory();
         PseudoGenomeGeneratorBase* pggb = pggf->getGenerator(readsIterator);
@@ -282,5 +280,17 @@ namespace PgSAIndex {
 
         return res;
     }
+
+    const vector<bool> GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
+            PackedConstantLengthReadsSet *readsSet, double qualityCoef) {
+        GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory* pggf = new GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory();
+        PseudoGenomeGeneratorBase* pggb = pggf->getGenerator(readsSet, false);
+        const vector<bool> res = pggb->getBothSidesOverlappedReads(qualityCoef);
+        delete(pggb);
+        delete(pggf);
+
+        return res;
+    }
+
 
 }

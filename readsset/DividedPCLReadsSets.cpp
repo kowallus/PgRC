@@ -3,17 +3,21 @@
 #include "iterator/DivisionReadsSetDecorators.h"
 
 namespace PgTools {
+    static const char *const DNA_SYMBOLS = "ACGT";
+
+    static const char *const DNA_AND_N_SYMBOLS = "ACGNT";
+
     DividedPCLReadsSets::DividedPCLReadsSets(uint_read_len_max readLength, bool separateNReadsSet, bool nReadsLQ) :
                                        nReadsLQ(nReadsLQ), separateNReadsSet(separateNReadsSet) {
         if (separateNReadsSet || nReadsLQ)
-            hqReadsSet = new PackedConstantLengthReadsSet(readLength, "ACGT", 4);
+            hqReadsSet = new PackedConstantLengthReadsSet(readLength, DNA_SYMBOLS, 4);
         else
-            hqReadsSet = new PackedConstantLengthReadsSet(readLength, "ACGTN", 5);
+            hqReadsSet = new PackedConstantLengthReadsSet(readLength, DNA_AND_N_SYMBOLS, 5);
         if (separateNReadsSet) {
-            lqReadsSet = new PackedConstantLengthReadsSet(readLength, "ACGT", 4);
-            nReadsSet = new PackedConstantLengthReadsSet(readLength, "ACGTN", 5);
+            lqReadsSet = new PackedConstantLengthReadsSet(readLength, DNA_SYMBOLS, 4);
+            nReadsSet = new PackedConstantLengthReadsSet(readLength, DNA_AND_N_SYMBOLS, 5);
         } else
-            lqReadsSet = new PackedConstantLengthReadsSet(readLength, "ACGTN", 5);
+            lqReadsSet = new PackedConstantLengthReadsSet(readLength, DNA_AND_N_SYMBOLS, 5);
     }
 
     DividedPCLReadsSets::~DividedPCLReadsSets() {
@@ -65,6 +69,7 @@ namespace PgTools {
         if (separateNReadsSet)
             readsSets->nMapping = new VectorMapping(std::move(nMapping), divReadsIt->getReadOriginalIndex());
 
+        delete(divReadsIt);
         return readsSets;
     }
 
@@ -72,6 +77,8 @@ namespace PgTools {
     DividedPCLReadsSets::getSimpleDividedPCLReadsSets(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt,
                                                       uint_read_len_max readLength, bool separateNReadsSet,
                                                       bool nReadsLQ) {
+        if (separateNReadsSet || nReadsLQ)
+            return DividedPCLReadsSets::getQualityDivisionBasedReadsSets(readsIt, readLength, 1, separateNReadsSet, nReadsLQ);
         DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, separateNReadsSet, nReadsLQ);
         while (readsIt->moveNext()) {
             readsSets->hqReadsSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());
@@ -107,5 +114,59 @@ namespace PgTools {
         }
 
         return readsSets;
+    }
+
+    void DividedPCLReadsSets::moveLqReadsFromHqReadsSetsToLqReadsSets(const vector<bool> &isReadHqInHqReadsSet) {
+        if (nReadsLQ) {
+            fprintf(stdout, "Unimplemented transferring reads between reads sets packed with different alphabet.\n");
+            exit(EXIT_FAILURE);
+        }
+        uint_reads_cnt_max readsToMoveCount = 0;
+        for(const bool hqFlag: isReadHqInHqReadsSet)
+            if (!hqFlag) readsToMoveCount++;
+
+        uint_reads_cnt_max newLqCounter = lqReadsSet->readsCount() + readsToMoveCount;
+        uint_reads_cnt_max lqCounter = lqReadsSet->readsCount();
+        bool ignoreLqSet = (lqCounter-- == 0);
+        lqReadsSet->resize(newLqCounter);
+        vector<uint_reads_cnt_max> &lqReadIdx = lqMapping->getMappingVector();
+        lqReadIdx.resize(newLqCounter + 1);
+        uint_reads_cnt_max allCounter = lqMapping->getReadsTotalCount();
+        lqReadIdx[newLqCounter--] = allCounter;
+        uint_reads_cnt_max nCounter = separateNReadsSet?nReadsSet->readsCount():0;
+        bool ignoreNSet = (nCounter-- == 0);
+        uint_reads_cnt_max hqCounter = hqReadsSet->readsCount();
+
+        while(allCounter-- > 0 && hqCounter != 0) {
+            if(!ignoreNSet) {
+                if(nMapping->getReadOriginalIndex(nCounter) == allCounter) {
+                    ignoreNSet = (nCounter-- == 0);
+                    continue;
+                }
+            }
+            if (!ignoreLqSet) {
+                if(lqMapping->getReadOriginalIndex(lqCounter) == allCounter) {
+                    lqReadsSet->copyRead(lqCounter, newLqCounter);
+                    lqReadIdx[newLqCounter] = allCounter;
+                    ignoreLqSet = (lqCounter-- == 0);
+                    if (newLqCounter-- == 0)
+                        break;
+                    continue;
+                }
+            }
+            if (!isReadHqInHqReadsSet[--hqCounter]) {
+                lqReadsSet->copyPackedRead(hqReadsSet->getPackedRead(hqCounter), newLqCounter);
+                lqReadIdx[newLqCounter] = allCounter;
+                if (newLqCounter-- == 0)
+                    break;
+            }
+        }
+
+        uint_reads_cnt_max newHqCounter = 0;
+        for(hqCounter = 0; hqCounter < hqReadsSet->readsCount(); hqCounter++) {
+            if (isReadHqInHqReadsSet[hqCounter])
+                hqReadsSet->copyRead(hqCounter, newHqCounter++);
+        }
+        hqReadsSet->resize(hqReadsSet->readsCount() - readsToMoveCount);
     }
 }

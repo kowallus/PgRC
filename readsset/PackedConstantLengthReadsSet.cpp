@@ -26,6 +26,12 @@ namespace PgSAReadsSet {
         packedReads.reserve((size_t) packedLength * readsCount);
     }
 
+    void PackedConstantLengthReadsSet::resize(uint_reads_cnt_max readsCount) {
+        properties->readsCount = readsCount;
+        properties->allReadsLength = readsCount * properties->minReadLength;
+        packedReads.resize((size_t) packedLength * readsCount);
+    }
+
     void PackedConstantLengthReadsSet::addRead(const char* read, uint_read_len_max readLength) {
         if (readLength != properties->minReadLength) {
             fprintf(stderr, "Unsupported variable length reads.\n");
@@ -35,6 +41,18 @@ namespace PgSAReadsSet {
         properties->allReadsLength += properties->minReadLength;
         uint_ps_element_min *packedReadsPtr = packedReads.data() + packedLength * (properties->readsCount - 1);
         sPacker->packSequence(read, readLength, packedReadsPtr);
+    }
+
+    void PackedConstantLengthReadsSet::copyRead(uint_reads_cnt_max srcIdx, uint_reads_cnt_max destIdx,
+            uint_reads_cnt_max n) {
+        std::copy(packedReads.begin() + packedLength * srcIdx, packedReads.begin() + packedLength * (srcIdx + n),
+                  packedReads.begin() + packedLength * destIdx);
+    }
+
+    void PackedConstantLengthReadsSet::copyPackedRead(const uint_ps_element_min *packedSequence,
+                                                      uint_reads_cnt_max destIdx, uint_reads_cnt_max n) {
+        std::copy(packedSequence, packedSequence + packedLength * n,
+                  packedReads.begin() + packedLength * destIdx);
     }
 
     template<class ReadsSourceIterator>

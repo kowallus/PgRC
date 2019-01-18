@@ -24,8 +24,8 @@ namespace PgSAIndex {
             const uint_symbols_cnt symbolsCount;
             const uchar symbolsPerElement;
             
-            char symbolsList[UCHAR_MAX] = {0};
-            int symbolOrder[UCHAR_MAX] = {-1};
+            char symbolsList[UCHAR_MAX] = {};
+            int symbolOrder[UCHAR_MAX] = {};
 
             // for a given value reverse[value][pos] returns character at the given position
             char_pg** reverse;

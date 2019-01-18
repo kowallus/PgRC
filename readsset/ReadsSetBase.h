@@ -74,11 +74,13 @@ namespace PgSAReadsSet {
             }
 
             void generateSymbolOrder() {
+                memset(symbolOrder, -1, UCHAR_MAX);
+
                 for (uint_symbols_cnt i = 0; i < symbolsCount; i++)
                     symbolOrder[(unsigned char) symbolsList[(unsigned char) i]] = i;
             }
 
-            void printout() {
+            void printout(bool verbose = false) {
                 std::cout << "reads count: " << readsCount << "\n";
                 std::cout << "all reads length: " << allReadsLength << "\n";
                 std::cout << "reads length is " << (constantReadLength?"constant":"variable") << "\n";

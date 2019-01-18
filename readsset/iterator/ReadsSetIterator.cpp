@@ -15,7 +15,7 @@ namespace PgSAReadsSet {
         for(uint_reads_cnt_max orgIdx: this->mapping) {
             writeValue(mappingDest, orgIdx);
         }
-        writeValue(mappingDest, UINT64_MAX);
+        writeValue(mappingDest, readsCount);
         mappingDest.close();
     }
 
@@ -30,13 +30,15 @@ namespace PgSAReadsSet {
         readValue(*divSource, readsCount, plainTextReadMode);
         VectorMapping* mapping = new VectorMapping({}, readsCount);
         uint_reads_cnt_max orgIdx = 0;
-        while (true) {
+        do {
             readValue(*divSource, orgIdx, plainTextReadMode);
-            if (orgIdx == UINT64_MAX)
-                break;
             mapping->mapping.push_back(orgIdx);
-        }
+        } while (orgIdx != readsCount);
         delete(divSource);
+        return mapping;
+    }
+
+    vector<uint_reads_cnt_max> &VectorMapping::getMappingVector() {
         return mapping;
     }
 

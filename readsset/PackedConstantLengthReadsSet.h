@@ -25,7 +25,11 @@ namespace PgSAReadsSet {
             virtual ~PackedConstantLengthReadsSet();
 
             void reserve(uint_reads_cnt_max readsCount);
+            void resize(uint_reads_cnt_max readsCount);
             void addRead(const char* read, uint_read_len_max readLength);
+            void copyRead(uint_reads_cnt_max srcIdx, uint_reads_cnt_max destIdx, uint_reads_cnt_max n = 1);
+            void copyPackedRead(const uint_ps_element_min *packedSequence, uint_reads_cnt_max destIdx,
+                    uint_reads_cnt_max n = 1);
 
             inline uint_read_len_max minReadLength() { return properties->minReadLength; };
             inline uint_read_len_max maxReadLength() { return properties->maxReadLength; };

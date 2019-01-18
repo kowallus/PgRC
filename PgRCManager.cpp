@@ -147,23 +147,14 @@ namespace PgTools {
     }
 
     void PgRCManager::runPgGeneratorBasedReadsDivision() {
-        ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator;
-        if (qualityDivision) goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                    srcFastqFile, pairFastqFile, lqDivisionFile, true, revComplPairFile, false, false);
-        else goodReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                    srcFastqFile, pairFastqFile);
-        const vector<bool> &badReads = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getBetterReads(
-                goodReadsIterator, gen_quality_coef);
-        IndexesMapping* goodIndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
-        delete (goodReadsIterator);
-        ReadsSetPersistence::writeOutputDivision(goodIndexesMapping, badReads,
-                                                 true, lqDivisionFile, true);
-
-        delete(goodIndexesMapping);
+        divReadsSets->getHqReadsSet()->printout();
+        const vector<bool> &isReadHqInHqReadsSet = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
+                divReadsSets->getHqReadsSet(), gen_quality_coef);
+        divReadsSets->moveLqReadsFromHqReadsSetsToLqReadsSets(isReadHqInHqReadsSet);
     }
 
     void PgRCManager::persistPgGeneratorBasedReadsDivision() {
-
+        divReadsSets->getLqReadsIndexesMapping()->saveMapping(lqDivisionFile);
     }
 
     void PgRCManager::runHQPgGeneration() {
