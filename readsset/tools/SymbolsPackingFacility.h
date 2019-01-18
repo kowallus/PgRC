@@ -36,7 +36,9 @@ namespace PgSAIndex {
             uint_element* clearFlat;
             
             void buildReverseAndClearIndexes();
-            
+
+            inline void validateSymbol(uchar symbol);
+
         public:
             SymbolsPackingFacility(ReadsSetProperties* readsSetProperties, uchar symbolsPerElement);
             

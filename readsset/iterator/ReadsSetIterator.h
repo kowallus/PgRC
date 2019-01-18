@@ -40,6 +40,9 @@ namespace PgSAReadsSet {
         uint_reads_cnt_max getReadOriginalIndex(uint_reads_cnt_max idx) override { return mapping[idx]; }
         uint_reads_cnt_max getMappedReadsCount() override { return mapping.size(); }
         uint_reads_cnt_max getReadsTotalCount() override { return readsCount; }
+
+        void saveMapping(string mappingFile);
+        static VectorMapping* loadMapping(string mappingFile);
     };
 
     template < typename uint_read_len >

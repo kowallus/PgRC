@@ -2,6 +2,44 @@
 
 namespace PgSAReadsSet {
 
+    using namespace PgSAHelpers;
+
+    void VectorMapping::saveMapping(string mappingFile) {
+        std::ofstream mappingDest(mappingFile, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (mappingDest.fail()) {
+            fprintf(stderr, "cannot write to indexes mapping file %s\n", mappingFile.c_str());
+            exit(EXIT_FAILURE);
+        }
+        writeReadMode(mappingDest, PgSAHelpers::plainTextWriteMode);
+        writeValue(mappingDest, readsCount);
+        for(uint_reads_cnt_max orgIdx: this->mapping) {
+            writeValue(mappingDest, orgIdx);
+        }
+        writeValue(mappingDest, UINT64_MAX);
+        mappingDest.close();
+    }
+
+    VectorMapping *VectorMapping::loadMapping(string mappingFile) {
+        ifstream* divSource = new ifstream(mappingFile, std::ios::in | std::ios::binary);
+        if (divSource->fail()) {
+            fprintf(stderr, "cannot open reads indexes mapping file %s\n", mappingFile.c_str());
+            exit(EXIT_FAILURE);
+        }
+        bool plainTextReadMode = readReadMode(*divSource);
+        uint_reads_cnt_max readsCount;
+        readValue(*divSource, readsCount, plainTextReadMode);
+        VectorMapping* mapping = new VectorMapping({}, readsCount);
+        uint_reads_cnt_max orgIdx = 0;
+        while (true) {
+            readValue(*divSource, orgIdx, plainTextReadMode);
+            if (orgIdx == UINT64_MAX)
+                break;
+            mapping->mapping.push_back(orgIdx);
+        }
+        delete(divSource);
+        return mapping;
+    }
+
     template<typename uint_read_len>
     ConcatenatedReadsSourceIterator<uint_read_len>::ConcatenatedReadsSourceIterator(std::istream* source) {
         this->source = source;

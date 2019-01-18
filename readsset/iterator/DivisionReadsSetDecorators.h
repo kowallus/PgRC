@@ -11,16 +11,10 @@ namespace PgTools {
         ReadsSourceIteratorTemplate< uint_read_len >* coreIterator;
         int64_t allCounter = -1;
         double error_level;
-        bool filterNReads;
-        bool visitGoodReads;
-        bool isQualityGood();
-        bool containsN();
-        vector<uint_reads_cnt_max> indexesMapping;
 
     public:
 
-        QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
-                                        bool filterNreads = false, bool visitGoodReads = true);
+        QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level);
 
         virtual ~QualityDividingReadsSetIterator();
 
@@ -31,6 +25,9 @@ namespace PgTools {
         string getQualityInfo();
         uint_read_len getReadLength();
         void rewind();
+
+        bool isQualityHigh();
+        bool containsN();
 
         IndexesMapping* retainVisitedIndexesMapping() override;
     };

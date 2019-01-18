@@ -4,7 +4,7 @@
 
 namespace PgSAReadsSet {
 
-    PackedConstantLengthReadsSet::PackedConstantLengthReadsSet(uint_read_len_max readLength, char *symbolsList,
+    PackedConstantLengthReadsSet::PackedConstantLengthReadsSet(uint_read_len_max readLength, const char *symbolsList,
                                                                uint8_t symbolsCount) {
         properties->maxReadLength = readLength;
         properties->minReadLength = readLength;

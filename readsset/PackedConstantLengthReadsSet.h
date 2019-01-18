@@ -21,7 +21,7 @@ namespace PgSAReadsSet {
 
             SymbolsPackingFacility<uint_ps_element_min>* sPacker;
 
-            PackedConstantLengthReadsSet(uint_read_len_max readLength, char* symbolsList, uint8_t symbolsCount);
+            PackedConstantLengthReadsSet(uint_read_len_max readLength, const char* symbolsList, uint8_t symbolsCount);
             virtual ~PackedConstantLengthReadsSet();
 
             void reserve(uint_reads_cnt_max readsCount);

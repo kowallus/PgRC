@@ -54,6 +54,7 @@ namespace PgSAReadsSet {
                 exit(EXIT_FAILURE);
             }
             divDest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << endl;
+            writeValue(divDest, orgIndexesMapping->getReadsTotalCount());
 
             int64_t i = -1;
             uint_reads_cnt_max visitedReadsCount = orgIndexesMapping->getMappedReadsCount();

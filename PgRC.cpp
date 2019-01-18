@@ -23,11 +23,11 @@ int main(int argc, char *argv[])
             case 's':
                 pgRC->generateIntermediateOutput();
                 break;
-            case 'n':
-                pgRC->setIgnoreNReads(true);
-                break;
             case 'N':
-                pgRC->setFilterNReads2Bad(true);
+                pgRC->setSeparateNReads(true);
+                break;
+            case 'n':
+                pgRC->setNReadsLQ(true);
                 break;
             case 'm':
                 pgRC->setTargetCharsPerMismatch(atoi(optarg));
@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
                                 "[-q error_probability*1000] gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                         argv[0]);
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
-                fprintf(stderr, "-n ignore reads containing N (WARNING: experimental - does not preserve reads order\n");
+                fprintf(stderr, "-n reads containing N are low quality \b-N reads containing N are processed separately\n");
                 fprintf(stderr, "-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
                 fprintf(stderr, "-s separate intermediate output files\n");

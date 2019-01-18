@@ -4,7 +4,6 @@
 #include "matching/SimplePgMatcher.h"
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
-#include "readsset/tools/division.h"
 #include "pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
@@ -22,14 +21,15 @@ namespace PgTools {
 
     void PgRCManager::prepareChainData() {
         qualityDivision = error_limit_in_promils < 1000;
-        readsLength = probeReadsLength(srcFastqFile);
-        targetMismatches = readsLength / targetCharsPerMismatch;
-        maxMismatches = readsLength / maxCharsPerMismatch;
+        readLength = probeReadsLength(srcFastqFile);
+        targetMismatches = readLength / targetCharsPerMismatch;
+        maxMismatches = readLength / maxCharsPerMismatch;
 
         if (qualityDivision)
             pgFilesPrefixes = pgFilesPrefixes + "_q" + toString(error_limit_in_promils);
-        pgFilesPrefixes = pgFilesPrefixes + (filterNReads2Bad?"_N":"") + "_g" + gen_quality_str;
-        badDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
+        pgFilesPrefixes = pgFilesPrefixes + (nReadsLQ?"_n":"") + (separateNReads?"_N":"") + "_g" + gen_quality_str;
+        lqDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
+        nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
         pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
         pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
                                       + "_M" + mismatchesMode + toString(maxCharsPerMismatch) + "_p" + toString(minimalPgMatchLength);
@@ -39,26 +39,29 @@ namespace PgTools {
         mappedBadDivisionFile = pgFilesPrefixesWithM + DIVISION_EXTENSION;
         if (skipIntermediateOutput) {
             pgGoodPrefix = pgMappedGoodPrefix;
-            badDivisionFile = mappedBadDivisionFile;
+            lqDivisionFile = mappedBadDivisionFile;
         }
     }
 
     void PgRCManager::executePgRCChain() {
         start_t = clock();
-
         prepareChainData();
-
         stageCount = 0;
         if (skipStages < ++stageCount && qualityDivision) {
             runQualityBasedDivision();
-            if (disableInMemoryMode || endAtStage == stageCount)
-                saveQualityBasedDivision();
+            if (disableInMemoryMode || endAtStage == stageCount) {
+                persistQualityBasedDivision();
+                disposeChainData();
+            }
         }
         div_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
+            prepareForPgGeneratorBaseReadsDivision();
             runPgGeneratorBasedReadsDivision();
-            if (disableInMemoryMode || endAtStage == stageCount)
-                savePgGeneratorBasedReadsDivision();
+            if (disableInMemoryMode || endAtStage == stageCount) {
+                persistPgGeneratorBasedReadsDivision();
+                disposeChainData();
+            }
         }
         pgDiv_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -91,7 +94,7 @@ namespace PgTools {
                     freeLQPg();
                 }
             }
-            if (ignoreNReads) {
+            if (separateNReads) {
                 runNPgGeneration();
                 saveNPg();
             }
@@ -104,30 +107,49 @@ namespace PgTools {
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
-            if (ignoreNReads)
+            if (separateNReads)
                 SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix, pgNPrefix});
             else
                 SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
         }
-
+        disposeChainData();
         reportTimes();
     }
 
-    void PgRCManager::runQualityBasedDivision() const {
+    void PgRCManager::runQualityBasedDivision() {
         ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
                 srcFastqFile, pairFastqFile);
-        divideReads(allReadsIterator, badDivisionFile, error_limit_in_promils / 1000.0, filterNReads2Bad);
+        divReadsSets =
+                DividedPCLReadsSets::getQualityDivisionBasedReadsSets(allReadsIterator, readLength, error_limit_in_promils / 1000.0,
+                        separateNReads, nReadsLQ);
         delete (allReadsIterator);
     }
 
-    void PgRCManager::saveQualityBasedDivision() {
-
+    void PgRCManager::persistQualityBasedDivision() {
+        divReadsSets->getLqReadsIndexesMapping()->saveMapping(lqDivisionFile);
+        if (separateNReads)
+            divReadsSets->getNReadsIndexesMapping()->saveMapping(nDivisionFile);
     }
 
-    void PgRCManager::runPgGeneratorBasedReadsDivision() const {
+    void PgRCManager::prepareForPgGeneratorBaseReadsDivision() {
+        if (!divReadsSets) {
+            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
+                    srcFastqFile, pairFastqFile);
+            if (qualityDivision) {
+                divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
+                        allReadsIterator, readLength, lqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "");
+            } else {
+                divReadsSets = DividedPCLReadsSets::getSimpleDividedPCLReadsSets(allReadsIterator, readLength,
+                                                                                     separateNReads, nReadsLQ);
+            }
+            delete (allReadsIterator);
+        }
+    }
+
+    void PgRCManager::runPgGeneratorBasedReadsDivision() {
         ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator;
         if (qualityDivision) goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                    srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
+                    srcFastqFile, pairFastqFile, lqDivisionFile, true, revComplPairFile, false, false);
         else goodReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
                     srcFastqFile, pairFastqFile);
         const vector<bool> &badReads = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getBetterReads(
@@ -135,18 +157,18 @@ namespace PgTools {
         IndexesMapping* goodIndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
         delete (goodReadsIterator);
         ReadsSetPersistence::writeOutputDivision(goodIndexesMapping, badReads,
-                                                 true, badDivisionFile, true);
+                                                 true, lqDivisionFile, true);
 
         delete(goodIndexesMapping);
     }
 
-    void PgRCManager::savePgGeneratorBasedReadsDivision() {
+    void PgRCManager::persistPgGeneratorBasedReadsDivision() {
 
     }
 
-    void PgRCManager::runHQPgGeneration() const {
+    void PgRCManager::runHQPgGeneration() {
         ReadsSourceIteratorTemplate<uint_read_len_max> *goodReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                srcFastqFile, pairFastqFile, badDivisionFile, true, revComplPairFile, false, false);
+                srcFastqFile, pairFastqFile, lqDivisionFile, true, revComplPairFile, false, false);
         PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
                 goodReadsIterator);
         IndexesMapping* good2IndexesMapping = goodReadsIterator->retainVisitedIndexesMapping();
@@ -157,10 +179,10 @@ namespace PgTools {
         delete(good2IndexesMapping);
     }
 
-    void PgRCManager::runMappingLQReadsOnHQPg() const {
+    void PgRCManager::runMappingLQReadsOnHQPg() {
         ReadsSourceIteratorTemplate<uint_read_len_max> *badReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                srcFastqFile, pairFastqFile, badDivisionFile, false);
-        cout << "Reading (div: " << badDivisionFile << ") reads set\n";
+                srcFastqFile, pairFastqFile, lqDivisionFile, false);
+        cout << "Reading (div: " << lqDivisionFile << ") reads set\n";
         PackedConstantLengthReadsSet *badReadsSet = PackedConstantLengthReadsSet::loadReadsSet(badReadsIterator);
         badReadsSet->printout();
         IndexesMapping* badIndexesMapping = badReadsIterator->retainVisitedIndexesMapping();
@@ -194,9 +216,9 @@ namespace PgTools {
 
     }
 
-    void PgRCManager::runLQPgGeneration() const {
+    void PgRCManager::runLQPgGeneration() {
         ReadsSourceIteratorTemplate<uint_read_len_max> *mappedBadReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, ignoreNReads, false);
+                srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, separateNReads, false);
         PseudoGenomeBase *badPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
                 mappedBadReadsIterator);
         IndexesMapping* mappedBadIndexesMapping = mappedBadReadsIterator->retainVisitedIndexesMapping();
@@ -223,7 +245,7 @@ namespace PgTools {
 
     }
 
-    void PgRCManager::runNPgGeneration() const {
+    void PgRCManager::runNPgGeneration() {
         ReadsSourceIteratorTemplate<uint_read_len_max> *mappedNReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, mappedBadDivisionFile, false, revComplPairFile, false, true);
         PseudoGenomeBase *nPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
@@ -262,6 +284,13 @@ namespace PgTools {
         fout << getTimeInSec(bad_t, match_t) << "\t";
         fout << getTimeInSec(gooder_t, bad_t) << "\t";
         fout << getTimeInSec(clock(), gooder_t) << endl;
+    }
+
+    void PgRCManager::disposeChainData() {
+        if (divReadsSets) {
+            delete (divReadsSets);
+            divReadsSets = 0;
+        }
     }
 
     uint_read_len_max probeReadsLength(const string &srcFastqFile) {

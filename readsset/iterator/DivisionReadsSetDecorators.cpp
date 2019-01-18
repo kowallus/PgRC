@@ -8,10 +8,8 @@ namespace PgTools {
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::QualityDividingReadsSetIterator(
-            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
-                bool filterNReads, bool visitGoodReads)
-            :coreIterator(coreIterator), error_level(error_level),
-             filterNReads(filterNReads), visitGoodReads(visitGoodReads) {}
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level)
+            :coreIterator(coreIterator), error_level(error_level) {}
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::~QualityDividingReadsSetIterator() {}
@@ -20,19 +18,15 @@ namespace PgTools {
     bool QualityDividingReadsSetIterator<uint_read_len>::moveNext() {
         while (coreIterator->moveNext()) {
             allCounter++;
-            if (isQualityGood() == visitGoodReads) {
-                indexesMapping.push_back(allCounter);
-                return true;
-            }
+            return true;
         }
         allCounter++;
         return false;
     }
 
     template<typename uint_read_len>
-    bool QualityDividingReadsSetIterator<uint_read_len>::isQualityGood() {
-        return (1 - qualityScore2correctProb(getQualityInfo()) <= error_level) &&
-                (!filterNReads || coreIterator->getRead().find('N') == string::npos);
+    bool QualityDividingReadsSetIterator<uint_read_len>::isQualityHigh() {
+        return (1 - qualityScore2correctProb(getQualityInfo()) <= error_level);
     }
 
     template<typename uint_read_len>
@@ -53,7 +47,6 @@ namespace PgTools {
     template<typename uint_read_len>
     void QualityDividingReadsSetIterator<uint_read_len>::rewind() {
         allCounter = -1;
-        indexesMapping.clear();
         coreIterator->rewind();
     }
 
@@ -69,7 +62,7 @@ namespace PgTools {
 
     template<typename uint_read_len>
     IndexesMapping *QualityDividingReadsSetIterator<uint_read_len>::retainVisitedIndexesMapping() {
-        return new VectorMapping(std::move(indexesMapping), allCounter);
+        return new DirectMapping(allCounter);
     }
 
     template<typename uint_read_len>
@@ -79,6 +72,8 @@ namespace PgTools {
             :coreIterator(coreIterator), divSource(divSource), visitComplement(visitComplement),
             ignoreNReads(ignoreNReads), ignoreNoNReads(ignoreNoNReads) {
         plainTextReadMode = readReadMode(*divSource);
+        uint_reads_cnt_max readsCount = 0;
+        readValue(*divSource, readsCount, plainTextReadMode);
         readValue(*divSource, currentDivIdx, plainTextReadMode);
     }
 
@@ -140,6 +135,8 @@ namespace PgTools {
         divSource->clear();
         divSource->seekg(0);
         readReadMode(*divSource);
+        uint_reads_cnt_max readsCount = 0;
+        readValue(*divSource, readsCount, plainTextReadMode);
         readValue(*divSource, currentDivIdx, plainTextReadMode);
         coreIterator->rewind();
     }

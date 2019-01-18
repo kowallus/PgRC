@@ -19,9 +19,6 @@ namespace PgSAIndex {
 
         std::copy(std::begin(readsSetProperties->symbolsList), std::end(readsSetProperties->symbolsList), std::begin(symbolsList));
         std::copy(std::begin(readsSetProperties->symbolOrder), std::end(readsSetProperties->symbolOrder), std::begin(symbolOrder));
-        for (uint_max i = 0; i < UCHAR_MAX; i++)
-            if (symbolOrder[i] == -1)
-                symbolOrder[i] = 0;
 
         buildReverseAndClearIndexes();
     }
@@ -90,8 +87,10 @@ namespace PgSAIndex {
     template<typename uint_element>
     uint_element SymbolsPackingFacility<uint_element>::packPrefixSymbols(const char_pg* symbols, const uint_max length) {
         uint_element value = 0;
-        for (uchar j = 0; j < length; j++)
+        for (uchar j = 0; j < length; j++) {
+            validateSymbol((uchar) symbols[j]);
             value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
+        }
 
         return value;
     }
@@ -119,8 +118,10 @@ namespace PgSAIndex {
         uint_element value = 0;
         for (uchar j = 0; j < symbolsPerElement; j++) {
             value *= symbolsCount;
-            if (j < length)
+            if (j < length) {
+                validateSymbol((uchar) symbols[j]);
                 value += symbolOrder[(uchar) symbols[j]];
+            }
         }
         return value;
     }
@@ -128,8 +129,10 @@ namespace PgSAIndex {
     template<typename uint_element>
     uint_element SymbolsPackingFacility<uint_element>::packSymbols(const char_pg* symbols) {
         uint_element value = 0;
-        for (uchar j = 0; j < symbolsPerElement; j++)
+        for (uchar j = 0; j < symbolsPerElement; j++) {
+            validateSymbol((uchar) symbols[j]);
             value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
+        }
 
         return value;
     }
@@ -327,6 +330,14 @@ namespace PgSAIndex {
         }
 
         return res;
+    }
+
+    template<typename uint_element>
+    void SymbolsPackingFacility<uint_element>::validateSymbol(uchar symbol) {
+        if (symbolOrder[symbol] == -1) {
+            fprintf(stdout, "Unexpected symbol '%c'. Packer supports: %s.\n", symbol, symbolsList);
+            exit(EXIT_FAILURE);
+        }
     }
 
     template class SymbolsPackingFacility<uint_ps_element_min>;

@@ -22,7 +22,8 @@ set(READSSET_FILES
         readsset/iterator/ReadsSetIterator.cpp
         readsset/iterator/ReadsSetIterator.h
         readsset/iterator/DivisionReadsSetDecorators.cpp readsset/iterator/DivisionReadsSetDecorators.h
-        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h readsset/tools/division.cpp readsset/tools/division.h readsset/tools/ReadsSetAnalizer.cpp readsset/tools/ReadsSetAnalizer.h)
+        readsset/DividedPCLReadsSets.cpp readsset/DividedPCLReadsSets.h
+        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h readsset/tools/ReadsSetAnalizer.cpp readsset/tools/ReadsSetAnalizer.h)
 
 set(PG_FILES
         ${READSSET_FILES}
@@ -62,7 +63,7 @@ set(PG_GEN_FILES
 set(STRAND_DETECTOR_FILES
         ${PG_FILES}
         strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h
-        strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h readsset/DividedReadsSets.cpp readsset/DividedReadsSets.h PgRCManager.cpp PgRCManager.h)
+        strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h PgRCManager.cpp PgRCManager.h)
 
 set(ROLLING_HASH_FILES
         rollinghash/characterhash.h

@@ -4,6 +4,8 @@
 #include "utils/helper.h"
 #include "pgsaconfig.h"
 
+#include "readsset/DividedPCLReadsSets.h"
+
 namespace PgTools {
 
     class PgRCManager {
@@ -15,8 +17,8 @@ namespace PgTools {
         uint16_t error_limit_in_promils = 1000;
         string gen_quality_str = "50";
         double gen_quality_coef = 0.5;
-        bool filterNReads2Bad = false;
-        bool ignoreNReads = false;
+        bool nReadsLQ = false;
+        bool separateNReads = false;
         uint16_t targetCharsPerMismatch = UINT16_MAX;
         uint16_t maxCharsPerMismatch = UINT16_MAX;
         char mismatchesMode = 'd';
@@ -44,13 +46,16 @@ namespace PgTools {
         void reportTimes();
 
         // CHAIN VARIABLES
-        uint_read_len_max readsLength;
+        uint_read_len_max readLength;
         uint8_t targetMismatches;
         uint8_t maxMismatches;
         uint8_t stageCount;
 
+        DividedPCLReadsSets* divReadsSets = 0;
+
         bool qualityDivision;
-        string badDivisionFile;
+        string lqDivisionFile;
+        string nDivisionFile;
         string pgGoodPrefix;
         string pgFilesPrefixesWithM;
         string pgMappedGoodPrefix;
@@ -87,12 +92,20 @@ namespace PgTools {
             PgRCManager::gen_quality_str = gen_quality_str;
         }
 
-        void setFilterNReads2Bad(bool filterNReads2Bad) {
-            PgRCManager::filterNReads2Bad = filterNReads2Bad;
+        void setNReadsLQ(bool nReadsLQ) {
+            if (separateNReads) {
+                fprintf(stderr, "Reads containing N should be processed either separately or consider low quality");
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::nReadsLQ = nReadsLQ;
         }
 
-        void setIgnoreNReads(bool ignoreNReads) {
-            PgRCManager::ignoreNReads = ignoreNReads;
+        void setSeparateNReads(bool separateNReads) {
+            if (nReadsLQ) {
+                fprintf(stderr, "Reads containing N should be processed either separately or consider low quality");
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::separateNReads = separateNReads;
         }
 
         void setTargetCharsPerMismatch(uint16_t targetCharsPerMismatch) {
@@ -161,21 +174,21 @@ namespace PgTools {
             PgRCManager::endAtStage = endAtStage;
         }
 
-        void runQualityBasedDivision() const;
+        void runQualityBasedDivision();
 
-        void runPgGeneratorBasedReadsDivision() const;
+        void runPgGeneratorBasedReadsDivision();
 
-        void runHQPgGeneration() const;
+        void runHQPgGeneration();
 
-        void runMappingLQReadsOnHQPg() const;
+        void runMappingLQReadsOnHQPg();
 
-        void runLQPgGeneration() const;
+        void runLQPgGeneration();
 
-        void runNPgGeneration() const;
+        void runNPgGeneration();
 
-        void saveQualityBasedDivision();
+        void persistQualityBasedDivision();
 
-        void savePgGeneratorBasedReadsDivision();
+        void persistPgGeneratorBasedReadsDivision();
 
         void saveHQPg();
 
@@ -198,6 +211,10 @@ namespace PgTools {
         void extractLQPgSequence();
 
         void freeLQPg();
+
+        void prepareForPgGeneratorBaseReadsDivision();
+
+        void disposeChainData();
     };
 }
 
