@@ -30,6 +30,7 @@ namespace PgSAReadsSet {
         properties->readsCount = readsCount;
         properties->allReadsLength = readsCount * properties->minReadLength;
         packedReads.resize((size_t) packedLength * readsCount);
+        packedReads.shrink_to_fit();
     }
 
     void PackedConstantLengthReadsSet::addRead(const char* read, uint_read_len_max readLength) {

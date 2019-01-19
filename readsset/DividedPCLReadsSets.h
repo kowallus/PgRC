@@ -47,6 +47,8 @@ namespace PgTools {
                           string lqDivisionFile, bool nReadsLQ, string nDivisionFile = "");
 
         void moveLqReadsFromHqReadsSetsToLqReadsSets(const vector<bool> &isReadHqInHqReadsSet);
+
+        IndexesMapping *generateHqReadsIndexesMapping();
     };
 
 }

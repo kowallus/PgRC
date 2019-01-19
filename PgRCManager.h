@@ -190,7 +190,7 @@ namespace PgTools {
 
         void persistPgGeneratorBasedReadsDivision();
 
-        void saveHQPg();
+        void persistHQPg();
 
         void saveHQPgReadsList();
 
@@ -215,6 +215,8 @@ namespace PgTools {
         void prepareForPgGeneratorBaseReadsDivision();
 
         void disposeChainData();
+
+        void prepareForHqPgGeneration();
     };
 }
 

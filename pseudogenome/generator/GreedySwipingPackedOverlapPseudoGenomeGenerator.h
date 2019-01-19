@@ -83,6 +83,7 @@ namespace PgSAIndex {
             PseudoGenomeGeneratorBase* getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet);
 
             static PseudoGenomeBase* generatePg(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
+            static PseudoGenomeBase* generatePg(PackedConstantLengthReadsSet *readsSet);
             static const vector<bool> getHQReads(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator,
                                                  double qualityCoef);
             static const vector<bool> getHQReads(PackedConstantLengthReadsSet *readsSet,

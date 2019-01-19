@@ -169,4 +169,23 @@ namespace PgTools {
         }
         hqReadsSet->resize(hqReadsSet->readsCount() - readsToMoveCount);
     }
+
+    IndexesMapping* DividedPCLReadsSets::generateHqReadsIndexesMapping() {
+        vector<uint_reads_cnt_max> hqReadIdx;
+        hqReadIdx.reserve(lqMapping->getReadsTotalCount() -
+            lqReadsSet->readsCount() - (separateNReadsSet?nReadsSet->readsCount():0));
+        int64_t allCounter = -1;
+        uint_reads_cnt_max lqCounter = 0;
+        uint_reads_cnt_max nCounter = 0;
+        while (++allCounter < lqMapping->getReadsTotalCount()) {
+            if (lqMapping->getReadOriginalIndex(lqCounter) == allCounter) {
+                lqCounter++;
+            } else if (separateNReadsSet &&
+                       nMapping->getReadOriginalIndex(nCounter) == allCounter) {
+                nCounter++;
+            } else
+                hqReadIdx.push_back(allCounter);
+        }
+        return new VectorMapping(std::move(hqReadIdx), lqMapping->getReadsTotalCount());
+    }
 }
