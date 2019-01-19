@@ -23,7 +23,7 @@ namespace PgTools {
         PackedConstantLengthReadsSet *readsSet;
         uint32_t matchPrefixLength;
 
-        vector<uint32_t> readMatchPos;
+        vector<uint64_t> readMatchPos;
         vector<bool> readMatchRC;
 
         vector<uint8_t> readMismatchesCount;
@@ -50,7 +50,7 @@ namespace PgTools {
 
     public:
         static const uint_read_len_max DISABLED_PREFIX_MODE;
-        static const uint32_t NOT_MATCHED_VALUE;
+        static const uint64_t NOT_MATCHED_VALUE;
 
         DefaultReadsMatcher(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                             uint32_t matchPrefixLength);
@@ -66,10 +66,12 @@ namespace PgTools {
         void writeMatchesInfo(const string &outPrefix);
 
         const vector<uint_reads_cnt_max> getMatchedReadsIndexes() const;
-        const vector<uint32_t> &getReadMatchPos() const;
+        const vector<uint64_t> &getReadMatchPos() const;
         const vector<uint8_t> &getReadMismatches() const;
 
         void writeIntoPseudoGenome(const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
+
+        const vector<bool> getMatchedReadsBitmap();
     };
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
@@ -153,11 +155,10 @@ namespace PgTools {
         virtual ~InterleavedReadsApproxMatcher();
     };
 
-    void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
+    const vector<bool> mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
-                        IndexesMapping* orgIndexesMapping, bool divisionComplement,
-                        const string &outDivisionFile);
+                        IndexesMapping* orgIndexesMapping);
 }
 
 #endif //PGTOOLS_READSMATCHERS_H

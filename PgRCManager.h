@@ -35,7 +35,7 @@ namespace PgTools {
         uint8_t endAtStage = UINT8_MAX;
 
         // TESTING
-        bool disableInMemoryMode = true;
+        bool disableInMemoryMode = false;
         clock_t start_t;
         clock_t div_t;
         clock_t pgDiv_t;
@@ -217,6 +217,10 @@ namespace PgTools {
         void disposeChainData();
 
         void prepareForHqPgGeneration();
+
+        void prepareForMappingLQReadsOnHQPg();
+
+        void prepareForLQPgAndNPgGeneration();
     };
 }
 

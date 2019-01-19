@@ -79,17 +79,18 @@ namespace PgTools {
                                                       bool nReadsLQ) {
         if (separateNReadsSet || nReadsLQ)
             return DividedPCLReadsSets::getQualityDivisionBasedReadsSets(readsIt, readLength, 1, separateNReadsSet, nReadsLQ);
-        DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, separateNReadsSet, nReadsLQ);
+        DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, false, false);
         while (readsIt->moveNext()) {
             readsSets->hqReadsSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());
         }
+        readsSets->lqMapping = new VectorMapping({}, readsSets->hqReadsSet->readsCount());
         return readsSets;
     }
 
     DividedPCLReadsSets *
     DividedPCLReadsSets::loadDivisionReadsSets(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt,
                                                uint_read_len_max readLength, string lqDivisionFile, bool nReadsLQ,
-                                               string nDivisionFile) {
+                                               string nDivisionFile, bool skipHQReadsSet) {
         bool separateNReadsSet = nDivisionFile != "";
         DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, separateNReadsSet, nReadsLQ);
         readsSets->lqMapping = VectorMapping::loadMapping(lqDivisionFile);
@@ -100,16 +101,15 @@ namespace PgTools {
         uint_reads_cnt_max lqCounter = 0;
         uint_reads_cnt_max nCounter = 0;
         while (readsIt->moveNext()) {
-            PackedConstantLengthReadsSet* targetSet = readsSets->hqReadsSet;
             if (readsSets->lqMapping->getReadOriginalIndex(lqCounter) == allCounter) {
-                targetSet = readsSets->lqReadsSet;
+                readsSets->lqReadsSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());
                 lqCounter++;
             } else if (separateNReadsSet &&
                     readsSets->nMapping->getReadOriginalIndex(nCounter) == allCounter) {
-                targetSet = readsSets->nReadsSet;
+                readsSets->nReadsSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());
                 nCounter++;
-            }
-            targetSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());
+            } else if (!skipHQReadsSet)
+                readsSets->hqReadsSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());
             allCounter++;
         }
 
@@ -187,5 +187,19 @@ namespace PgTools {
                 hqReadIdx.push_back(allCounter);
         }
         return new VectorMapping(std::move(hqReadIdx), lqMapping->getReadsTotalCount());
+    }
+
+    void DividedPCLReadsSets::removeReadsFromLqReadsSet(const vector<bool> &isLqReadMappedIntoHqPg) {
+        vector<uint_reads_cnt_max> &lqReadIdx = lqMapping->getMappingVector();
+        uint_reads_cnt_max newLqCounter = 0;
+        for(uint_reads_cnt_max lqCounter = 0; lqCounter < lqReadsSet->readsCount(); lqCounter++) {
+            if (!isLqReadMappedIntoHqPg[lqCounter]) {
+                lqReadIdx[newLqCounter] = lqReadIdx[lqCounter];
+                lqReadsSet->copyRead(lqCounter, newLqCounter++);
+            }
+        }
+        lqReadsSet->resize(newLqCounter);
+        lqReadIdx[newLqCounter++] = lqMapping->getReadsTotalCount();
+        lqReadIdx.resize(newLqCounter);
     }
 }

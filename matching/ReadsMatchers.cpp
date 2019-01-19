@@ -42,7 +42,7 @@ namespace PgTools {
     }
 
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
-    const uint32_t DefaultReadsMatcher::NOT_MATCHED_VALUE = UINT32_MAX;
+    const uint64_t DefaultReadsMatcher::NOT_MATCHED_VALUE = UINT64_MAX;
 
     DefaultReadsMatcher::DefaultReadsMatcher(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                                              uint32_t matchPrefixLength) :
@@ -145,7 +145,7 @@ namespace PgTools {
 
         while (hashMatcher->moveNext()) {
             const uint64_t matchPosition = hashMatcher->getHashMatchTextPosition();
-            const uint32_t matchReadIndex = hashMatcher->getHashMatchPatternIndex();
+            const uint_reads_cnt_max matchReadIndex = hashMatcher->getHashMatchPatternIndex();
 
             bool exactMatch = readsSet->comparePackedReadWithPattern(matchReadIndex, txt + matchPosition) == 0;
             if (exactMatch) {
@@ -370,7 +370,7 @@ namespace PgTools {
         return matchedReads;
     }
 
-    const vector<uint32_t> &DefaultReadsMatcher::getReadMatchPos() const {
+    const vector<uint64_t> &DefaultReadsMatcher::getReadMatchPos() const {
         return readMatchPos;
     }
 
@@ -438,11 +438,18 @@ namespace PgTools {
         cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
-    void mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
+    const vector<bool> DefaultReadsMatcher::getMatchedReadsBitmap() {
+        vector<bool> res;
+        res.reserve(readsCount);
+        for(const uint64_t matchPos: readMatchPos)
+            res.push_back(matchPos != DefaultReadsMatcher::NOT_MATCHED_VALUE);
+        return res;
+    }
+
+    const vector<bool> mapReadsIntoPg(const string &pgFilePrefix, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
-                        IndexesMapping* orgIndexesMapping, bool divisionComplement,
-                        const string &outDivisionFile) {
+                        IndexesMapping* orgIndexesMapping) {
         DefaultReadsMatcher* matcher;
         cout << "targetMismatches (maxMismatches): " << (int) targetMismatches << "(" << (int) maxMismatches << ")" << endl;
         if (targetMismatches == 0)
@@ -463,16 +470,13 @@ namespace PgTools {
         if (dumpInfo)
             matcher->writeMatchesInfo(pgDestFilePrefix);
 
-        const vector<uint32_t> &readsMatchPos = matcher->getReadMatchPos();
-        const vector<uint8_t> &readsMismatches = matcher->getReadMismatches();
-
-        ReadsSetPersistence::writeOutputDivision(orgIndexesMapping, readsMatchPos,
-                                                 DefaultReadsMatcher::NOT_MATCHED_VALUE, outDivisionFile, divisionComplement);
+        const vector<bool> res = matcher->getMatchedReadsBitmap();
 
         if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
             matcher->writeIntoPseudoGenome(pgDestFilePrefix, orgIndexesMapping);
 
         delete(matcher);
+        return res;
     }
 
 }

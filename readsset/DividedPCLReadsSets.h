@@ -44,11 +44,13 @@ namespace PgTools {
 
         static DividedPCLReadsSets *
     loadDivisionReadsSets(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt, uint_read_len_max readLength,
-                          string lqDivisionFile, bool nReadsLQ, string nDivisionFile = "");
+                          string lqDivisionFile, bool nReadsLQ, string nDivisionFile = "", bool skipHQReadsSet = false);
 
         void moveLqReadsFromHqReadsSetsToLqReadsSets(const vector<bool> &isReadHqInHqReadsSet);
 
         IndexesMapping *generateHqReadsIndexesMapping();
+
+        void removeReadsFromLqReadsSet(const vector<bool> &isLqReadMappedIntoHqPg);
     };
 
 }
