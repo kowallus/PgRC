@@ -365,5 +365,4 @@ namespace PgTools {
     SeparatedPseudoGenomeOutputBuilder::~SeparatedPseudoGenomeOutputBuilder() {
         delete(pgh);
     }
-
 }

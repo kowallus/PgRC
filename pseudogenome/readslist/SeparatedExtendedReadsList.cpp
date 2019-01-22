@@ -124,7 +124,7 @@ namespace PgTools {
     }
 
     template<int maxMismatches>
-    ConstantAccessExtendedReadsList *SeparatedExtendedReadsList<maxMismatches>::getConstantAccessExtendedReadsList(
+    ConstantAccessExtendedReadsList *SeparatedExtendedReadsList<maxMismatches>::loadConstantAccessExtendedReadsList(
             const string &pseudoGenomePrefix, uint_pg_len_max pgLengthPosGuard) {
         SeparatedExtendedReadsList rl(pseudoGenomePrefix);
         ConstantAccessExtendedReadsList *res = new ConstantAccessExtendedReadsList(rl.pgh->getMaxReadLength());

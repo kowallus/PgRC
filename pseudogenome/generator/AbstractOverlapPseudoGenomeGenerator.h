@@ -4,6 +4,7 @@
 #include "PseudoGenomeGeneratorBase.h"
 #include <algorithm>
 #include <set>
+#include "../persistence/SeparatedPseudoGenomePersistence.h"
 
 using namespace PgSAReadsSet;
 
@@ -34,14 +35,13 @@ namespace PgSAIndex {
             virtual uint_reads_cnt readsTotal() = 0;
 
             virtual ReadsSetProperties* getReadsSetProperties() = 0;
-            
-            template<typename uint_pg_len, class GeneratedPseudoGenome>
-            PseudoGenomeBase* assemblePseudoGenomeFullTemplate();
 
-            template<typename uint_pg_len>
-            PseudoGenomeBase* assemblePseudoGenomeTemplate();
+            void performOverlapping(double overlappedReadsCountStopCoef = 1);
 
-            virtual void findOverlappingReads(double overlappedReadsCountStopCoef = 1) = 0;
+            template<class GeneratedPseudoGenome>
+            GeneratedPseudoGenome* assemblePseudoGenomeTemplate();
+
+            virtual void findOverlappingReads(double overlappedReadsCountStopCoef) = 0;
             
             uint_pg_len_max countPseudoGenomeLength();
             uint_reads_cnt countSingles();
@@ -56,8 +56,12 @@ namespace PgSAIndex {
             AbstractOverlapPseudoGenomeGeneratorTemplate() {}
             virtual ~AbstractOverlapPseudoGenomeGeneratorTemplate() {}
 
-            PseudoGenomeBase* generatePseudoGenomeBase();
-            const vector<bool> getBothSidesOverlappedReads(double overlappedReadsCountStopCoef) override;
+            SeparatedPseudoGenome *generateSeparatedPseudoGenome() override;
+
+            PseudoGenomeBase *generatePseudoGenomeBase() override;
+
+
+        const vector<bool> getBothSidesOverlappedReads(double overlappedReadsCountStopCoef) override;
 
             bool isPseudoGenomeLengthStandardVirtual();
             bool isPseudoGenomeLengthMaximalVirtual();

@@ -47,9 +47,9 @@ set(PG_FILES
         pseudogenome/readslist/iterator/ReadsListIteratorInterface.h
         pseudogenome/TemplateUserGenerator.h
         pseudogenome/persistence/SeparatedPseudoGenomePersistence.cpp pseudogenome/persistence/SeparatedPseudoGenomePersistence.h
-        pseudogenome/persistence/SeparatedExtendedReadsList.cpp pseudogenome/persistence/SeparatedExtendedReadsList.h
+        pseudogenome/readslist/SeparatedExtendedReadsList.cpp pseudogenome/readslist/SeparatedExtendedReadsList.h
         pseudogenome/readslist/iterator/ExtendedReadsListIteratorInterface.h
-        pseudogenome/readslist/iterator/ReadsListIteratorExtendedWrapper.h)
+        pseudogenome/readslist/iterator/ReadsListIteratorExtendedWrapper.h pseudogenome/SeparatedPseudoGenome.cpp pseudogenome/SeparatedPseudoGenome.h)
 
 set(PG_GEN_FILES
         ${PG_FILES}

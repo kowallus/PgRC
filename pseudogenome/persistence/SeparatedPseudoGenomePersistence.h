@@ -6,6 +6,7 @@
 #include "../../utils/helper.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 #include "../readslist/iterator/ReadsListIteratorExtendedWrapper.h"
+#include "../readslist/SeparatedExtendedReadsList.h"
 
 namespace PgTools {
 

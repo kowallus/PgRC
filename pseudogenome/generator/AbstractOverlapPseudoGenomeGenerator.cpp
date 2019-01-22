@@ -29,9 +29,7 @@ namespace PgSAIndex {
 
         clock_checkpoint();
         init();
-        findOverlappingReads(overlappedReadsCountStopCoef);
-        pseudoGenomeLength = countPseudoGenomeLength();
-        quick_stats();
+        performOverlapping(overlappedReadsCountStopCoef);
 
         vector<uint_read_len> prevOverlap(readsTotal() + 1, 0);
         for(uint_reads_cnt i = 1; i <= readsTotal(); i++)
@@ -59,29 +57,12 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    PseudoGenomeBase* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::generatePseudoGenomeBase() {
-
+    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::performOverlapping(double overlappedReadsCountStopCoef) {
         clock_checkpoint();
-      
-        init();  
-        
-        findOverlappingReads();
-        
+        findOverlappingReads(overlappedReadsCountStopCoef);
         pseudoGenomeLength = countPseudoGenomeLength();
         quick_stats();
 
-        PseudoGenomeBase* pgb = 0;
-        
-        if (isPseudoGenomeLengthStandardVirtual())
-            pgb = assemblePseudoGenomeTemplate<uint_pg_len_std>();
-        else if (isPseudoGenomeLengthMaximalVirtual())
-            pgb = assemblePseudoGenomeTemplate<uint_pg_len_max>();
-        else
-            cout << "Unsupported: pseudo genome length :(";
-        
-        dispose();
-        
-        return pgb;
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
@@ -149,9 +130,13 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    template<typename uint_pg_len, class GeneratedPseudoGenome>
-    PseudoGenomeBase* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::assemblePseudoGenomeFullTemplate() {
+    template<class GeneratedPseudoGenome>
+    GeneratedPseudoGenome* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::assemblePseudoGenomeTemplate() {
         clock_checkpoint();
+        if (!getReadsSetProperties()->constantReadLength) {
+            cout << "ERROR: Unsuported variable reads length!";
+            exit(EXIT_FAILURE);
+        }
 
         GeneratedPseudoGenome* genPG =
                 new GeneratedPseudoGenome(this->pseudoGenomeLength, getReadsSetProperties());
@@ -169,16 +154,6 @@ namespace PgSAIndex {
         cout << "Pseudogenome assembled in " << clock_millis() << " msec\n\n";
 
         return genPG;
-    }
-
-    template<typename uint_read_len, typename uint_reads_cnt>
-    template<typename uint_pg_len>
-    PseudoGenomeBase* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::assemblePseudoGenomeTemplate() {
-        if (getReadsSetProperties()->constantReadLength)
-            return assemblePseudoGenomeFullTemplate<uint_pg_len, GeneratedPseudoGenomeOfConstantLengthReadsType < uint_read_len, uint_reads_cnt, uint_pg_len >> ();
-
-        cout << "ERROR: Unsuported variable reads length!";
-        return 0;
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
@@ -204,6 +179,38 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     bool AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::isPseudoGenomeLengthStandardVirtual() {
         return isPGLengthStd(pseudoGenomeLength);
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    SeparatedPseudoGenome *
+    AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::generateSeparatedPseudoGenome() {
+        init();
+        performOverlapping();
+
+        SeparatedPseudoGenome* pg = assemblePseudoGenomeTemplate<GeneratedSeparatedPseudoGenome>();
+
+        dispose();
+        return pg;
+
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    PseudoGenomeBase *
+    AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::generatePseudoGenomeBase() {
+        init();
+        performOverlapping();
+
+        PseudoGenomeBase* pg = 0;
+
+        if (isPseudoGenomeLengthStandardVirtual())
+            pg = assemblePseudoGenomeTemplate<GeneratedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len_std>>();
+        else if (isPseudoGenomeLengthMaximalVirtual())
+            pg = assemblePseudoGenomeTemplate<GeneratedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len_max>>();
+        else
+            cout << "Unsupported: pseudo genome length :(";
+
+        dispose();
+        return pg;
     }
 
     template class AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len_min, uint_reads_cnt_std>;

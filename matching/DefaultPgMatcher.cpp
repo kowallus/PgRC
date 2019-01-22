@@ -3,7 +3,7 @@
 #include "../pseudogenome/DefaultPseudoGenome.h"
 #include "../pseudogenome/PackedPseudoGenome.h"
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
+#include "../pseudogenome/readslist/SeparatedExtendedReadsList.h"
 
 namespace PgTools {
 
@@ -27,6 +27,7 @@ namespace PgTools {
                                                                                  plainTextReadMode);
             destPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(targetPgPrefix);
             cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
+            delete(pgh);
         } else
             destPg = srcPg;
 
@@ -55,7 +56,8 @@ namespace PgTools {
     using namespace PgTools;
 
     void DefaultPgMatcher::transferMatchedReads(const string &destPgFilePrefix) {
-        srcRl = DefaultSeparatedExtendedReadsList::getConstantAccessExtendedReadsList(srcPgPrefix, srcPgh->getPseudoGenomeLength());
+        srcRl = DefaultSeparatedExtendedReadsList::loadConstantAccessExtendedReadsList(srcPgPrefix,
+                                                                                       srcPgh->getPseudoGenomeLength());
 
         fillPgMatches();
         mapPgMatches2SrcReadsList();

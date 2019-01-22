@@ -4,7 +4,7 @@
 #include "../readsset/persistance/ReadsSetPersistence.h"
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
+#include "../pseudogenome/readslist/SeparatedExtendedReadsList.h"
 
 namespace PgTools {
 

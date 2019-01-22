@@ -1,8 +1,8 @@
 #ifndef PGTOOLS_SEPARATEDEXTENDEDREADSLISTITERATOR_H
 #define PGTOOLS_SEPARATEDEXTENDEDREADSLISTITERATOR_H
 
-#include "../readslist/iterator/ExtendedReadsListIteratorInterface.h"
-#include "SeparatedPseudoGenomePersistence.h"
+#include "iterator/ExtendedReadsListIteratorInterface.h"
+#include "../persistence/SeparatedPseudoGenomePersistence.h"
 
 namespace PgTools {
 
@@ -85,8 +85,8 @@ namespace PgTools {
         bool areMismatchesEnabled();
 
         static SeparatedExtendedReadsList<maxMismatches>* getIterator(const string &pseudoGenomePrefix);
-        static ConstantAccessExtendedReadsList* getConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
-                uint_pg_len_max pgLengthPosGuard = 0);
+        static ConstantAccessExtendedReadsList* loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
+                                                                                    uint_pg_len_max pgLengthPosGuard = 0);
     };
 
     typedef SeparatedExtendedReadsList<UINT8_MAX> DefaultSeparatedExtendedReadsList;

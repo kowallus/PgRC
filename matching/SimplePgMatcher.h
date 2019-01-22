@@ -2,7 +2,7 @@
 #define PGTOOLS_SIMPLEPGMATCHER_H
 
 #include "../pseudogenome/PseudoGenomeBase.h"
-#include "../pseudogenome/persistence/SeparatedExtendedReadsList.h"
+#include "../pseudogenome/readslist/SeparatedExtendedReadsList.h"
 #include "TextMatchers.h"
 
 namespace PgTools {

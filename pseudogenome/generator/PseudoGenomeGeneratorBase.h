@@ -4,9 +4,11 @@
 #include "../../pseudogenome/DefaultPseudoGenome.h"
 #include "../../pseudogenome/PseudoGenomeInterface.h"
 #include "../../readsset/DefaultReadsSet.h"
+#include "../SeparatedPseudoGenome.h"
 
 using namespace PgSAHelpers;
 using namespace PgSAReadsSet;
+using namespace PgTools;
 
 namespace PgSAIndex {
 
@@ -14,6 +16,7 @@ namespace PgSAIndex {
     {
         public:
 
+            virtual SeparatedPseudoGenome* generateSeparatedPseudoGenome() = 0;
             virtual PseudoGenomeBase* generatePseudoGenomeBase() = 0;
             virtual const vector<bool> getBothSidesOverlappedReads(double overlappedReadsCountStopCoef) = 0;
 

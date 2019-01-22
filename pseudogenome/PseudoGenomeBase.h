@@ -125,6 +125,15 @@ namespace PgSAIndex {
             };
 
             uint_pg_len_max getPseudoGenomeLength() { return this->pgLength; };
+
+            ReadsSetProperties* generateReadsSetProperties() {
+                ReadsSetProperties* rsProp = new ReadsSetProperties();
+                rsProp->constantReadLength = this->constantReadLength;
+                rsProp->minReadLength = this->constantReadLength?this->maxReadLength:1;
+                rsProp->maxReadLength = this->maxReadLength;
+                rsProp->allReadsLength = this->constantReadLength?this->readsCount*this->maxReadLength:-1;
+                rsProp->readsCount = this->readsCount;
+            }
     };
 
 }
