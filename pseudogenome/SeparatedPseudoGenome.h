@@ -31,6 +31,8 @@ namespace PgTools {
         void write(std::ostream &dest) override;
 
         const string getPseudoGenomeVirtual() override;
+
+        void disposeReadsList();
     };
 
     class GeneratedSeparatedPseudoGenome: public SeparatedPseudoGenome {

@@ -6,7 +6,6 @@
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
-#include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
 namespace PgTools {
 
@@ -30,16 +29,16 @@ namespace PgTools {
         pgFilesPrefixes = pgFilesPrefixes + (nReadsLQ?"_n":"") + (separateNReads?"_N":"") + "_g" + gen_quality_str;
         lqDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
         nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
-        pgGoodPrefix = pgFilesPrefixes + GOOD_INFIX;
+        pgHqPrefix = pgFilesPrefixes + GOOD_INFIX;
         pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
                                       + "_M" + mismatchesMode + toString(maxCharsPerMismatch) + "_p" + toString(minimalPgMatchLength);
-        pgMappedGoodPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
-        pgMappedBadPrefix = pgFilesPrefixesWithM + BAD_INFIX;
+        pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
+        pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
-        mappedBadDivisionFile = pgFilesPrefixesWithM + DIVISION_EXTENSION;
+        mappedLqDivisionFile = pgFilesPrefixesWithM + DIVISION_EXTENSION;
         if (skipIntermediateOutput) {
-            pgGoodPrefix = pgMappedGoodPrefix;
-            lqDivisionFile = mappedBadDivisionFile;
+            pgHqPrefix = pgMappedHqPrefix;
+            lqDivisionFile = mappedLqDivisionFile;
         }
     }
 
@@ -50,7 +49,7 @@ namespace PgTools {
         if (skipStages < ++stageCount && qualityDivision) {
             runQualityBasedDivision();
             if (disableInMemoryMode || endAtStage == stageCount) {
-                persistQualityBasedDivision();
+                persistReadsQualityDivision();
                 disposeChainData();
             }
         }
@@ -59,7 +58,7 @@ namespace PgTools {
             prepareForPgGeneratorBaseReadsDivision();
             runPgGeneratorBasedReadsDivision();
             if (disableInMemoryMode || endAtStage == stageCount) {
-                persistPgGeneratorBasedReadsDivision();
+                persistReadsQualityDivision();
                 disposeChainData();
             }
         }
@@ -69,6 +68,7 @@ namespace PgTools {
             runHQPgGeneration();
             if (disableInMemoryMode || endAtStage == stageCount) {
                 persistHQPg();
+                persistReadsQualityDivision();
                 disposeChainData();
             }
         }
@@ -77,12 +77,13 @@ namespace PgTools {
             prepareForMappingLQReadsOnHQPg();
             runMappingLQReadsOnHQPg();
             if (disableInMemoryMode || endAtStage == stageCount) {
-                persistHQPg();
+                persistHQPgSequence();
+                persistMappedReadsQualityDivision();
                 disposeChainData();
             } else {
-                saveHQPgReadsList();
-                extractHQPgSequence();
-                freeHQPg();
+                //// Already done during runMappingLQReadsOnHQPg()
+//                persistMappedHQPgReadsList();
+                hqPg->disposeReadsList();
             }
         }
         match_t = clock();
@@ -90,33 +91,35 @@ namespace PgTools {
             prepareForLQPgAndNPgGeneration();
             if (separateNReads) {
                 runNPgGeneration();
-                saveNPg();
+                persistNPg();
+                delete(nPg);
+                nPg = 0;
             }
             runLQPgGeneration();
             if (disableInMemoryMode || endAtStage == stageCount) {
-                saveLQPg();
-                if (skipStages < stageCount - 1)
-                    saveHQPgSequence();
+                persistLQPg();
+                if (hqPg)
+                    persistHQPgSequence();
             } else {
-                saveLQPgReadsList();
-                extractLQPgSequence();
-                freeLQPg();
+                persistLQPgReadsList();
             }
             delete(divReadsSets);
             divReadsSets = 0;
+            lqPg->disposeReadsList();
         }
         bad_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
-            //DefaultPgMatcher::matchPgInPgFile(pgMappedGoodPrefix, pgMappedGoodPrefix, readsLength, pgGoodPrefix, true, false);
-            SimplePgMatcher::matchPgInPgFiles(pgMappedGoodPrefix, pgMappedBadPrefix, minimalPgMatchLength, true);
-            saveMEMMappedPgSequences();
+            prepareForPgMatching();
+            //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
+            SimplePgMatcher::matchPgInPgFiles(hqPg->getPgSequence(), lqPg->getPgSequence(),
+                    pgMappedHqPrefix, pgMappedLqPrefix, minimalPgMatchLength, true);
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
             if (separateNReads)
-                SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix, pgNPrefix});
+                SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
             else
-                SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedGoodPrefix, pgMappedBadPrefix});
+                SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
         }
         disposeChainData();
         reportTimes();
@@ -131,7 +134,7 @@ namespace PgTools {
         delete (allReadsIterator);
     }
 
-    void PgRCManager::persistQualityBasedDivision() {
+    void PgRCManager::persistReadsQualityDivision() {
         divReadsSets->getLqReadsIndexesMapping()->saveMapping(lqDivisionFile);
         if (separateNReads)
             divReadsSets->getNReadsIndexesMapping()->saveMapping(nDivisionFile);
@@ -159,10 +162,6 @@ namespace PgTools {
         divReadsSets->moveLqReadsFromHqReadsSetsToLqReadsSets(isReadHqInHqReadsSet);
     }
 
-    void PgRCManager::persistPgGeneratorBasedReadsDivision() {
-        divReadsSets->getLqReadsIndexesMapping()->saveMapping(lqDivisionFile);
-    }
-
     void PgRCManager::prepareForHqPgGeneration() {
         if (!divReadsSets) {
             ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
@@ -175,7 +174,7 @@ namespace PgTools {
 
     void PgRCManager::runHQPgGeneration() {
         divReadsSets->getHqReadsSet()->printout();
-        SeparatedPseudoGenome *hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+        hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getHqReadsSet());
         divReadsSets->disposeHqReadsSet();
         IndexesMapping* hq2IndexesMapping = divReadsSets->generateHqReadsIndexesMapping();
@@ -183,11 +182,10 @@ namespace PgTools {
         delete(hq2IndexesMapping);
         if (revComplPairFile)
             hqPg->applyRevComplPairFile();
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgGoodPrefix);
     }
 
     void PgRCManager::persistHQPg() {
-
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgHqPrefix);
     }
 
     void PgRCManager::prepareForMappingLQReadsOnHQPg() {
@@ -195,35 +193,34 @@ namespace PgTools {
             ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
                     srcFastqFile, pairFastqFile);
             divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
-                    allReadsIterator, readLength, lqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "");
+                    allReadsIterator, readLength, lqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "", true);
             delete (allReadsIterator);
         }
+        if (!hqPg)
+            hqPg = SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(pgHqPrefix);
     }
 
     void PgRCManager::runMappingLQReadsOnHQPg() {
         divReadsSets->getLqReadsSet()->printout();
         const vector<bool>& isLqReadMappedIntoHqPg = mapReadsIntoPg(
-                pgGoodPrefix, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
+                hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 targetMismatches, maxMismatches, mismatchesMode, 0,
-                false, pgMappedGoodPrefix, divReadsSets->getLqReadsIndexesMapping());
+                false, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
-        divReadsSets->getLqReadsIndexesMapping()->saveMapping(mappedBadDivisionFile);
     }
 
-    void PgRCManager::saveHQPgReadsList() {
-
+    void PgRCManager::persistMappedReadsQualityDivision() {
+        divReadsSets->getLqReadsIndexesMapping()->saveMapping(mappedLqDivisionFile);
+        if (separateNReads)
+            divReadsSets->getNReadsIndexesMapping()->saveMapping(nDivisionFile);
     }
 
-    void PgRCManager::saveHQPgSequence() {
-
+    void PgRCManager::persistMappedHQPgReadsList() {
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgMappedHqPrefix, true);
     }
 
-    void PgRCManager::extractHQPgSequence() {
-
-    }
-
-    void PgRCManager::freeHQPg() {
-
+    void PgRCManager::persistHQPgSequence() {
+        SeparatedPseudoGenomePersistence::writePseudoGenomeSequence(hqPg->getPgSequence(), pgMappedHqPrefix);
     }
 
     void PgRCManager::prepareForLQPgAndNPgGeneration() {
@@ -231,54 +228,52 @@ namespace PgTools {
             ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
                     srcFastqFile, pairFastqFile);
             divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
-                    allReadsIterator, readLength, mappedBadDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "", true);
+                    allReadsIterator, readLength, mappedLqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "", true);
             delete (allReadsIterator);
         }
     }
 
     void PgRCManager::runLQPgGeneration() {
         divReadsSets->getLqReadsSet()->printout();
-        SeparatedPseudoGenome *lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+        lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getLqReadsSet());
         lqPg->applyIndexesMapping(divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->disposeLqReadsSet();
         if (revComplPairFile)
             lqPg->applyRevComplPairFile();
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedBadPrefix);
     }
 
-    void PgRCManager::saveLQPg() {
-
+    void PgRCManager::persistLQPg() {
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix);
     }
 
-    void PgRCManager::saveLQPgReadsList() {
-
-    }
-
-    void PgRCManager::extractLQPgSequence() {
-
-    }
-
-    void PgRCManager::freeLQPg() {
-
+    void PgRCManager::persistLQPgReadsList() {
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix, true);
     }
 
     void PgRCManager::runNPgGeneration() {
         divReadsSets->getNReadsSet()->printout();
-        SeparatedPseudoGenome *nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+        nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getNReadsSet());
         nPg->applyIndexesMapping(divReadsSets->getNReadsIndexesMapping());
         divReadsSets->disposeNReadsSet();
         if (revComplPairFile)
             nPg->applyRevComplPairFile();
+    }
+
+    void PgRCManager::persistNPg() {
         SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(nPg, pgNPrefix);
     }
 
-    void PgRCManager::saveNPg() {
-
+    void PgRCManager::prepareForPgMatching() {
+        if (!hqPg)
+            hqPg = SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(pgHqPrefix, true);
+        if (!lqPg)
+            lqPg = SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(pgMappedLqPrefix, true);
     }
 
-    void PgRCManager::saveMEMMappedPgSequences() {
+
+    void PgRCManager::persistMEMMappedPgSequences() {
 
     }
 
@@ -306,6 +301,18 @@ namespace PgTools {
         if (divReadsSets) {
             delete (divReadsSets);
             divReadsSets = 0;
+        }
+        if (hqPg) {
+            delete (hqPg);
+            hqPg = 0;
+        }
+        if (lqPg) {
+            delete (lqPg);
+            lqPg = 0;
+        }
+        if (nPg) {
+            delete (nPg);
+            nPg = 0;
         }
     }
 

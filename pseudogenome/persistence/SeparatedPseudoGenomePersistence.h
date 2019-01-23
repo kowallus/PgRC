@@ -22,11 +22,12 @@ namespace PgTools {
     public:
         static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
                 IndexesMapping* orgIndexesMapping, bool revComplPairFile = false);
-        static void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, const string &pseudoGenomePrefix);
-        static SeparatedPseudoGenome* loadSeparatedPseudoGenome(const string &pgPrefix);
+        static void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, const string &pseudoGenomePrefix,
+            bool skipPgSequence = false);
+        static SeparatedPseudoGenome* loadSeparatedPseudoGenome(const string &pgPrefix, bool skipReadsList = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
-        static string getPseudoGenome(const string &pseudoGenomePrefix);
+        static string loadPseudoGenomeSequence(const string &pseudoGenomePrefix);
 
         static void getPseudoGenomeProperties(const string &pseudoGenomePrefix, PseudoGenomeHeader *&pgh,
                 ReadsSetProperties *&rsProp, bool &plainTextReadMode);
@@ -63,6 +64,7 @@ namespace PgTools {
 
         static void dumpPgPairs(vector<string> pgFilePrefixes);
 
+        static void writePseudoGenomeSequence(string &pgSequence, string pgPrefix);
     };
 
     class SeparatedPseudoGenomeOutputBuilder {
@@ -104,6 +106,7 @@ namespace PgTools {
         virtual ~SeparatedPseudoGenomeOutputBuilder();
 
         void copyPseudoGenomeProperties(const string &pseudoGenomePrefix);
+        void copyPseudoGenomeProperties(SeparatedPseudoGenome* sPg);
 
         void writeReadEntry(const DefaultReadsListEntry &rlEntry);
 
@@ -112,7 +115,7 @@ namespace PgTools {
         void writeExtraReadEntry(const DefaultReadsListEntry &rlEntry);
 
         void writePseudoGenome(PseudoGenomeBase* pgb, IndexesMapping* orgIndexesMapping, bool revComplPairFile = "false");
-        void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg);
+        void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, bool skipPgSequence = false);
         void appendPseudoGenome(const string &pg);
 
         void build();

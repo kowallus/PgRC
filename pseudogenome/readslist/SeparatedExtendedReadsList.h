@@ -22,6 +22,8 @@ namespace PgTools {
 
         ConstantAccessExtendedReadsList(uint_read_len_max readLength) : readLength(readLength) {}
 
+        virtual ~ConstantAccessExtendedReadsList() {};
+
         inline uint8_t getMisCount(uint_reads_cnt_max rlIdx) {
             return misCumCount[rlIdx + 1] - misCumCount[rlIdx];
         }
@@ -41,7 +43,7 @@ namespace PgTools {
             for(uint8_t i = 0; i < mismatchesCount; i++)
                 entry.addMismatch(getMisSymCode(idx, i), getMisOff(idx, i));
             if (misRevOffMode)
-                PgSAHelpers::convertMisOffsets2RevOffsets(entry.mismatchOffset, entry.mismatchesCount, readLength);
+                PgSAHelpers::convertMisRevOffsets2Offsets(entry.mismatchOffset, entry.mismatchesCount, readLength);
         }
 
         // iterator routines
@@ -55,6 +57,12 @@ namespace PgTools {
 
         static ConstantAccessExtendedReadsList* loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
                 uint_pg_len_max pgLengthPosGuard = 0, bool skipMismatches = false);
+
+        bool isRevCompEnabled();
+
+        bool areMismatchesEnabled();
+
+        bool getRevComp(uint_reads_cnt_std idx);
     };
 
     template <int maxMismatches>

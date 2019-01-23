@@ -4,12 +4,10 @@
 
 namespace PgTools {
 
-    SimplePgMatcher::SimplePgMatcher(const string& srcPgPrefix, uint32_t minMatchLength)
-            :srcPgPrefix(srcPgPrefix), targetMatchLength(minMatchLength), minMatchLength(minMatchLength) {
+    SimplePgMatcher::SimplePgMatcher(const string& srcPgPrefix, const string& srcPg, uint32_t minMatchLength)
+            :srcPgPrefix(srcPgPrefix), srcPg(srcPg), targetMatchLength(minMatchLength), minMatchLength(minMatchLength) {
 
-        cout << "Reading source pseudogenome..." << endl;
-        srcPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
-        cout << "Pseudogenome length: " << srcPg.length() << endl;
+        cout << "Source pseudogenome length: " << srcPg.length() << endl;
 
         matcher = new DefaultTextMatcher(srcPg, minMatchLength);
     }
@@ -21,22 +19,17 @@ namespace PgTools {
     void SimplePgMatcher::exactMatchPg() {
         bool destPgIsSrcPg = srcPgPrefix == targetPgPrefix;
 
-        if (!destPgIsSrcPg) {
-            cout << "Reading target pseudogenome..." << endl;
-
-            destPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(targetPgPrefix);
-            cout << "Pseudogenome length: " << destPg.length() << endl;
-        } else
-            destPg = srcPg;
-
-        if (revComplMatching)
-            destPg = PgSAHelpers::reverseComplement(destPg);
+        if (!destPgIsSrcPg)
+            cout << "Destination pseudogenome length: " << destPg.length() << endl;
 
         matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, targetMatchLength);
 
         if (revComplMatching) {
             correctDestPositionDueToRevComplMatching();
-            destPg = destPgIsSrcPg?srcPg:PgSAHelpers::reverseComplement(destPg);
+            if (destPgIsSrcPg)
+                destPg = srcPg;
+            else
+                PgSAHelpers::reverseComplementInPlace(destPg);
         }
     }
 
@@ -51,9 +44,10 @@ namespace PgTools {
         return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPg.length(), 1)+ "%)";
     }
 
-    void SimplePgMatcher::markAndRemoveExactMatches(const string &destPgFilePrefix, bool revComplMatching) {
+    void SimplePgMatcher::markAndRemoveExactMatches(const string &destPgFilePrefix, const string &destPg, bool revComplMatching) {
         this->targetPgPrefix = destPgFilePrefix;
         this->revComplMatching = revComplMatching;
+        this->destPg = revComplMatching?reverseComplement(destPg):destPg;
 
         exactMatchPg();
 
@@ -123,12 +117,13 @@ namespace PgTools {
         }
     }
 
-    void SimplePgMatcher::matchPgInPgFiles(const string &goodPgPrefix, const string &badPgPrefix, uint_pg_len_max targetMatchLength,
+    void SimplePgMatcher::matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
+            const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
                          bool revComplMatching) {
 
-        PgTools::SimplePgMatcher matcher(goodPgPrefix, targetMatchLength);
-        matcher.markAndRemoveExactMatches(goodPgPrefix, revComplMatching);
-        matcher.markAndRemoveExactMatches(badPgPrefix, revComplMatching);
+        PgTools::SimplePgMatcher matcher(hqPgPrefix, hqPgSequence, targetMatchLength);
+        matcher.markAndRemoveExactMatches(hqPgPrefix, hqPgSequence, revComplMatching);
+        matcher.markAndRemoveExactMatches(lqPgPrefix, lqPgSequence, revComplMatching);
     }
 }
 

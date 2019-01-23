@@ -103,7 +103,7 @@ namespace PgTools {
                     entry.addMismatch(mismatchCode, mismatchOffset);
                 }
                 if (!rlMisOffSrc)
-                    convertMisOffsets2RevOffsets(entry.mismatchOffset, entry.mismatchesCount, pgh->getMaxReadLength());
+                    convertMisRevOffsets2Offsets(entry.mismatchOffset, entry.mismatchesCount, pgh->getMaxReadLength());
             }
             return true;
         }
@@ -139,8 +139,8 @@ namespace PgTools {
         const uint_reads_cnt_max readsCount = rl.pgh->getReadsCount();
         res->orgIdx.resize(readsCount);
         PgSAHelpers::readArray(*(rl.rlOrgIdxSrc), res->orgIdx.data(), sizeof(uint_reads_cnt_std) * readsCount);
-        res->revComp.resize(readsCount, false);
         if (rl.rlRevCompSrc) {
+            res->revComp.resize(readsCount, false);
             uint8_t revComp = 0;
             for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
                 PgSAHelpers::readValue<uint8_t>(*(rl.rlRevCompSrc), revComp, rl.plainTextReadMode);
@@ -185,15 +185,23 @@ namespace PgTools {
 
     bool ConstantAccessExtendedReadsList::moveNext() {
         if (++current < readsCount) {
-            entry.advanceEntryByPosition(pos[current], orgIdx[current], revComp[current]);
-            if (misCumCount.size()) {
-                uint8_t mismatchesCount = this->getMisCount(current);
-                for(uint8_t i = 0; i < mismatchesCount; i++)
-                    entry.addMismatch(getMisSymCode(current, i), getMisOff(current, i));
-            }
+            entry.advanceEntryByPosition(pos[current], orgIdx[current], this->getRevComp(current));
+            copyMismatchesToEntry(current, entry);
             return true;
         }
         return false;
+    }
+
+    bool ConstantAccessExtendedReadsList::isRevCompEnabled() {
+        return !this->revComp.empty();
+    }
+
+    bool ConstantAccessExtendedReadsList::areMismatchesEnabled() {
+        return !this->misCumCount.empty();
+    }
+
+    bool ConstantAccessExtendedReadsList::getRevComp(uint_reads_cnt_std idx) {
+        return isRevCompEnabled()?revComp[idx]:false;
     }
 
     template class SeparatedExtendedReadsListIterator<UINT8_MAX>;

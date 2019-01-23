@@ -28,7 +28,7 @@ validatePg(const string &srcFastqFile, const string &pairFastqFile, const string
     bool plainTextReadMode;
     PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgFilePrefix, pgh, plainTextReadMode);
     uint_read_len_max readLength = pgh->getMaxReadLength();
-    string pg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(pgFilePrefix);
+    string pg = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(pgFilePrefix);
     ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
             srcFastqFile, pairFastqFile);
     cout << "Reading reads set\n";

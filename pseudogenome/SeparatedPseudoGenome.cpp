@@ -20,12 +20,21 @@ namespace PgTools {
             ReadsSetProperties* properties)
             : PseudoGenomeBase(pgSequence.length(), properties),
             pgSequence(std::move(pgSequence)), readsList(readsList) {
-        readsList->readsCount = properties->readsCount;
+        if (readsList)
+            readsList->readsCount = properties->readsCount;
     }
 
 
     SeparatedPseudoGenome::~SeparatedPseudoGenome() {
-        delete(readsList);
+        disposeReadsList();
+    }
+
+
+    void SeparatedPseudoGenome::disposeReadsList() {
+        if (readsList) {
+            delete(readsList);
+            readsList = 0;
+        }
     }
 
     void SeparatedPseudoGenome::applyIndexesMapping(IndexesMapping *indexesMapping) {

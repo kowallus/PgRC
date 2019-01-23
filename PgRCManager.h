@@ -5,6 +5,7 @@
 #include "pgsaconfig.h"
 
 #include "readsset/DividedPCLReadsSets.h"
+#include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
 namespace PgTools {
 
@@ -52,16 +53,19 @@ namespace PgTools {
         uint8_t stageCount;
 
         DividedPCLReadsSets* divReadsSets = 0;
+        SeparatedPseudoGenome *hqPg = 0;
+        SeparatedPseudoGenome *lqPg = 0;
+        SeparatedPseudoGenome *nPg = 0;
 
         bool qualityDivision;
         string lqDivisionFile;
         string nDivisionFile;
-        string pgGoodPrefix;
+        string pgHqPrefix;
         string pgFilesPrefixesWithM;
-        string pgMappedGoodPrefix;
-        string pgMappedBadPrefix;
+        string pgMappedHqPrefix;
+        string pgMappedLqPrefix;
         string pgNPrefix;
-        string mappedBadDivisionFile;
+        string mappedLqDivisionFile;
 
         // CHAIN METHODS
         void prepareChainData();
@@ -186,31 +190,21 @@ namespace PgTools {
 
         void runNPgGeneration();
 
-        void persistQualityBasedDivision();
-
-        void persistPgGeneratorBasedReadsDivision();
+        void persistReadsQualityDivision();
 
         void persistHQPg();
 
-        void saveHQPgReadsList();
+        void persistMappedHQPgReadsList();
 
-        void saveLQPg();
+        void persistLQPg();
 
-        void saveLQPgReadsList();
+        void persistLQPgReadsList();
 
-        void saveHQPgSequence();
+        void persistHQPgSequence();
 
-        void saveNPg();
+        void persistNPg();
 
-        void saveMEMMappedPgSequences();
-
-        void extractHQPgSequence();
-
-        void freeHQPg();
-
-        void extractLQPgSequence();
-
-        void freeLQPg();
+        void persistMEMMappedPgSequences();
 
         void prepareForPgGeneratorBaseReadsDivision();
 
@@ -221,6 +215,10 @@ namespace PgTools {
         void prepareForMappingLQReadsOnHQPg();
 
         void prepareForLQPgAndNPgGeneration();
+
+        void persistMappedReadsQualityDivision();
+
+        void prepareForPgMatching();
     };
 }
 

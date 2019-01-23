@@ -19,7 +19,7 @@ namespace PgTools {
         uint32_t minMatchLength;
 
         TextMatcher* matcher;
-        string srcPg;
+        const string& srcPg;
 
         string targetPgPrefix;
         string destPg;
@@ -34,13 +34,14 @@ namespace PgTools {
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
     public:
-        SimplePgMatcher(const string& srcPgPrefix, uint32_t targetMatchLength);
+        SimplePgMatcher(const string& srcPgPrefix, const string& srcPg, uint32_t targetMatchLength);
 
         virtual ~SimplePgMatcher();
 
-        void markAndRemoveExactMatches(const string &destPgPrefix, bool revComplMatching);
+        void markAndRemoveExactMatches(const string &destPgPrefix, const string &destPg, bool revComplMatching);
 
-        static void matchPgInPgFiles(const string &goodPgPrefix, const string &badPgPrefix, uint_pg_len_max targetMatchLength,
+        static void matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
+                const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
                              bool revComplMatching);
 
     };

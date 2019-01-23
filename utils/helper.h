@@ -29,7 +29,7 @@ namespace PgSAHelpers {
     uint8_t mismatch2code(char actual, char mismatch);
     char code2mismatch(char actual, uint8_t code);
 
-    void convertMisOffsets2RevOffsets(uint16_t* mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength);
+    void convertMisRevOffsets2Offsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength);
 
     // time routines
 

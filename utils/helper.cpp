@@ -165,7 +165,7 @@ void PgSAHelpers::writeReadLengthValue(std::ostream &dest, const uint16_t value)
 }
 
 void
-PgSAHelpers::convertMisOffsets2RevOffsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength) {
+PgSAHelpers::convertMisRevOffsets2Offsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength) {
     for(uint8_t i = 0; i < mismatchesCount / 2; i++) {
         uint16_t tmp = mismatchOffsets[mismatchesCount - i - 1];
         mismatchOffsets[mismatchesCount - i - 1] = mismatchOffsets[i];

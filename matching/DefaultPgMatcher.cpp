@@ -15,7 +15,7 @@ namespace PgTools {
         else
             cout << "Reading source pseudogenome..." << endl;
         PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, srcPgh, srcRsProp, plainTextReadMode);
-        srcPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
+        srcPg = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(srcPgPrefix);
         cout << "Pseudogenome length: " << srcPgh->getPseudoGenomeLength() << endl;
         readLength = srcPgh->getMaxReadLength();
 
@@ -26,7 +26,7 @@ namespace PgTools {
             bool plainTextReadMode = false;
             PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(targetPgPrefix, pgh, rsProp,
                                                                                  plainTextReadMode);
-            destPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(targetPgPrefix);
+            destPg = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(targetPgPrefix);
             cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
             delete(pgh);
             delete(rsProp);
