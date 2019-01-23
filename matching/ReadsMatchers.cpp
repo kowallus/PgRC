@@ -421,7 +421,7 @@ namespace PgTools {
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(outPgPrefix,
                 rlIt->isRevCompEnabled(), rlIt->areMismatchesEnabled());
         builder->setReadsSourceIterator(rlIt);
-        builder->copyPseudoGenomeHeader(pgFilePrefix);
+        builder->copyPseudoGenomeProperties(pgFilePrefix);
         for(uint_reads_cnt_max i = 0; i < matchedReadsCount; i++) {
             uint_reads_cnt_max matchIdx = idxs[i];
             uint64_t currPos = builder->writeReadsFromIterator(readMatchPos[matchIdx]);

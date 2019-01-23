@@ -51,6 +51,10 @@ namespace PgTools {
         IndexesMapping *generateHqReadsIndexesMapping();
 
         void removeReadsFromLqReadsSet(const vector<bool> &isLqReadMappedIntoHqPg);
+
+        void disposeLqReadsSet();
+        void disposeNReadsSet();
+        void disposeHqReadsSet();
     };
 
 }

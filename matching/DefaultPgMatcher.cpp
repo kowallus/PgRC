@@ -14,7 +14,7 @@ namespace PgTools {
             cout << "Reading pseudogenome..." << endl;
         else
             cout << "Reading source pseudogenome..." << endl;
-        PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, srcPgh, plainTextReadMode);
+        PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, srcPgh, srcRsProp, plainTextReadMode);
         srcPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(srcPgPrefix);
         cout << "Pseudogenome length: " << srcPgh->getPseudoGenomeLength() << endl;
         readLength = srcPgh->getMaxReadLength();
@@ -22,12 +22,14 @@ namespace PgTools {
         if (targetPgPrefix != srcPgPrefix) {
             cout << "Reading target pseudogenome..." << endl;
             PseudoGenomeHeader *pgh = 0;
+            ReadsSetProperties* rsProp = 0;
             bool plainTextReadMode = false;
-            PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(targetPgPrefix, pgh,
+            PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(targetPgPrefix, pgh, rsProp,
                                                                                  plainTextReadMode);
             destPg = PgTools::SeparatedPseudoGenomePersistence::getPseudoGenome(targetPgPrefix);
             cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
             delete(pgh);
+            delete(rsProp);
         } else
             destPg = srcPg;
 
@@ -37,6 +39,7 @@ namespace PgTools {
 
     DefaultPgMatcher::~DefaultPgMatcher() {
         delete(srcPgh);
+        delete(srcRsProp);
     }
 
     void DefaultPgMatcher::exactMatchPg(uint32_t minMatchLength) {
@@ -56,7 +59,7 @@ namespace PgTools {
     using namespace PgTools;
 
     void DefaultPgMatcher::transferMatchedReads(const string &destPgFilePrefix) {
-        srcRl = DefaultSeparatedExtendedReadsList::loadConstantAccessExtendedReadsList(srcPgPrefix,
+        srcRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(srcPgPrefix,
                                                                                        srcPgh->getPseudoGenomeLength());
 
         fillPgMatches();
@@ -348,7 +351,7 @@ namespace PgTools {
              });
 
         SeparatedPseudoGenomeOutputBuilder builder(destPgIsSrcPg?destPgPrefix:srcPgPrefix);
-        builder.copyPseudoGenomeHeader(srcPgPrefix);
+        builder.copyPseudoGenomeProperties(srcPgPrefix);
 
         pos = 0;
         uint_pg_len_max totalOffsetOverflow = 0;

@@ -21,16 +21,38 @@ namespace PgTools {
     }
 
     DividedPCLReadsSets::~DividedPCLReadsSets() {
-        if (hqReadsSet)
-            delete(hqReadsSet);
-        if (lqReadsSet)
-            delete(lqReadsSet);
-        if (nReadsSet)
-            delete(nReadsSet);
-        if (lqMapping)
-            delete(lqMapping);
-        if (nMapping)
-            delete(nMapping);
+        disposeHqReadsSet();
+        disposeLqReadsSet();
+        disposeNReadsSet();
+    }
+
+    void DividedPCLReadsSets::disposeHqReadsSet() {
+        if (hqReadsSet) {
+            delete (hqReadsSet);
+            hqReadsSet = 0;
+        }
+    }
+
+    void DividedPCLReadsSets::disposeLqReadsSet() {
+        if (lqReadsSet) {
+            delete (lqReadsSet);
+            lqReadsSet = 0;
+        }
+        if (lqMapping) {
+            delete (lqMapping);
+            lqMapping = 0;
+        }
+    }
+
+    void DividedPCLReadsSets::disposeNReadsSet() {
+        if (nReadsSet) {
+            delete (nReadsSet);
+            nReadsSet = 0;
+        }
+        if (nMapping) {
+            delete (nMapping);
+            nMapping = 0;
+        }
     }
 
     DividedPCLReadsSets*
@@ -202,4 +224,5 @@ namespace PgTools {
         lqReadIdx[newLqCounter++] = lqMapping->getReadsTotalCount();
         lqReadIdx.resize(newLqCounter);
     }
+
 }

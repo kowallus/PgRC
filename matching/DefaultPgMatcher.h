@@ -23,6 +23,7 @@ namespace PgTools {
         bool plainTextReadMode = false;
 
         PseudoGenomeHeader* srcPgh = 0;
+        ReadsSetProperties* srcRsProp = 0;
         uint_read_len_max readLength;
         string srcPg;
         string destPg;

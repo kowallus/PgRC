@@ -3,6 +3,7 @@
 
 #include "../DefaultPseudoGenome.h"
 #include "../PackedPseudoGenome.h"
+#include "../SeparatedPseudoGenome.h"
 #include "../../utils/helper.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 #include "../readslist/iterator/ReadsListIteratorExtendedWrapper.h"
@@ -21,12 +22,14 @@ namespace PgTools {
     public:
         static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
                 IndexesMapping* orgIndexesMapping, bool revComplPairFile = false);
+        static void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, const string &pseudoGenomePrefix);
+        static SeparatedPseudoGenome* loadSeparatedPseudoGenome(const string &pgPrefix);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
         static string getPseudoGenome(const string &pseudoGenomePrefix);
 
         static void getPseudoGenomeProperties(const string &pseudoGenomePrefix, PseudoGenomeHeader *&pgh,
-                                              bool &plainTextReadMode);
+                ReadsSetProperties *&rsProp, bool &plainTextReadMode);
 
         static std::ifstream getPseudoGenomeElementSrc(const string &pseudoGenomePrefix, const string& fileSuffix);
         static std::ofstream getPseudoGenomeElementDest(const string &pseudoGenomePrefix, const string &fileSuffix,
@@ -90,6 +93,7 @@ namespace PgTools {
         uint_reads_cnt_max readsCounter = 0;
 
         PseudoGenomeHeader* pgh = 0;
+        ReadsSetProperties* rsProp = 0;
 
         void freeDest(ofstream* &dest);
         void freeDests();
@@ -99,7 +103,7 @@ namespace PgTools {
 
         virtual ~SeparatedPseudoGenomeOutputBuilder();
 
-        void copyPseudoGenomeHeader(const string &pseudoGenomePrefix);
+        void copyPseudoGenomeProperties(const string &pseudoGenomePrefix);
 
         void writeReadEntry(const DefaultReadsListEntry &rlEntry);
 
@@ -108,6 +112,7 @@ namespace PgTools {
         void writeExtraReadEntry(const DefaultReadsListEntry &rlEntry);
 
         void writePseudoGenome(PseudoGenomeBase* pgb, IndexesMapping* orgIndexesMapping, bool revComplPairFile = "false");
+        void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg);
         void appendPseudoGenome(const string &pg);
 
         void build();

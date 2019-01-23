@@ -5,22 +5,32 @@
 
 namespace PgTools {
 
-    class SeparatedPseudoGenome {
+    const string PGTYPE_SEPARATED = "SEPARATED_PGEN";
+
+    class SeparatedPseudoGenome: public PseudoGenomeBase {
     protected:
         string pgSequence;
         ConstantAccessExtendedReadsList* readsList;
     public:
-        SeparatedPseudoGenome(uint_read_len_max readLength);
+        SeparatedPseudoGenome(uint_pg_len_max sequenceLength, ReadsSetProperties* properties);
 
         SeparatedPseudoGenome(string &&pgSequence,
-                              ConstantAccessExtendedReadsList *readsList);
+                              ConstantAccessExtendedReadsList *readsList, ReadsSetProperties* properties);
 
         string &getPgSequence();
         ConstantAccessExtendedReadsList *getReadsList();
 
-        static SeparatedPseudoGenome* loadFromFile(string pgPrefix);
-
         virtual ~SeparatedPseudoGenome();
+
+        void applyIndexesMapping(IndexesMapping *indexesMapping);
+
+        void applyRevComplPairFile();
+
+        string getTypeID() override;
+
+        void write(std::ostream &dest) override;
+
+        const string getPseudoGenomeVirtual() override;
     };
 
     class GeneratedSeparatedPseudoGenome: public SeparatedPseudoGenome {

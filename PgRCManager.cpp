@@ -175,12 +175,15 @@ namespace PgTools {
 
     void PgRCManager::runHQPgGeneration() {
         divReadsSets->getHqReadsSet()->printout();
-        PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+        SeparatedPseudoGenome *hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getHqReadsSet());
-        IndexesMapping* good2IndexesMapping = divReadsSets->generateHqReadsIndexesMapping();
-        SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgGoodPrefix, good2IndexesMapping,
-                                                            revComplPairFile);
-        delete(good2IndexesMapping);
+        divReadsSets->disposeHqReadsSet();
+        IndexesMapping* hq2IndexesMapping = divReadsSets->generateHqReadsIndexesMapping();
+        hqPg->applyIndexesMapping(hq2IndexesMapping);
+        delete(hq2IndexesMapping);
+        if (revComplPairFile)
+            hqPg->applyRevComplPairFile();
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgGoodPrefix);
     }
 
     void PgRCManager::persistHQPg() {
@@ -235,10 +238,13 @@ namespace PgTools {
 
     void PgRCManager::runLQPgGeneration() {
         divReadsSets->getLqReadsSet()->printout();
-        PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+        SeparatedPseudoGenome *lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getLqReadsSet());
-        SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgMappedBadPrefix,
-                divReadsSets->getLqReadsIndexesMapping(), revComplPairFile);
+        lqPg->applyIndexesMapping(divReadsSets->getLqReadsIndexesMapping());
+        divReadsSets->disposeLqReadsSet();
+        if (revComplPairFile)
+            lqPg->applyRevComplPairFile();
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedBadPrefix);
     }
 
     void PgRCManager::saveLQPg() {
@@ -259,10 +265,13 @@ namespace PgTools {
 
     void PgRCManager::runNPgGeneration() {
         divReadsSets->getNReadsSet()->printout();
-        PseudoGenomeBase *goodPgb = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generatePg(
+        SeparatedPseudoGenome *nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getNReadsSet());
-        SeparatedPseudoGenomePersistence::writePseudoGenome(goodPgb, pgNPrefix,
-                                                            divReadsSets->getNReadsIndexesMapping(), revComplPairFile);
+        nPg->applyIndexesMapping(divReadsSets->getNReadsIndexesMapping());
+        divReadsSets->disposeNReadsSet();
+        if (revComplPairFile)
+            nPg->applyRevComplPairFile();
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(nPg, pgNPrefix);
     }
 
     void PgRCManager::saveNPg() {

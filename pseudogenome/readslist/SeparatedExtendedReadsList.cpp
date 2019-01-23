@@ -1,29 +1,32 @@
 #include "SeparatedExtendedReadsList.h"
 
+#include "../persistence/SeparatedPseudoGenomePersistence.h"
+
 namespace PgTools {
 
     template <int maxMismatches>
-    SeparatedExtendedReadsList<maxMismatches>::SeparatedExtendedReadsList(const string &pseudoGenomePrefix)
+    SeparatedExtendedReadsListIterator<maxMismatches>::SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix)
             : pseudoGenomePrefix(pseudoGenomePrefix) {
-        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pseudoGenomePrefix, pgh, plainTextReadMode);
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pseudoGenomePrefix, pgh, rsProp, plainTextReadMode);
         if (PgSAReadsSet::isReadLengthMin(pgh->getMaxReadLength()))
             PgSAHelpers::bytePerReadLengthMode = true;
         initSrcs();
     }
 
     template<int maxMismatches>
-    SeparatedExtendedReadsList<maxMismatches>* SeparatedExtendedReadsList<maxMismatches>::getIterator(const string &pseudoGenomePrefix) {
-        return new SeparatedExtendedReadsList(pseudoGenomePrefix);
+    SeparatedExtendedReadsListIterator<maxMismatches>* SeparatedExtendedReadsListIterator<maxMismatches>::getIterator(const string &pseudoGenomePrefix) {
+        return new SeparatedExtendedReadsListIterator(pseudoGenomePrefix);
     }
 
     template <int maxMismatches>
-    SeparatedExtendedReadsList<maxMismatches>::~SeparatedExtendedReadsList() {
+    SeparatedExtendedReadsListIterator<maxMismatches>::~SeparatedExtendedReadsListIterator() {
         delete(pgh);
+        delete(rsProp);
         freeSrcs();
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsList<maxMismatches>::initSrc(ifstream *&src, const string &fileSuffix) {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(ifstream *&src, const string &fileSuffix) {
         src = new ifstream(pseudoGenomePrefix + fileSuffix, ios_base::in | ios_base::binary);
         if (src->fail()) {
             delete (src);
@@ -32,7 +35,7 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsList<maxMismatches>::initSrcs() {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrcs() {
         initSrc(rlPosSrc, SeparatedPseudoGenomePersistence::READSLIST_POSITIONS_FILE_SUFFIX);
         initSrc(rlOrgIdxSrc, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
         initSrc(rlRevCompSrc, SeparatedPseudoGenomePersistence::READSLIST_REVERSECOMPL_FILE_SUFFIX);
@@ -48,7 +51,7 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsList<maxMismatches>::freeSrc(ifstream *&src) {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::freeSrc(ifstream *&src) {
         if (src) {
             src->close();
             delete (src);
@@ -57,7 +60,7 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsList<maxMismatches>::freeSrcs() {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::freeSrcs() {
         freeSrc(rlPosSrc);
         freeSrc(rlOrgIdxSrc);
         freeSrc(rlRevCompSrc);
@@ -70,7 +73,7 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    bool SeparatedExtendedReadsList<maxMismatches>::moveNext() {
+    bool SeparatedExtendedReadsListIterator<maxMismatches>::moveNext() {
         if (++current < pgh->getReadsCount()) {
             uint_reads_cnt_std idx = 0;
             uint8_t revComp = 0;
@@ -109,24 +112,23 @@ namespace PgTools {
 
     template <int maxMismatches>
     PgTools::ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &
-    SeparatedExtendedReadsList<maxMismatches>::peekReadEntry() {
+    SeparatedExtendedReadsListIterator<maxMismatches>::peekReadEntry() {
         return entry;
     }
 
     template <int maxMismatches>
-    bool SeparatedExtendedReadsList<maxMismatches>::isRevCompEnabled() {
+    bool SeparatedExtendedReadsListIterator<maxMismatches>::isRevCompEnabled() {
         return rlRevCompSrc;
     }
 
     template <int maxMismatches>
-    bool SeparatedExtendedReadsList<maxMismatches>::areMismatchesEnabled() {
+    bool SeparatedExtendedReadsListIterator<maxMismatches>::areMismatchesEnabled() {
         return rlMisCntSrc;
     }
 
-    template<int maxMismatches>
-    ConstantAccessExtendedReadsList *SeparatedExtendedReadsList<maxMismatches>::loadConstantAccessExtendedReadsList(
-            const string &pseudoGenomePrefix, uint_pg_len_max pgLengthPosGuard) {
-        SeparatedExtendedReadsList rl(pseudoGenomePrefix);
+    ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(
+            const string &pseudoGenomePrefix, uint_pg_len_max pgLengthPosGuard, bool skipMismatches) {
+        DefaultSeparatedExtendedReadsListIterator rl(pseudoGenomePrefix);
         ConstantAccessExtendedReadsList *res = new ConstantAccessExtendedReadsList(rl.pgh->getMaxReadLength());
         if (rl.plainTextReadMode) {
             fprintf(stderr, "Unsupported text plain read mode in creating ConstantAccessExtendedReadsList for %s\n\n",
@@ -160,7 +162,7 @@ namespace PgTools {
         }
         if (pgLengthPosGuard)
             res->pos.push_back(pgLengthPosGuard);
-        if (maxMismatches != 0 && rl.rlMisCntSrc) {
+        if (!skipMismatches && rl.rlMisCntSrc) {
             uint_reads_cnt_max cumCount = 0;
             uint8_t mismatchesCount = 0;
             res->misCumCount.reserve(readsCount + 1);
@@ -181,6 +183,19 @@ namespace PgTools {
         return res;
     }
 
-    template class SeparatedExtendedReadsList<UINT8_MAX>;
-    template class SeparatedExtendedReadsList<0>;
+    bool ConstantAccessExtendedReadsList::moveNext() {
+        if (++current < readsCount) {
+            entry.advanceEntryByPosition(pos[current], orgIdx[current], revComp[current]);
+            if (misCumCount.size()) {
+                uint8_t mismatchesCount = this->getMisCount(current);
+                for(uint8_t i = 0; i < mismatchesCount; i++)
+                    entry.addMismatch(getMisSymCode(current, i), getMisOff(current, i));
+            }
+            return true;
+        }
+        return false;
+    }
+
+    template class SeparatedExtendedReadsListIterator<UINT8_MAX>;
+    template class SeparatedExtendedReadsListIterator<0>;
 }

@@ -10,32 +10,51 @@ namespace PgTools {
         return readsList;
     }
 
-    SeparatedPseudoGenome::SeparatedPseudoGenome(uint_read_len_max readLength):
-              readsList(new ConstantAccessExtendedReadsList(readLength)){
+    SeparatedPseudoGenome::SeparatedPseudoGenome(uint_pg_len_max sequenceLength, ReadsSetProperties* properties):
+              PseudoGenomeBase(sequenceLength, properties),
+              readsList(new ConstantAccessExtendedReadsList(properties->maxReadLength)){
+        readsList->readsCount = properties->readsCount;
     }
 
-    SeparatedPseudoGenome::SeparatedPseudoGenome(string &&pgSequence, ConstantAccessExtendedReadsList *readsList)
-            : pgSequence(std::move(pgSequence)), readsList(readsList) {}
+    SeparatedPseudoGenome::SeparatedPseudoGenome(string &&pgSequence, ConstantAccessExtendedReadsList *readsList,
+            ReadsSetProperties* properties)
+            : PseudoGenomeBase(pgSequence.length(), properties),
+            pgSequence(std::move(pgSequence)), readsList(readsList) {
+        readsList->readsCount = properties->readsCount;
+    }
 
 
     SeparatedPseudoGenome::~SeparatedPseudoGenome() {
         delete(readsList);
     }
 
-    SeparatedPseudoGenome* SeparatedPseudoGenome::loadFromFile(string pgPrefix){
-        PseudoGenomeHeader *pgh = 0;
-        bool plainTextReadMode = false;
-        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgPrefix, pgh, plainTextReadMode);
-        string pgSequence = SeparatedPseudoGenomePersistence::getPseudoGenome(pgPrefix);
-        ConstantAccessExtendedReadsList* caeRl =
-                DefaultSeparatedExtendedReadsList::loadConstantAccessExtendedReadsList(pgPrefix, pgh->getPseudoGenomeLength());
-        SeparatedPseudoGenome* spg = new SeparatedPseudoGenome(std::move(pgSequence), caeRl);
-        return spg;
+    void SeparatedPseudoGenome::applyIndexesMapping(IndexesMapping *indexesMapping) {
+        for(uint_reads_cnt_std& idx: readsList->orgIdx)
+            idx = indexesMapping->getReadOriginalIndex(idx);
+    }
+
+    void SeparatedPseudoGenome::applyRevComplPairFile() {
+        uint_reads_cnt_std readsCount = readsList->orgIdx.size();
+        for(uint_reads_cnt_std i = 0; i < readsCount; i++)
+            readsList->revComp[i] = readsList->orgIdx[i]%2?!readsList->revComp[i]:readsList->revComp[i];
+    }
+
+    string SeparatedPseudoGenome::getTypeID() {
+        return PGTYPE_SEPARATED;
+    }
+
+    void SeparatedPseudoGenome::write(std::ostream &dest) {
+        fprintf(stderr, "ERROR: Separated Pseudogenome cannot be written to a ostream.");
+        exit(EXIT_FAILURE);
+    }
+
+    const string SeparatedPseudoGenome::getPseudoGenomeVirtual() {
+        return pgSequence;
     }
 
     GeneratedSeparatedPseudoGenome::GeneratedSeparatedPseudoGenome(uint_pg_len_max sequenceLength,
                                                                    ReadsSetProperties *properties)
-            : SeparatedPseudoGenome(properties->maxReadLength) {
+            : SeparatedPseudoGenome(sequenceLength, properties) {
         pgSequence.resize(sequenceLength);
         sequence = (char_pg*) pgSequence.data();
         readsList->pos.reserve(properties->readsCount);

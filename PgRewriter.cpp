@@ -13,7 +13,7 @@ void rewritePg(string pgFileSrcPrefix, string pgFileDestPrefix, bool compactByte
     SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(pgFileDestPrefix,
             !rlIt->isRevCompEnabled(), !rlIt->areMismatchesEnabled());
     builder->setReadsSourceIterator(rlIt);
-    builder->copyPseudoGenomeHeader(pgFileSrcPrefix);
+    builder->copyPseudoGenomeProperties(pgFileSrcPrefix);
     builder->writeReadsFromIterator();
     delete(rlIt);
     builder->build();
