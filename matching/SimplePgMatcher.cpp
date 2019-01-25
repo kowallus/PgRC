@@ -1,5 +1,7 @@
 #include "SimplePgMatcher.h"
 
+#include "copmem/CopMEMMatcher.h"
+
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
 namespace PgTools {
@@ -9,7 +11,8 @@ namespace PgTools {
 
         cout << "Source pseudogenome length: " << srcPg.length() << endl;
 
-        matcher = new DefaultTextMatcher(srcPg, minMatchLength);
+        //matcher = new DefaultTextMatcher(srcPg, minMatchLength);
+        matcher = new CopMEMMatcher(srcPg, minMatchLength);
     }
 
     SimplePgMatcher::~SimplePgMatcher() {
@@ -23,6 +26,12 @@ namespace PgTools {
             cout << "Destination pseudogenome length: " << destPg.length() << endl;
 
         matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, targetMatchLength);
+
+        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
+            { return match1.length > match2.length; });
+        cout << "Largest matches:" << endl;
+        for (uint32_t i = 0; i < textMatches.size() && i < 10; i++)
+            textMatches[i].report(cout);
 
         if (revComplMatching) {
             correctDestPositionDueToRevComplMatching();

@@ -128,11 +128,5 @@ namespace PgTools {
         cout << "Exact matched " << matchCount << " parts (too short matches: " << shorterMatchCount << "). False matches reported: " << falseMatchCount << "." << endl;
         cout << "Stage 1: Matched " << toString(matchCharsCount) << " (" << (toString((matchCharsCount * 100.0) / destText.length(), 1)) << "%)" <<
              " Pg characters. Sum length of all matches is " << matchCharsWithOverlapCount << "." << endl;
-
-        std::sort(resMatches.begin(), resMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool { return match1.length > match2.length; });
-
-        cout << "Largest matches:" << endl;
-        for (uint32_t i = 0; i < resMatches.size() && i < 10; i++)
-            resMatches[i].report(cout);
     }
 }

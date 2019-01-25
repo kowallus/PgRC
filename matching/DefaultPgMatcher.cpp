@@ -1,5 +1,7 @@
 #include "DefaultPgMatcher.h"
 
+#include "copmem/CopMEMMatcher.h"
+
 #include "../pseudogenome/DefaultPseudoGenome.h"
 #include "../pseudogenome/PackedPseudoGenome.h"
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
@@ -45,6 +47,7 @@ namespace PgTools {
     void DefaultPgMatcher::exactMatchPg(uint32_t minMatchLength) {
         TextMatcher* matcher;
         matcher = new DefaultTextMatcher(srcPg, minMatchLength);
+        //matcher = new CopMEMMatcher(srcPg, minMatchLength);
         matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, minMatchLength);
         delete(matcher);
 

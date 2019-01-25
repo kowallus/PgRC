@@ -68,8 +68,6 @@ void CopMEMMatcher::initGlobals() {
 	k2 = 3;
 	hashFunc = hashFuncMatrix[K][H];
 	isVerbose = v1;
-	isRC = no;
-	isFast = false;
 }
 
 
@@ -104,19 +102,15 @@ public:
 NullBuffer null_buffer;
 std::ostream null_stream(&null_buffer);
 
-std::ostream *v1logger, *v2logger;
+std::ostream *v1logger;
 
 void CopMEMMatcher::displayParams() {
 	std::cout << "PARAMETERS" << std::endl;
-	std::cout << "Reference filename: " << R_FN << std::endl;
-	std::cout << "Query filename: " << Q_FN << std::endl;
-	std::cout << "l = " << L << std::endl;
-	std::cout << "K = " << K << std::endl;
-	std::cout << "HASH_SIZE = " << HASH_SIZE << std::endl;
-	std::cout << "k1 = " << k1 << std::endl;
+	std::cout << "l = " << L << "; ";
+	std::cout << "K = " << K << "; ";
+	std::cout << "HASH_SIZE = " << HASH_SIZE << "; ";
+	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
-	std::cout << "Fast mode = " << (isFast? "Yes" : "No") << std::endl;
-	std::cout << "Reverse Complement = " << ((isRC==both)? "Both" : (isRC == yes) ? "Yes" : "No") << std::endl;
 	std::cout << "Hash function: ";
 	if (hashFunc == hashFuncMatrix[36][1] || hashFunc == hashFuncMatrix[44][1] || hashFunc == hashFuncMatrix[56][1]) std::cout << "maRushPrime1HashSimplified\n";
 	if (hashFunc == hashFuncMatrix[36][2] || hashFunc == hashFuncMatrix[44][2] || hashFunc == hashFuncMatrix[56][2]) std::cout << "xxhash32\n";
@@ -130,11 +124,6 @@ void CopMEMMatcher::initParams() {
     assert(K % 4 == 0);
     v1logger = &std::cout;
     //v1logger = &null_stream;
-    v2logger = &null_stream;
-    //v2logger = &std::cout;
-    //isFast = true;
-    //isRC = both;
-    //isRC = yes;
     //hashFunc = hashFuncMatrix[K][H];
 }
 
@@ -411,6 +400,7 @@ CopMEMMatcher::~CopMEMMatcher() {
 void
 CopMEMMatcher::matchTexts(vector <TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                           uint32_t minMatchLength) {
+    resMatches.clear();
     if (bigRef == 2) {
         processQueryTight<std::uint64_t, std::uint64_t>(buffer2, resMatches, destText, destIsSrc, revComplMatching, minMatchLength);
     } else if (bigRef == 1) {

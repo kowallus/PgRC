@@ -21,15 +21,11 @@ private:
     int bigRef;
 
     verbosity isVerbose;
-    reverseMode isRC;
-    bool isFast;
 
     int K, H, L, k1, k2;
     std::uint32_t(*hashFunc)(const char*);
     std::uint32_t(*hashFuncMatrix[64][6])(const char*);
 
-    std::string R_FN;
-    std::string Q_FN;
 
     void initHashFuncMatrix();
     void initGlobals();
