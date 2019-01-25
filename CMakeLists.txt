@@ -65,22 +65,29 @@ set(STRAND_DETECTOR_FILES
         strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h
         strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h PgRCManager.cpp PgRCManager.h)
 
-set(ROLLING_HASH_FILES
+set(HASHES_FILES
         rollinghash/characterhash.h
         rollinghash/cyclichash.h
         rollinghash/generalhash.h
         rollinghash/mersennetwister.cpp
         rollinghash/mersennetwister.h
         rollinghash/rabinkarphash.h
-        rollinghash/threewisehash.h)
+        rollinghash/threewisehash.h
+        matching/copmem/Hashes.h
+        matching/copmem/metrohash64.cpp matching/copmem/metrohash64.h matching/copmem/platform.h
+        matching/copmem/xxhash.c matching/copmem/xxhash.h
+        matching/copmem/city.cpp matching/copmem/city.h matching/copmem/citycrc.h)
 
 set(MATCHER_FILES
         ${PG_FILES}
-        ${ROLLING_HASH_FILES}
+        ${HASHES_FILES}
         matching/ReadsMatchers.cpp matching/ReadsMatchers.h
         matching/ConstantLengthPatternsOnTextHashMatcher.cpp
         matching/ConstantLengthPatternsOnTextHashMatcher.h
-        matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h matching/TextMatchers.cpp matching/TextMatchers.h matching/SimplePgMatcher.cpp matching/SimplePgMatcher.h)
+        matching/DefaultPgMatcher.cpp matching/DefaultPgMatcher.h
+        matching/SimplePgMatcher.cpp matching/SimplePgMatcher.h
+        matching/TextMatchers.cpp matching/TextMatchers.h
+        matching/copmem/CopMEMMatcher.cpp matching/copmem/CopMEMMatcher.h)
 
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
