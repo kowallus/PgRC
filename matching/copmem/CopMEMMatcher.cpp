@@ -251,160 +251,116 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 
 	std::uint32_t l1, l2, r1, r2;
 
-	size_t i1;
-
-	bool filterMulti = false;
 	size_t charExtensions = 0ULL;
 
     size_t N2 = destText.length();
     const char* start2 = destText.data();
 
-    uint64_t furthestMatchEndPos = 0;
-    list<TextMatch> currentMatches;
+    const int skip = K / k1 - k2;
+    const int skipK2 = skip * k2;
+    const bool MULTI_MODE = true;
 
-    for (i1 = 0; i1 + K + k2MULTI < N2 + 1; i1 += k2MULTI) {
-        const char* curr2 = start2 + i1;
-        size_t tempCount = 0;
-        for (size_t i2 = 0; i2 < MULTI; ++i2) {
-            hArray[tempCount++] = hashFunc(curr2);
-            curr2 += k2;
-        }
-        for (size_t i2 = 0; i2 < tempCount; ++i2) {
-            memcpy(posArray + i2 * 2, cumm + hArray[i2], sizeof(MyUINT2) * 2);
-        }
-
-        curr2 = start2 + i1;
-        for (size_t i2 = 0; i2 < tempCount; ++i2) {
-            if (posArray[i2 * 2] == posArray[i2 * 2 + 1]) {
+    size_t i1 = 0;
+    if (MULTI_MODE) {
+        for (i1 = 0; i1 + K + k2MULTI < N2 + 1; i1 += k2MULTI) {
+            const char *curr2 = start2 + i1;
+            size_t tempCount = 0;
+            for (size_t i2 = 0; i2 < MULTI; ++i2) {
+                hArray[tempCount++] = hashFunc(curr2);
                 curr2 += k2;
-                continue;
+            }
+            for (size_t i2 = 0; i2 < tempCount; ++i2) {
+                memcpy(posArray + i2 * 2, cumm + hArray[i2], sizeof(MyUINT2) * 2);
             }
 
-            memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
-            memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
-
-            for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
-                ++charExtensions;
-                const char* curr1 = start1 + sampledPositions[j];
-
-                uint64_t tmpMatchSrcPos = sampledPositions[j];
-                uint64_t tmpMatchDestPos = curr2 - start2;
-                if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
-                    : curr2 - start2 >= tmpMatchSrcPos))
+            curr2 = start2 + i1;
+            for (size_t i2 = 0; i2 < tempCount; ++i2) {
+                if (posArray[i2 * 2] == posArray[i2 * 2 + 1]) {
+                    curr2 += k2;
                     continue;
-                if (filterMulti) {
-                    auto cmIt = currentMatches.begin();
-                    bool continueMatch = false;
-                    while (cmIt != currentMatches.end()) {
-                        if (tmpMatchDestPos + K > (*cmIt).endPosDestText()) {
-                            currentMatches.erase(cmIt++);
-                        } else {
-                            if ((*cmIt).posSrcText - (*cmIt).posDestText == tmpMatchSrcPos - tmpMatchDestPos) {
-                                continueMatch = true;
-                                break;
-                            }
-                            cmIt++;
-                        }
-                    }
-                    if (continueMatch)
+                }
+
+                memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
+                memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+
+                for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
+                    ++charExtensions;
+                    const char *curr1 = start1 + sampledPositions[j];
+
+                    uint64_t tmpMatchSrcPos = sampledPositions[j];
+                    uint64_t tmpMatchDestPos = curr2 - start2;
+                    if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
+                                                       : curr2 - start2 >= tmpMatchSrcPos))
                         continue;
-                }
 
-                memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
-                memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
+                    memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
+                    memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
 
-                if (r1 == r2 || l1 == l2) {
-                    const char* p1 = curr1 + K - 1;
-                    const char* p2 = curr2 + K - 1;
-                    while (*++p1 == *++p2);
-                    const char* right = p1;
-                    p1 = curr1;
-                    p2 = curr2;
-                    while (*--p1 == *--p2) ;
+                    if (r1 == r2 || l1 == l2) {
+                        const char *p1 = curr1 + K - 1;
+                        const char *p2 = curr2 + K - 1;
+                        while (*++p1 == *++p2);
+                        const char *right = p1;
+                        p1 = curr1;
+                        p2 = curr2;
+                        while (*--p1 == *--p2);
 
-                    if (right - p1 >= L_PLUS_ONE && memcmp(curr1, curr2, K) == 0) {
-                        const TextMatch &matchInfo = TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2));
-                        resMatches.push_back(matchInfo);
-                        if (filterMulti) {
-                            if (furthestMatchEndPos < matchInfo.endPosDestText())
-                                furthestMatchEndPos = matchInfo.endPosDestText();
-                            currentMatches.push_back(matchInfo);
+                        if (right - p1 > L && memcmp(curr1, curr2, K) == 0) {
+                            resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
+                            curr2 += skipK2;
+                            i2 += skip;
+                            break;
                         }
                     }
                 }
+                curr2 += k2;
             }
-            curr2 += k2;
         }
     }
     //////////////////// processing the end part of Q  //////////////////////
+    const char* curr2 = start2 + i1;
     for (; i1 + K < N2 + 1; i1 += k2) {
-        const char* curr2 = start2 + i1;
-        size_t tempCount = 0;
-        memcpy(posArray + tempCount * 2, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
-        ++tempCount;
+        memcpy(posArray, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
 
-        curr2 = start2 + i1;
-        for (size_t i2 = 0; i2 < tempCount; ++i2) {
-            if (posArray[i2 * 2] == posArray[i2 * 2 + 1]) {
-                curr2 += k2;
-                continue;
-            }
-
-            memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
-            memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
-
-            for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
-                ++charExtensions;
-                const char* curr1 = start1 + sampledPositions[j];
-
-                uint64_t tmpMatchSrcPos = sampledPositions[j];
-                uint64_t tmpMatchDestPos = curr2 - start2;
-                if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
-                                                   : curr2 - start2 >= tmpMatchSrcPos))
-                    continue;
-                if (filterMulti) {
-                    auto cmIt = currentMatches.begin();
-                    bool continueMatch = false;
-                    while (cmIt != currentMatches.end()) {
-                        if (tmpMatchDestPos + K > (*cmIt).endPosDestText()) {
-                            currentMatches.erase(cmIt++);
-                        } else {
-                            if ((*cmIt).posSrcText - (*cmIt).posDestText == tmpMatchSrcPos - tmpMatchDestPos) {
-                                continueMatch = true;
-                                break;
-                            }
-                            cmIt++;
-                        }
-                    }
-                    if (continueMatch)
-                        continue;
-                }
-
-                memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
-                memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
-
-                if (r1 == r2 || l1 == l2) {
-                    const char* p1 = curr1 + K - 1;
-                    const char* p2 = curr2 + K - 1;
-                    while (*++p1 == *++p2);
-                    const char* right = p1;
-                    p1 = curr1;
-                    p2 = curr2;
-                    while (*--p1 == *--p2) ;
-
-                    if (right - p1 >= L_PLUS_ONE && memcmp(curr1, curr2, K) == 0) {
-                        const TextMatch &matchInfo = TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2));
-                        resMatches.push_back(matchInfo);
-                        if (filterMulti) {
-                            if (furthestMatchEndPos < matchInfo.endPosDestText())
-                                furthestMatchEndPos = matchInfo.endPosDestText();
-                            currentMatches.push_back(matchInfo);
-                        }
-                    }
-                }
-            }
+        if (posArray[0] == posArray[1]) {
             curr2 += k2;
+            continue;
         }
+
+        memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
+        memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+
+        for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
+            ++charExtensions;
+            const char* curr1 = start1 + sampledPositions[j];
+
+            uint64_t tmpMatchSrcPos = sampledPositions[j];
+            uint64_t tmpMatchDestPos = curr2 - start2;
+            if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
+                                               : curr2 - start2 >= tmpMatchSrcPos))
+                continue;
+
+            memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
+            memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
+
+            if (r1 == r2 || l1 == l2) {
+                const char* p1 = curr1 + K - 1;
+                const char* p2 = curr2 + K - 1;
+                while (*++p1 == *++p2);
+                const char* right = p1;
+                p1 = curr1;
+                p2 = curr2;
+                while (*--p1 == *--p2) ;
+
+                if (right - p1 > L && memcmp(curr1, curr2, K) == 0) {
+                    resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
+                    curr2 += skipK2;
+                    i1 += skipK2;
+                    break;
+                }
+            }
+        }
+        curr2 += k2;
     }
     //////////////////// processing the end part of Q  //////////////////////
 

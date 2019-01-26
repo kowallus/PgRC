@@ -25,7 +25,7 @@ namespace PgTools {
         if (!destPgIsSrcPg)
             cout << "Destination pseudogenome length: " << destPg.length() << endl;
         matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, targetMatchLength);
-        cout << "... found " << textMatches.size() << " exact matchers in " << clock_millis() << " msec. " << endl;
+        cout << "... found " << textMatches.size() << " exact matches in " << clock_millis() << " msec. " << endl;
 /*        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
             { return match1.length > match2.length; });
         cout << "Largest matches:" << endl;
