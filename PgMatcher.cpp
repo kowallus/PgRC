@@ -48,10 +48,12 @@ int main(int argc, char *argv[])
     string srcPgFilePrefix(argv[optind++]);
     string targetPgFilePrefix(argv[optind++]);
     string destPgFilePrefix(argv[optind++]);
-
-//    PgTools::SimplePgMatcher::matchPgInPgFiles("1", "2", 40, true);
-
-    PgTools::DefaultPgMatcher::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
+    clock_t pgMatcher_start = clock();
+    string pgSeq1 = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence("1");
+    string pgSeq2 = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence("2");
+    PgTools::SimplePgMatcher::matchPgInPgFiles(pgSeq1, pgSeq2, "1p", "2p", 47, true);
+    cout << "... pg matching completed in " << clock_millis(pgMatcher_start) << " msec. " << endl;
+//    PgTools::DefaultPgMatcher::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
 
     exit(EXIT_SUCCESS);
 }

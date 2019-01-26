@@ -6,13 +6,18 @@
 
 clock_t checkpoint;
 
-void PgSAHelpers::clock_checkpoint() {
+clock_t PgSAHelpers::clock_checkpoint() {
     checkpoint = clock();
+    return checkpoint;
 //    cout << "Clock reset!\n";
 }
 
-unsigned long long int PgSAHelpers::clock_millis() {
+unsigned long long int PgSAHelpers::clock_millis(clock_t checkpoint) {
     return (clock() - checkpoint) * (unsigned long long int) 1000 / CLOCKS_PER_SEC;
+}
+
+unsigned long long int PgSAHelpers::clock_millis() {
+    return clock_millis(checkpoint);
 }
 
 const size_t chunkSize = 10000000;

@@ -30,21 +30,14 @@ namespace PgTools {
 
     DefaultTextMatcher::DefaultTextMatcher(const string &srcText, const uint32_t targetMatchLength) :
             srcText(srcText), targetMatchLength(targetMatchLength), matchingLength(targetMatchLength / 2), hashMatcher(matchingLength) {
-        clock_checkpoint();
-
-        cout << "Feeding pattern pseudogenome parts...\n" << endl;
-
         const char *srcTextPtr = srcText.data();
         uint32_t partsCount = srcText.length() / matchingLength;
         for (uint32_t i = 0; i < partsCount; i++)
             hashMatcher.addPattern(srcTextPtr + i * matchingLength, i);
-
-        cout << "... finished in " << clock_millis() << " msec. " << endl;
     }
 
     void DefaultTextMatcher::matchTexts(vector<TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                                         uint32_t minMatchLength) {
-        clock_checkpoint();
         cout << "Matching...\n" << endl;
 
         const char *srcTextPtr = srcText.data();
@@ -124,7 +117,6 @@ namespace PgTools {
                             }
                         }*/
         }
-        cout << "Finished matching in  " << clock_millis() << " msec. " << endl;
         cout << "Exact matched " << matchCount << " parts (too short matches: " << shorterMatchCount << "). False matches reported: " << falseMatchCount << "." << endl;
         cout << "Stage 1: Matched " << toString(matchCharsCount) << " (" << (toString((matchCharsCount * 100.0) / destText.length(), 1)) << "%)" <<
              " Pg characters. Sum length of all matches is " << matchCharsWithOverlapCount << "." << endl;

@@ -253,6 +253,7 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 
 	size_t i1;
 
+	bool filterMulti = false;
 	size_t charExtensions = 0ULL;
 
     size_t N2 = destText.length();
@@ -291,21 +292,23 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
                 if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
                     : curr2 - start2 >= tmpMatchSrcPos))
                     continue;
-                auto cmIt = currentMatches.begin();
-                bool continueMatch = false;
-                while (cmIt != currentMatches.end()) {
-                    if (tmpMatchDestPos + K > (*cmIt).endPosDestText()) {
-                        currentMatches.erase(cmIt++);
-                    } else {
-                        if ((*cmIt).posSrcText - (*cmIt).posDestText == tmpMatchSrcPos - tmpMatchDestPos) {
-                            continueMatch = true;
-                            break;
+                if (filterMulti) {
+                    auto cmIt = currentMatches.begin();
+                    bool continueMatch = false;
+                    while (cmIt != currentMatches.end()) {
+                        if (tmpMatchDestPos + K > (*cmIt).endPosDestText()) {
+                            currentMatches.erase(cmIt++);
+                        } else {
+                            if ((*cmIt).posSrcText - (*cmIt).posDestText == tmpMatchSrcPos - tmpMatchDestPos) {
+                                continueMatch = true;
+                                break;
+                            }
+                            cmIt++;
                         }
-                        cmIt++;
                     }
+                    if (continueMatch)
+                        continue;
                 }
-                if (continueMatch)
-                    continue;
 
                 memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
                 memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
@@ -321,10 +324,12 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 
                     if (right - p1 >= L_PLUS_ONE && memcmp(curr1, curr2, K) == 0) {
                         const TextMatch &matchInfo = TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2));
-                        if (furthestMatchEndPos < matchInfo.endPosDestText())
-                            furthestMatchEndPos = matchInfo.endPosDestText();
                         resMatches.push_back(matchInfo);
-                        currentMatches.push_back(matchInfo);
+                        if (filterMulti) {
+                            if (furthestMatchEndPos < matchInfo.endPosDestText())
+                                furthestMatchEndPos = matchInfo.endPosDestText();
+                            currentMatches.push_back(matchInfo);
+                        }
                     }
                 }
             }
@@ -357,21 +362,23 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
                 if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
                                                    : curr2 - start2 >= tmpMatchSrcPos))
                     continue;
-                auto cmIt = currentMatches.begin();
-                bool continueMatch = false;
-                while (cmIt != currentMatches.end()) {
-                    if (tmpMatchDestPos + K > (*cmIt).endPosDestText()) {
-                        currentMatches.erase(cmIt++);
-                    } else {
-                        if ((*cmIt).posSrcText - (*cmIt).posDestText == tmpMatchSrcPos - tmpMatchDestPos) {
-                            continueMatch = true;
-                            break;
+                if (filterMulti) {
+                    auto cmIt = currentMatches.begin();
+                    bool continueMatch = false;
+                    while (cmIt != currentMatches.end()) {
+                        if (tmpMatchDestPos + K > (*cmIt).endPosDestText()) {
+                            currentMatches.erase(cmIt++);
+                        } else {
+                            if ((*cmIt).posSrcText - (*cmIt).posDestText == tmpMatchSrcPos - tmpMatchDestPos) {
+                                continueMatch = true;
+                                break;
+                            }
+                            cmIt++;
                         }
-                        cmIt++;
                     }
+                    if (continueMatch)
+                        continue;
                 }
-                if (continueMatch)
-                    continue;
 
                 memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
                 memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
@@ -387,10 +394,12 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 
                     if (right - p1 >= L_PLUS_ONE && memcmp(curr1, curr2, K) == 0) {
                         const TextMatch &matchInfo = TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2));
-                        if (furthestMatchEndPos < matchInfo.endPosDestText())
-                            furthestMatchEndPos = matchInfo.endPosDestText();
                         resMatches.push_back(matchInfo);
-                        currentMatches.push_back(matchInfo);
+                        if (filterMulti) {
+                            if (furthestMatchEndPos < matchInfo.endPosDestText())
+                                furthestMatchEndPos = matchInfo.endPosDestText();
+                            currentMatches.push_back(matchInfo);
+                        }
                     }
                 }
             }

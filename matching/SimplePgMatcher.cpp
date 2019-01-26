@@ -8,11 +8,11 @@ namespace PgTools {
 
     SimplePgMatcher::SimplePgMatcher(const string& srcPgPrefix, const string& srcPg, uint32_t minMatchLength)
             :srcPgPrefix(srcPgPrefix), srcPg(srcPg), targetMatchLength(minMatchLength), minMatchLength(minMatchLength) {
-
         cout << "Source pseudogenome length: " << srcPg.length() << endl;
 
         //matcher = new DefaultTextMatcher(srcPg, minMatchLength);
         matcher = new CopMEMMatcher(srcPg, minMatchLength);
+
     }
 
     SimplePgMatcher::~SimplePgMatcher() {
@@ -20,19 +20,18 @@ namespace PgTools {
     }
 
     void SimplePgMatcher::exactMatchPg() {
+        clock_checkpoint();
         bool destPgIsSrcPg = srcPgPrefix == targetPgPrefix;
-
         if (!destPgIsSrcPg)
             cout << "Destination pseudogenome length: " << destPg.length() << endl;
-
         matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, targetMatchLength);
-
-        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
+        cout << "... found " << textMatches.size() << " exact matchers in " << clock_millis() << " msec. " << endl;
+/*        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
             { return match1.length > match2.length; });
         cout << "Largest matches:" << endl;
         for (uint32_t i = 0; i < textMatches.size() && i < 10; i++)
             textMatches[i].report(cout);
-
+*/
         if (revComplMatching) {
             correctDestPositionDueToRevComplMatching();
             if (destPgIsSrcPg)
@@ -129,10 +128,15 @@ namespace PgTools {
     void SimplePgMatcher::matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
             const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
                          bool revComplMatching) {
-
+        clock_t ref_start = clock();
         PgTools::SimplePgMatcher matcher(hqPgPrefix, hqPgSequence, targetMatchLength);
+        cout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
+        clock_t hq_start = clock();
         matcher.markAndRemoveExactMatches(hqPgPrefix, hqPgSequence, revComplMatching);
+        cout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
+        clock_t lq_start = clock();
         matcher.markAndRemoveExactMatches(lqPgPrefix, lqPgSequence, revComplMatching);
+        cout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
     }
 }
 

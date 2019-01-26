@@ -33,8 +33,9 @@ namespace PgSAHelpers {
 
     // time routines
 
-    void clock_checkpoint();
+    clock_t clock_checkpoint();
     unsigned long long int clock_millis();
+    unsigned long long int clock_millis(clock_t checkpoint);
 
     // string conversion routines
 
