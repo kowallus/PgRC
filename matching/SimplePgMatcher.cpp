@@ -34,10 +34,10 @@ namespace PgTools {
 */
         if (revComplMatching) {
             correctDestPositionDueToRevComplMatching();
-            if (destPgIsSrcPg)
+/*            if (destPgIsSrcPg)
                 destPg = srcPg;
             else
-                PgSAHelpers::reverseComplementInPlace(destPg);
+                PgSAHelpers::reverseComplementInPlace(destPg);*/
         }
     }
 
@@ -52,13 +52,13 @@ namespace PgTools {
         return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPg.length(), 1)+ "%)";
     }
 
-    void SimplePgMatcher::markAndRemoveExactMatches(const string &destPgFilePrefix, const string &destPg, bool revComplMatching) {
+    void SimplePgMatcher::markAndRemoveExactMatches(const string &destPgFilePrefix, const string &queryPg, bool revComplMatching) {
         this->targetPgPrefix = destPgFilePrefix;
         this->revComplMatching = revComplMatching;
-        this->destPg = revComplMatching?reverseComplement(destPg):destPg;
+        this->destPg = revComplMatching?reverseComplement(queryPg):queryPg;
 
         exactMatchPg();
-
+        clock_t post_start = clock();
         if (srcPgPrefix == destPgFilePrefix)
             resolveMappingCollisionsInTheSameText();
 
@@ -72,6 +72,7 @@ namespace PgTools {
         uint_pg_len_max totalDestOverlap = 0;
         uint_pg_len_max totalMatched = 0;
         bool isPgLengthStd = srcPg.length() <= UINT32_MAX;
+        this->destPg.resize(0);
         for(TextMatch& match: textMatches) {
             if (match.posDestText < pos) {
                 uint_pg_len_max overflow = pos - match.posDestText;
@@ -91,8 +92,8 @@ namespace PgTools {
                 continue;
             }
             totalMatched += match.length;
-            PgSAHelpers::writeArray(pgDest, (void*) (destPg.data() + pos), match.posDestText - pos);
-            pgDest.put(128);
+            this->destPg.append(queryPg, pos, match.posDestText - pos);
+            this->destPg.push_back(128);
             if (isPgLengthStd)
                 PgSAHelpers::writeValue<uint32_t>(pgMapOffDest, match.posSrcText);
             else
@@ -100,13 +101,14 @@ namespace PgTools {
             PgSAHelpers::writeUIntByteFrugal(pgMapLenDest, match.length - minMatchLength);
             pos = match.endPosDestText();
         }
-        PgSAHelpers::writeArray(pgDest, (void*) (destPg.data() + pos), destPg.length() - pos);
+        this->destPg.append(queryPg, pos, queryPg.length() - pos);
+        PgSAHelpers::writeArray(pgDest, (void*) (this->destPg.data()), this->destPg.length());
         pgDest.close();
         pgMapOffDest.close();
         pgMapLenDest.close();
         SeparatedPseudoGenomePersistence::acceptTemporaryPseudoGenomeElements(destPgFilePrefix, false);
-
-        cout << "Final size of Pg: " << (destPg.length() - totalMatched) << " (removed: " <<
+        cout << "Writing files time: " << clock_millis(post_start) << endl;
+        cout << "Final size of Pg: " << (queryPg.length() - totalMatched) << " (removed: " <<
              getTotalMatchStat(totalMatched) << "; " << totalDestOverlap << " chars in overlapped dest symbol)" << endl;
     }
 
@@ -126,16 +128,15 @@ namespace PgTools {
     }
 
     void SimplePgMatcher::matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
-            const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
-                         bool revComplMatching) {
+            const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength) {
         clock_t ref_start = clock();
         PgTools::SimplePgMatcher matcher(hqPgPrefix, hqPgSequence, targetMatchLength);
         cout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
         clock_t hq_start = clock();
-        matcher.markAndRemoveExactMatches(hqPgPrefix, hqPgSequence, revComplMatching);
+        matcher.markAndRemoveExactMatches(hqPgPrefix, hqPgSequence, true);
         cout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
         clock_t lq_start = clock();
-        matcher.markAndRemoveExactMatches(lqPgPrefix, lqPgSequence, revComplMatching);
+        matcher.markAndRemoveExactMatches(lqPgPrefix, lqPgSequence, false);
         cout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
     }
 }

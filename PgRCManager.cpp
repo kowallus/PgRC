@@ -112,7 +112,7 @@ namespace PgTools {
             prepareForPgMatching();
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
             SimplePgMatcher::matchPgInPgFiles(hqPg->getPgSequence(), lqPg->getPgSequence(),
-                    pgMappedHqPrefix, pgMappedLqPrefix, minimalPgMatchLength, true);
+                    pgMappedHqPrefix, pgMappedLqPrefix, minimalPgMatchLength);
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {

@@ -38,11 +38,10 @@ namespace PgTools {
 
         virtual ~SimplePgMatcher();
 
-        void markAndRemoveExactMatches(const string &destPgPrefix, const string &destPg, bool revComplMatching);
+        void markAndRemoveExactMatches(const string &destPgPrefix, const string &queryPg, bool revComplMatching);
 
         static void matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
-                const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
-                             bool revComplMatching);
+                const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength);
 
     };
 }

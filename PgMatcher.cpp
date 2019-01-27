@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     clock_t pgMatcher_start = clock();
     string pgSeq1 = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence("1");
     string pgSeq2 = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence("2");
-    PgTools::SimplePgMatcher::matchPgInPgFiles(pgSeq1, pgSeq2, "1p", "2p", 47, true);
+    PgTools::SimplePgMatcher::matchPgInPgFiles(pgSeq1, pgSeq2, "1s", "2s", 47);
     cout << "... pg matching completed in " << clock_millis(pgMatcher_start) << " msec. " << endl;
 //    PgTools::DefaultPgMatcher::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
 
