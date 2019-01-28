@@ -258,76 +258,55 @@ char PgSAHelpers::code2mismatch(char actual, uint8_t code) {
     return value2symbol(code < actualValue?code:(code+1));
 }
 
+struct ComplementLUT
+{
+    char lut[256];
+
+    ComplementLUT() {
+        memset(lut, 0, 256);
+        lut['A'] = 'T'; lut['a'] = 'T';
+        lut['C'] = 'G'; lut['c'] = 'G';
+        lut['G'] = 'C'; lut['g'] = 'C';
+        lut['T'] = 'A'; lut['t'] = 'A';
+        lut['N'] = 'N'; lut['n'] = 'N';
+        lut['U'] = 'A'; lut['u'] = 'A';
+        lut['Y'] = 'R'; lut['y'] = 'R';
+        lut['R'] = 'Y'; lut['r'] = 'Y';
+        lut['K'] = 'M'; lut['k'] = 'M';
+        lut['M'] = 'K'; lut['m'] = 'K';
+        lut['B'] = 'V'; lut['b'] = 'V';
+        lut['D'] = 'H'; lut['d'] = 'H';
+        lut['H'] = 'D'; lut['h'] = 'D';
+        lut['V'] = 'B'; lut['v'] = 'B';
+    }
+} instance;
+
+char* complLUT = instance.lut;
+
+void PgSAHelpers::reverseComplementInPlace(char* start, const std::size_t N) {
+    char* left = start - 1;
+    char* right = start + N;
+    while (--right > ++left) {
+        char tmp = complLUT[*left];
+        *left = complLUT[*right];
+        *right = tmp;
+    }
+    if (left == right)
+        *left = complLUT[*left];
+}
+
 string PgSAHelpers::reverseComplement(string kmer) {
     size_t kmer_length = kmer.size();
     string revcomp;
     revcomp.resize(kmer_length);
     size_t j = kmer_length;
-    for(size_t i = 0; i < kmer_length; i++) {
-        switch(kmer[i]) {
-            case 'A': revcomp[--j] = 'T'; break;
-            case 'T': revcomp[--j] = 'A'; break;
-            case 'U': revcomp[--j] = 'A'; break;
-            case 'G': revcomp[--j] = 'C'; break;
-            case 'C': revcomp[--j] = 'G'; break;
-            case 'Y': revcomp[--j] = 'R'; break;
-            case 'R': revcomp[--j] = 'Y'; break;
-            case 'K': revcomp[--j] = 'M'; break;
-            case 'M': revcomp[--j] = 'K'; break;
-            case 'B': revcomp[--j] = 'V'; break;
-            case 'D': revcomp[--j] = 'H'; break;
-            case 'H': revcomp[--j] = 'D'; break;
-            case 'V': revcomp[--j] = 'B'; break;
-            case 'N': revcomp[--j] = 'N'; break;
-            default: revcomp[--j] = kmer[i];
-                cout << "WARNING: Unsupported reverse compliment: " << kmer[i] << "\n";
-                break;
-        }
-    }
+    for(size_t i = 0; i < kmer_length; i++)
+        revcomp[--j] = complLUT[kmer[i]];
     return revcomp;
 }
 
 void PgSAHelpers::reverseComplementInPlace(string &kmer) {
-    size_t kmer_length = kmer.size();
-    size_t j = kmer_length;
-    size_t i = 0;
-    for(i = 0; i < kmer_length / 2; i++) {
-        char tmp;
-        switch(kmer[i]) {
-            case 'A': tmp = 'T'; break;
-            case 'T': tmp = 'A'; break;
-            case 'G': tmp = 'C'; break;
-            case 'C': tmp = 'G'; break;
-            case 'N': tmp = 'N'; break;
-            default: tmp = kmer[i];
-                cout << "WARNING: Unsupported reverse compliment: " << kmer[i] << "\n";
-                break;
-        }
-        switch(kmer[--j]) {
-            case 'A': kmer[i] = 'T'; break;
-            case 'T': kmer[i] = 'A'; break;
-            case 'G': kmer[i] = 'C'; break;
-            case 'C': kmer[i] = 'G'; break;
-            case 'N': kmer[i] = 'N'; break;
-            default:
-                cout << "WARNING: Unsupported reverse compliment: " << kmer[j] << "\n";
-                break;
-        }
-        kmer[j] = tmp;
-    }
-    if (kmer_length % 2) {
-        switch(kmer[i]) {
-            case 'A': kmer[i] = 'T'; break;
-            case 'T': kmer[i] = 'A'; break;
-            case 'G': kmer[i] = 'C'; break;
-            case 'C': kmer[i] = 'G'; break;
-            case 'N': kmer[i] = 'N'; break;
-            default:
-                cout << "WARNING: Unsupported reverse compliment: " << kmer[j] << "\n";
-                break;
-        }
-    }
-
+    reverseComplementInPlace((char*) kmer.data(), kmer.length());
 }
 
 double PgSAHelpers::qualityScore2approxCorrectProb(string quality) {

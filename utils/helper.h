@@ -20,6 +20,7 @@ namespace PgSAHelpers {
     // bioinformatical routines
 
     string reverseComplement(string kmer);
+    void reverseComplementInPlace(char* start, const std::size_t N);
     void reverseComplementInPlace(string &kmer);
     double qualityScore2approxCorrectProb(string quality);
     double qualityScore2correctProb(string quality);
