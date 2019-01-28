@@ -15,6 +15,28 @@ namespace PgTools {
         TextMatch(uint64_t posSrcText, uint64_t length, uint64_t posDestText) : posSrcText(posSrcText), length(length),
                                                                                 posDestText(posDestText) {}
 
+        bool operator==(const TextMatch &rhs) const {
+            return posSrcText == rhs.posSrcText &&
+                   length == rhs.length &&
+                   posDestText == rhs.posDestText;
+        }
+
+        bool operator!=(const TextMatch &rhs) const {
+            return !(rhs == *this);
+        }
+
+        bool operator<(const TextMatch &rhs) const {
+            if (posDestText < rhs.posDestText)
+                return true;
+            if (rhs.posDestText < posDestText)
+                return false;
+            if (posSrcText < rhs.posSrcText)
+                return true;
+            if (rhs.posSrcText < posSrcText)
+                return false;
+            return length < rhs.length;
+        }
+
         uint64_t endPosSrcText() const {
             return posSrcText + length;
         }

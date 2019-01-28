@@ -22,11 +22,11 @@ namespace PgTools {
         const string& srcPg;
 
         string targetPgPrefix;
-        string destPg;
+        uint64_t destPgLength;
         vector<TextMatch> textMatches;
         bool revComplMatching;
 
-        void exactMatchPg();
+        void exactMatchPg(string& destPg);
 
         void correctDestPositionDueToRevComplMatching();
         void resolveMappingCollisionsInTheSameText();
@@ -38,7 +38,7 @@ namespace PgTools {
 
         virtual ~SimplePgMatcher();
 
-        void markAndRemoveExactMatches(const string &destPgPrefix, const string &queryPg, bool revComplMatching);
+        void markAndRemoveExactMatches(const string &destPgPrefix, string &destPg, bool revComplMatching);
 
         static void matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
                 const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength);

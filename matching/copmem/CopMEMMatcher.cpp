@@ -292,6 +292,13 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
                     if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
                                                        : curr2 - start2 >= tmpMatchSrcPos))
                         continue;
+                    if (resMatches.size() > 0 &&
+                        tmpMatchDestPos - tmpMatchSrcPos == resMatches.back().posDestText - resMatches.back().posSrcText
+                        && tmpMatchDestPos + K < resMatches.back().posDestText + resMatches.back().length) {
+                        curr2 += skipK2;
+                        i2 += skip;
+                        break;
+                    }
 
                     memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
                     memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
@@ -307,6 +314,7 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 
                         if (right - p1 > L && memcmp(curr1, curr2, K) == 0) {
                             resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
+
                             curr2 += skipK2;
                             i2 += skip;
                             break;
@@ -339,6 +347,13 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
             if (destIsSrc && (revComplMatching ? destText.length() - tmpMatchSrcPos < tmpMatchDestPos
                                                : curr2 - start2 >= tmpMatchSrcPos))
                 continue;
+            if (resMatches.size() > 0 &&
+                tmpMatchDestPos - tmpMatchSrcPos == resMatches.back().posDestText - resMatches.back().posSrcText
+                && tmpMatchDestPos + K < resMatches.back().posDestText + resMatches.back().length) {
+                curr2 += skipK2;
+                i1 += skipK2;
+                break;
+            }
 
             memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
             memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
