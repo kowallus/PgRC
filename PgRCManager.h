@@ -23,7 +23,7 @@ namespace PgTools {
         uint16_t targetCharsPerMismatch = UINT16_MAX;
         uint16_t maxCharsPerMismatch = UINT16_MAX;
         char mismatchesMode = 'd';
-        uint32_t minimalPgMatchLength = 50;
+        uint32_t targetPgMatchLength = 50;
         string pgFilesPrefixes = "";
         bool revComplPairFile = false;
 
@@ -132,12 +132,12 @@ namespace PgTools {
             PgRCManager::mismatchesMode = mismatchesMode;
         }
 
-        void setMinimalPgMatchLength(uint32_t minimalPgMatchLength) {
-            if (minimalPgMatchLength < MIN_CHARS_PER_PGMATCH) {
-                fprintf(stderr, "Minimal Pg match length cannot be lower than %d.\n", MIN_CHARS_PER_PGMATCH);
+        void setMinimalPgMatchLength(uint32_t targetPgMatchLength) {
+            if (targetPgMatchLength < MIN_CHARS_PER_PGMATCH) {
+                fprintf(stderr, "Target Pg match length cannot be lower than %d.\n", MIN_CHARS_PER_PGMATCH);
                 exit(EXIT_FAILURE);
             }
-            PgRCManager::minimalPgMatchLength = minimalPgMatchLength;
+            PgRCManager::targetPgMatchLength = targetPgMatchLength;
         }
 
         void setPgFilesPrefixes(const string &pgFilesPrefixes) {

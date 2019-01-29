@@ -16,7 +16,6 @@ namespace PgTools {
 
         const string srcPgPrefix;
         uint32_t targetMatchLength;
-        uint32_t minMatchLength;
 
         TextMatcher* matcher;
         const string& srcPg;
@@ -26,7 +25,7 @@ namespace PgTools {
         vector<TextMatch> textMatches;
         bool revComplMatching;
 
-        void exactMatchPg(string& destPg);
+        void exactMatchPg(string& destPg, uint32_t minMatchLength);
 
         void correctDestPositionDueToRevComplMatching();
         void resolveMappingCollisionsInTheSameText();
@@ -34,14 +33,17 @@ namespace PgTools {
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
     public:
-        SimplePgMatcher(const string& srcPgPrefix, const string& srcPg, uint32_t targetMatchLength);
+        SimplePgMatcher(const string& srcPgPrefix, const string& srcPg, uint32_t targetMatchLength,
+                uint32_t minMatchLength = UINT32_MAX);
 
         virtual ~SimplePgMatcher();
 
-        void markAndRemoveExactMatches(const string &destPgPrefix, string &destPg, bool revComplMatching);
+        void markAndRemoveExactMatches(const string &destPgPrefix, string &destPg, bool revComplMatching,
+                uint32_t minMatchLength = UINT32_MAX);
 
         static void matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
-                const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength);
+                const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
+                uint32_t minMatchLength = UINT32_MAX);
 
     };
 }

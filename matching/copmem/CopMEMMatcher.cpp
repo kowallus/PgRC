@@ -61,33 +61,16 @@ char* blockBuffer; //buffer used in buffered reading of some Query sequences
 size_t blockBufferSize;
 BlockVector blockVector;
 
-void CopMEMMatcher::initGlobals() {
-	H = 1;
-    K = 36;
-	L = 47;
-	k1 = 4;
-	k2 = 3;
-	hashFunc = hashFuncMatrix[K][H];
-	isVerbose = v1;
-}
-
-
+#define INIT_HASH_FUNC(n) hashFuncMatrix[n][1] = maRushPrime1HashSimplified<n>; hashFuncMatrix[n][2] = xxhash32<n>; hashFuncMatrix[n][3] = xxhash64<n>;hashFuncMatrix[n][4] = metroHash64<n>; hashFuncMatrix[n][5] = cityHash64<n>;
 void CopMEMMatcher::initHashFuncMatrix() {
-	hashFuncMatrix[36][1] = maRushPrime1HashSimplified<36>;
-	hashFuncMatrix[36][2] = xxhash32<36>;
-	hashFuncMatrix[36][3] = xxhash64<36>;
-	hashFuncMatrix[36][4] = metroHash64<36>;
-	hashFuncMatrix[36][5] = cityHash64<36>;
-	hashFuncMatrix[44][1] = maRushPrime1HashSimplified<44>;
-	hashFuncMatrix[44][2] = xxhash32<44>;
-	hashFuncMatrix[44][3] = xxhash64<44>;
-	hashFuncMatrix[44][4] = metroHash64<44>;
-	hashFuncMatrix[44][5] = cityHash64<44>;
-	hashFuncMatrix[56][1] = maRushPrime1HashSimplified<56>;
-	hashFuncMatrix[56][2] = xxhash32<56>;
-	hashFuncMatrix[56][3] = xxhash64<56>;
-	hashFuncMatrix[56][4] = metroHash64<56>;
-	hashFuncMatrix[56][5] = cityHash64<56>;
+    INIT_HASH_FUNC(20);
+    INIT_HASH_FUNC(24);
+    INIT_HASH_FUNC(28);
+    INIT_HASH_FUNC(32);
+    INIT_HASH_FUNC(36);
+    INIT_HASH_FUNC(40);
+    INIT_HASH_FUNC(44);
+    INIT_HASH_FUNC(56);
 }
 
 
@@ -105,6 +88,25 @@ std::ostream null_stream(&null_buffer);
 
 std::ostream *v1logger;
 
+void CopMEMMatcher::initParams(uint32 minMatchLength) {
+    if (L > 110) K = 56;
+    else if (L > 62) K = 44;
+    else if (L > 53) K = 40;
+    else if (L > 46) K = 36;
+    else if (L > 42) K = 32;
+    else if (L > 32) K = 28;
+    else K = (L / 4 - 1) * 4;
+    if (minMatchLength < 24) {
+        cout << "Error: Minimal matching length too short!" << endl;
+        exit(EXIT_FAILURE);
+    }
+    int KmmL = (minMatchLength / 4 - 1) * 4;
+    if (KmmL < K) K = KmmL;
+    calcCoprimes();
+    hashFunc = hashFuncMatrix[K][H];
+    v1logger = &std::cout;
+}
+
 void CopMEMMatcher::displayParams() {
 	std::cout << "PARAMETERS" << std::endl;
 	std::cout << "l = " << L << "; ";
@@ -112,20 +114,7 @@ void CopMEMMatcher::displayParams() {
 	std::cout << "HASH_SIZE = " << HASH_SIZE << "; ";
 	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
-	std::cout << "Hash function: ";
-	if (hashFunc == hashFuncMatrix[36][1] || hashFunc == hashFuncMatrix[44][1] || hashFunc == hashFuncMatrix[56][1]) std::cout << "maRushPrime1HashSimplified\n";
-	if (hashFunc == hashFuncMatrix[36][2] || hashFunc == hashFuncMatrix[44][2] || hashFunc == hashFuncMatrix[56][2]) std::cout << "xxhash32\n";
-	if (hashFunc == hashFuncMatrix[36][3] || hashFunc == hashFuncMatrix[44][3] || hashFunc == hashFuncMatrix[56][3]) std::cout << "xxhash64\n";
-	if (hashFunc == hashFuncMatrix[36][4] || hashFunc == hashFuncMatrix[44][4] || hashFunc == hashFuncMatrix[56][4]) std::cout << "metroHash64\n";
-	if (hashFunc == hashFuncMatrix[36][5] || hashFunc == hashFuncMatrix[44][5] || hashFunc == hashFuncMatrix[56][5]) std::cout << "cityHash64\n";
-}
-
-
-void CopMEMMatcher::initParams() {
-    assert(K % 4 == 0);
-    v1logger = &std::cout;
-    //v1logger = &null_stream;
-    //hashFunc = hashFuncMatrix[K][H];
+	std::cout << "Hash function: maRushPrime1HashSimplified\n";
 }
 
 void CopMEMMatcher::calcCoprimes()
@@ -134,13 +123,25 @@ void CopMEMMatcher::calcCoprimes()
 	int tempVar = L - K + 1;
 	if (tempVar <= 0) {
 		std::cerr << "\nL and K mismatch.\n";
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
-	k1 = (int)(pow(tempVar, 0.5)) + 1;
-	k2 = k1 - 1;
-	if (k1 * k2 > tempVar) {
-        --k1;
-        --k2;
+	if (tempVar >= 20) {
+        k1 = (int) (pow(tempVar, 0.5)) + 1;
+        k2 = k1 - 1;
+        if (k1 * k2 > tempVar) {
+            --k2;
+            --k1;
+        }
+    } else if (tempVar >= 15) {
+	    k1 = 5; k2 = 3;
+	} else if (tempVar >= 12) {
+        k1 = 4; k2 = 3;
+    } else if (tempVar >= 10) {
+        k1 = 5; k2 = 2;
+    } else if (tempVar >= 6) {
+        k1 = 3; k2 = 2;
+    } else {
+        k1 = tempVar; k2 = 1;
     }
 }
 
@@ -235,7 +236,6 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
         const string &destText, bool destIsSrc, bool revComplMatching, uint32_t minMatchLength){
     const char* start1 = srcText.data();
 
-    const int L_PLUS_ONE = L + 1;
 	const int LK2 = (L - K) / 2;
 	const int LK2_MINUS_4 = LK2 - 4;
 	const int K_PLUS_LK24 = K + LK2_MINUS_4;
@@ -259,6 +259,9 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
     const int skip = K / k1 - k2;
     const int skipK2 = skip * k2;
     const bool MULTI_MODE = true;
+    *v1logger << "Minimal matching length = " << minMatchLength << "; ";
+    *v1logger << "Skip factor = " << skip << "; ";
+    *v1logger << "Multi-mode = " << (MULTI_MODE?"true":"false") << std::endl;
 
     size_t i1 = 0;
     if (MULTI_MODE) {
@@ -312,7 +315,7 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
                         p2 = curr2;
                         while (*--p1 == *--p2);
 
-                        if (right - p1 > L && memcmp(curr1, curr2, K) == 0) {
+                        if (right - p1 > minMatchLength && memcmp(curr1, curr2, K) == 0) {
                             resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
 
                             curr2 += skipK2;
@@ -367,7 +370,7 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
                 p2 = curr2;
                 while (*--p1 == *--p2) ;
 
-                if (right - p1 > L && memcmp(curr1, curr2, K) == 0) {
+                if (right - p1 > minMatchLength && memcmp(curr1, curr2, K) == 0) {
                     resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
                     curr2 += skipK2;
                     i1 += skipK2;
@@ -384,12 +387,12 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 
 using namespace std;
 
-CopMEMMatcher::CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength) : srcText(srcText),
-    targetMatchLength(targetMatchLength) {
+CopMEMMatcher::CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength)
+    : srcText(srcText), L(targetMatchLength) {
     initHashFuncMatrix();
-    initGlobals();
-    initParams();
-    calcCoprimes();
+    if (minMatchLength > targetMatchLength)
+        minMatchLength = targetMatchLength;
+    initParams(minMatchLength);
     displayParams();
 
     if ((srcText.length()) / k1 >= (1ULL << 32)) {
@@ -419,6 +422,10 @@ CopMEMMatcher::~CopMEMMatcher() {
 void
 CopMEMMatcher::matchTexts(vector <TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                           uint32_t minMatchLength) {
+    if (minMatchLength < K) {
+        fprintf(stderr, "Minimal matching length cannot be smaller than K (%d < %d)\n\n", minMatchLength, K);
+        exit(EXIT_FAILURE);
+    }
     resMatches.clear();
     if (bigRef == 2) {
         processQueryTight<std::uint64_t, std::uint64_t>(buffer2, resMatches, destText, destIsSrc, revComplMatching, minMatchLength);

@@ -17,19 +17,15 @@ using HashBuffer =  std::pair<MyUINT1*, MyUINT2* >;
 class CopMEMMatcher: public TextMatcher {
 private:
     const string &srcText;
-    const uint32_t targetMatchLength;
     int bigRef;
-
-    verbosity isVerbose;
-
-    int K, H, L, k1, k2;
+    const int L;
+    int K, k1, k2;
     std::uint32_t(*hashFunc)(const char*);
     std::uint32_t(*hashFuncMatrix[64][6])(const char*);
-
+    const int H = 1;
 
     void initHashFuncMatrix();
-    void initGlobals();
-    void initParams();
+    void initParams(uint32_t minMatchLength);
     void calcCoprimes();
     void displayParams();
 
@@ -54,7 +50,7 @@ private:
             bool destIsSrc, bool revComplMatching, uint32_t minMatchLength);
 
 public:
-    CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength);
+    CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
     virtual ~CopMEMMatcher();
 

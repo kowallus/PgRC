@@ -15,9 +15,13 @@ int main(int argc, char *argv[])
     int opt; // current option
     bool revComplPg = false;
     bool dumpInfo = false;
+    uint32_t minMatchLength = UINT32_MAX;
 
-    while ((opt = getopt(argc, argv, "rt?")) != -1) {
+    while ((opt = getopt(argc, argv, "m:rt?")) != -1) {
         switch (opt) {
+        case 'm':
+            minMatchLength = atoi(optarg);
+            break;
         case 'r':
             revComplPg = true;
             break;
@@ -29,7 +33,7 @@ int main(int argc, char *argv[])
             break;
         case '?':
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-r] [-t] targetMatchLength srcPgFilePrefix targetPgFilePrefix destPgFilePrefix\n\n",
+            fprintf(stderr, "Usage: %s [-r] [-t] [-m minMatchLength] targetMatchLength srcPgFilePrefix targetPgFilePrefix destPgFilePrefix\n\n",
                     argv[0]);
                 fprintf(stderr, "-r match reverse compliment of pseudogenome\n-t write numbers in text mode\n\n");
             fprintf(stderr, "\n\n");
@@ -51,7 +55,7 @@ int main(int argc, char *argv[])
     clock_t pgMatcher_start = clock();
     string pgSeq1 = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence("1");
     string pgSeq2 = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence("2");
-    PgTools::SimplePgMatcher::matchPgInPgFiles(pgSeq1, pgSeq2, "1s", "2s", 47);
+    PgTools::SimplePgMatcher::matchPgInPgFiles(pgSeq1, pgSeq2, srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, minMatchLength);
     cout << "... pg matching completed in " << clock_millis(pgMatcher_start) << " msec. " << endl;
 //    PgTools::DefaultPgMatcher::matchPgInPgFile(srcPgFilePrefix, targetPgFilePrefix, targetMatchLength, destPgFilePrefix, revComplPg, dumpInfo);
 

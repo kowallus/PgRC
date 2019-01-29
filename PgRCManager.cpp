@@ -31,7 +31,7 @@ namespace PgTools {
         nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
         pgHqPrefix = pgFilesPrefixes + GOOD_INFIX;
         pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
-                                      + "_M" + mismatchesMode + toString(maxCharsPerMismatch) + "_p" + toString(minimalPgMatchLength);
+                                      + "_M" + mismatchesMode + toString(maxCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
@@ -112,7 +112,7 @@ namespace PgTools {
             prepareForPgMatching();
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
             SimplePgMatcher::matchPgInPgFiles(hqPg->getPgSequence(), lqPg->getPgSequence(),
-                    pgMappedHqPrefix, pgMappedLqPrefix, minimalPgMatchLength);
+                    pgMappedHqPrefix, pgMappedLqPrefix, targetPgMatchLength);
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -286,7 +286,7 @@ namespace PgTools {
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgFilesPrefixes << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t"
-             << (int) targetMismatches << "\t" << mismatchesMode << (int) maxMismatches << "\t" << minimalPgMatchLength << "\t";
+             << (int) targetMismatches << "\t" << mismatchesMode << (int) maxMismatches << "\t" << targetPgMatchLength << "\t";
         fout << getTimeInSec(clock(), start_t) << "\t";
         fout << getTimeInSec(div_t, start_t) << "\t";
         fout << getTimeInSec(pgDiv_t, div_t) << "\t";
