@@ -35,8 +35,8 @@ namespace PgTools {
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
-        mappedLqDivisionFile = pgFilesPrefixesWithM + DIVISION_EXTENSION;
-        if (skipIntermediateOutput) {
+        mappedLqDivisionFile = pgFilesPrefixesWithM + BAD_INFIX + DIVISION_EXTENSION;
+        if (sameIntermediateOutput) {
             pgHqPrefix = pgMappedHqPrefix;
             lqDivisionFile = mappedLqDivisionFile;
         }

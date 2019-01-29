@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
                 pgRC->setRevComplPairFile();
                 break;
             case 's':
-                pgRC->generateIntermediateOutput();
+                pgRC->separateIntermediateOutput();
                 break;
             case 'N':
                 pgRC->setSeparateNReads(true);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-n reads containing N are low quality \b-N reads containing N are processed separately\n");
                 fprintf(stderr, "-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
-                fprintf(stderr, "-s separate intermediate output files\n");
+                fprintf(stderr, "-s separate names for intermediate output files\n");
                 fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
                 fprintf(stderr, "Mismatches modes: d:default; i:interleaved\n");
                 fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad); 6:PgMatching; 7:pairDump\n");

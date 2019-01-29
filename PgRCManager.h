@@ -31,7 +31,7 @@ namespace PgTools {
         string pairFastqFile = "";
 
         // CHAIN MANAGEMENT
-        bool skipIntermediateOutput = true;
+        bool sameIntermediateOutput = true;
         uint8_t skipStages = 0;
         uint8_t endAtStage = UINT8_MAX;
 
@@ -156,8 +156,8 @@ namespace PgTools {
             PgRCManager::pairFastqFile = pairFastqFile;
         }
 
-        void generateIntermediateOutput() {
-            PgRCManager::skipIntermediateOutput = false;
+        void separateIntermediateOutput() {
+            PgRCManager::sameIntermediateOutput = false;
         }
 
         void setSkipStages(uint8_t skipStages) {
