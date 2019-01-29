@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
                 switch (*optarg) {
                     case 'd': pgRC->setMismatchesMode('d'); break;
                     case 'i': pgRC->setMismatchesMode('i'); break;
+                    case 'c': pgRC->setMismatchesMode('c'); break;
                     default: valPtr--;
                 }
                 pgRC->setMaxCharsPerMismatch(atoi(valPtr));

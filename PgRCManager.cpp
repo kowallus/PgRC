@@ -21,8 +21,6 @@ namespace PgTools {
     void PgRCManager::prepareChainData() {
         qualityDivision = error_limit_in_promils < 1000;
         readLength = probeReadsLength(srcFastqFile);
-        targetMismatches = readLength / targetCharsPerMismatch;
-        maxMismatches = readLength / maxCharsPerMismatch;
 
         if (qualityDivision)
             pgFilesPrefixes = pgFilesPrefixes + "_q" + toString(error_limit_in_promils);
@@ -31,7 +29,7 @@ namespace PgTools {
         nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
         pgHqPrefix = pgFilesPrefixes + GOOD_INFIX;
         pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
-                                      + "_M" + mismatchesMode + toString(maxCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
+                                      + "_M" + mismatchesMode + toString(minCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
@@ -204,7 +202,7 @@ namespace PgTools {
         divReadsSets->getLqReadsSet()->printout();
         const vector<bool>& isLqReadMappedIntoHqPg = mapReadsIntoPg(
                 hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
-                targetMismatches, maxMismatches, mismatchesMode, 0,
+                targetCharsPerMismatch, minCharsPerMismatch, mismatchesMode, 0,
                 false, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
     }
@@ -286,7 +284,7 @@ namespace PgTools {
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgFilesPrefixes << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t"
-             << (int) targetMismatches << "\t" << mismatchesMode << (int) maxMismatches << "\t" << targetPgMatchLength << "\t";
+             << (int) targetCharsPerMismatch << "\t" << mismatchesMode << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
         fout << getTimeInSec(clock(), start_t) << "\t";
         fout << getTimeInSec(div_t, start_t) << "\t";
         fout << getTimeInSec(pgDiv_t, div_t) << "\t";

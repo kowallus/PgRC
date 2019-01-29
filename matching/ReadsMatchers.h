@@ -8,6 +8,7 @@
 #include "../readsset/PackedConstantLengthReadsSet.h"
 #include "ConstantLengthPatternsOnTextHashMatcher.h"
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
+#include "copmem/CopMEMMatcher.h"
 
 using namespace std;
 
@@ -19,6 +20,8 @@ namespace PgTools {
     class DefaultReadsMatcher {
     protected:
         SeparatedPseudoGenome* sPg;
+        const char* pgPtr;
+        const uint_pg_len_max pgLength;
         bool revComplPg;
         PackedConstantLengthReadsSet *readsSet;
         uint32_t matchPrefixLength;
@@ -29,16 +32,16 @@ namespace PgTools {
         vector<uint8_t> readMismatchesCount;
         uint_reads_cnt_max matchedReadsCount = 0;
 
-        uint_reads_cnt_max readsCount;
-        uint_read_len_max readLength;
-        uint_read_len_max matchingLength;
+        const uint_reads_cnt_max readsCount;
+        const uint_read_len_max readLength;
+        const uint_read_len_max matchingLength;
 
         // stats
         uint64_t multiMatchCount = 0;
         uint64_t falseMatchCount = 0;
 
         virtual void initMatching();
-        virtual void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false) = 0;
+        virtual void executeMatching(bool revCompMode = false) = 0;
         virtual void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) = 0;
 
         virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
@@ -80,7 +83,7 @@ namespace PgTools {
 
     protected:
         void initMatching();
-        void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
+        void executeMatching(bool revCompMode = false);
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
@@ -102,10 +105,10 @@ namespace PgTools {
         uint8_t maxMismatches;
         uint8_t targetMismatches = 0;
         uint8_t minMismatches = 0;
-
-        const char* pgPtr;
+        uint_reads_cnt_max matchedCountPerMismatches[UINT8_MAX + 1] = {};
 
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
+        void printApproxMatchingStats();
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
                                                                                      bool enableRevComp, bool enableMismatches) override;
@@ -129,7 +132,7 @@ namespace PgTools {
         uint_read_len_max partLength;
 
         void initMatching();
-        void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
+        void executeMatching(bool revCompMode = false);
 
     public:
         DefaultReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
@@ -146,7 +149,7 @@ namespace PgTools {
         uint_read_len_max partLength;
 
         void initMatching();
-        void matchConstantLengthReads(const char* txt, uint64_t length, bool revCompMode = false);
+        void executeMatching(bool revCompMode = false);
 
     public:
         InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
@@ -155,8 +158,24 @@ namespace PgTools {
         virtual ~InterleavedReadsApproxMatcher();
     };
 
+    class CopMEMReadsApproxMatcher: public AbstractReadsApproxMatcher {
+    private:
+
+    protected:
+        uint_read_len_max partLength;
+
+        void initMatching();
+        void executeMatching(bool revCompMode = false);
+
+    public:
+        CopMEMReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
+                                  uint32_t matchPrefixLength, uint16_t targetCharsPerMismatch, uint8_t maxMismatches, uint8_t minMismatches = 0);
+
+        virtual ~CopMEMReadsApproxMatcher();
+    };
+
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches,
+                        uint_read_len_max matchPrefixLength, uint16_t targetCharsPerMismatch, uint16_t minCharsPerMismatch,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
                         IndexesMapping* orgIndexesMapping);
 }

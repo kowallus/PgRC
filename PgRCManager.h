@@ -21,7 +21,7 @@ namespace PgTools {
         bool nReadsLQ = false;
         bool separateNReads = false;
         uint16_t targetCharsPerMismatch = UINT16_MAX;
-        uint16_t maxCharsPerMismatch = UINT16_MAX;
+        uint16_t minCharsPerMismatch = UINT16_MAX;
         char mismatchesMode = 'd';
         uint32_t targetPgMatchLength = 50;
         string pgFilesPrefixes = "";
@@ -48,8 +48,6 @@ namespace PgTools {
 
         // CHAIN VARIABLES
         uint_read_len_max readLength;
-        uint8_t targetMismatches;
-        uint8_t maxMismatches;
         uint8_t stageCount;
 
         DividedPCLReadsSets* divReadsSets = 0;
@@ -113,7 +111,7 @@ namespace PgTools {
         }
 
         void setTargetCharsPerMismatch(uint16_t targetCharsPerMismatch) {
-            if (targetCharsPerMismatch < MIN_CHARS_PER_MISMATCH || maxCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {
+            if (targetCharsPerMismatch < MIN_CHARS_PER_MISMATCH || minCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {
                 fprintf(stderr, "Chars per mismatch cannot be lower than %d.\n", MIN_CHARS_PER_MISMATCH);
                 exit(EXIT_FAILURE);
             }
@@ -125,7 +123,7 @@ namespace PgTools {
                 fprintf(stdout, "allowedMaxMismatches cannot be smaller than targetMaxMismatches.\n");
                 exit(EXIT_FAILURE);
             }
-            PgRCManager::maxCharsPerMismatch = maxCharsPerMismatch;
+            PgRCManager::minCharsPerMismatch = maxCharsPerMismatch;
         }
 
         void setMismatchesMode(char mismatchesMode) {
