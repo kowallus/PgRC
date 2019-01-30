@@ -230,8 +230,10 @@ namespace PgTools {
                 continue;
             if (readMatchPos[matchReadIndex] == (revCompMode?pgLength-(matchPosition+matchingLength):matchPosition))
                 continue;
+            uint8_t currentMatchesLimit = readMismatchesCount[matchReadIndex]==NOT_MATCHED_COUNT?maxMismatches
+                    :(readMismatchesCount[matchReadIndex] - 1);
             const uint8_t mismatchesCount = readsSet->countMismatchesVsPattern(matchReadIndex, pgPtr + matchPosition,
-                                                            matchingLength, maxMismatches);
+                                                            matchingLength, currentMatchesLimit);
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
@@ -288,8 +290,10 @@ namespace PgTools {
                 continue;
             if (readMatchPos[matchReadIndex] == (revCompMode?pgLength-(matchPosition+matchingLength):matchPosition))
                 continue;
+            uint8_t currentMatchesLimit = readMismatchesCount[matchReadIndex]==NOT_MATCHED_COUNT?maxMismatches
+                    :(readMismatchesCount[matchReadIndex] - 1);
             const uint8_t mismatchesCount = readsSet->countMismatchesVsPattern(matchReadIndex, pgPtr + matchPosition,
-                                                            matchingLength, maxMismatches);
+                    matchingLength, currentMatchesLimit);
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
@@ -344,11 +348,13 @@ namespace PgTools {
             readsSet->getRead(matchReadIndex, (char_pg*) currentRead.data());
             uint8_t mismatchesCount = readMismatchesCount[matchReadIndex];
             uint64_t matchPosition = copMEMMatcher->approxMatchPattern(currentRead.data(), matchingLength,
-                    maxMismatches, minMismatches, mismatchesCount);
+                                                                       maxMismatches, minMismatches, mismatchesCount,
+                                                                       multiMatchCount, falseMatchCount);
             if (matchPosition == UINT64_MAX)
                 continue;
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
-                matchedReadsCount++;
+                if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
+                    matchedReadsCount++;
                 matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
                 matchedCountPerMismatches[mismatchesCount]++;
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
@@ -492,12 +498,13 @@ namespace PgTools {
         uint_read_len_max readLength = readsSet->maxReadLength();
         uint8_t targetMismatches = readLength / targetCharsPerMismatch;
         uint8_t maxMismatches = readLength / minCharsPerMismatch;
-        cout << "Target pseudogenome length: " << sPg->getPgSequence().length() << endl << endl;
-        cout << "targetCharsPerMismatch (minCharsPerMismatch): " << (int) targetCharsPerMismatch <<
-        "(" << (int) minCharsPerMismatch << ")" << endl;
-        cout << "targetMismatches (maxMismatches): " << (int) targetMismatches << "(" << (int) maxMismatches << ")" << endl;
         if (targetMismatches == 0)
-            matcher = new DefaultReadsExactMatcher(sPg, revComplPg, readsSet, matchPrefixLength);
+            switch (mismatchesMode) {
+                case 'c': matcher = new CopMEMReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
+                                                                 targetCharsPerMismatch>readLength?readLength:targetCharsPerMismatch, 0);
+                    break;
+                default: matcher = new DefaultReadsExactMatcher(sPg, revComplPg, readsSet, matchPrefixLength);
+            }
         else switch (mismatchesMode) {
                 case 'd': matcher = new DefaultReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
                                                                       targetMismatches, maxMismatches, minMismatches);
@@ -513,6 +520,12 @@ namespace PgTools {
                     exit(EXIT_FAILURE);
 
             }
+        if (targetMismatches > 0 && mismatchesMode == 'c')
+            targetMismatches--;
+        cout << "Target pseudogenome length: " << sPg->getPgSequence().length() << endl << endl;
+        cout << "targetCharsPerMismatch (minCharsPerMismatch): " << (int) targetCharsPerMismatch <<
+             "(" << (int) minCharsPerMismatch << ")" << endl;
+        cout << "targetMismatches (maxMismatches): " << (int) targetMismatches << "(" << (int) maxMismatches << ")" << endl;
         matcher->matchConstantLengthReads();
         if (dumpInfo)
             matcher->writeMatchesInfo(pgDestFilePrefix);

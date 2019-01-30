@@ -60,7 +60,8 @@ private:
 
     template<typename MyUINT1, typename MyUINT2>
     uint64_t processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, const char *pattern, const uint_read_len_max length,
-                                 uint8_t maxMismatches, uint8_t minMismatches, uint8_t &mismatchesCount);
+                                 uint8_t maxMismatches, uint8_t minMismatches, uint8_t &mismatchesCount,
+                                 uint64_t& multiMatchCount, uint64_t& falseMatchCount);
 
 public:
     CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
@@ -70,8 +71,8 @@ public:
     void matchTexts(vector<TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                     uint32_t minMatchLength) override;
 
-    uint64_t approxMatchPattern(const char *pattern, const uint_read_len_max length, uint8_t maxMismatches,
-        uint8_t minMismatches, uint8_t &mismatchesCount);
+    uint64_t approxMatchPattern(const char *pattern, const uint_read_len_max length, uint8_t maxMismatches, uint8_t minMismatches,
+            uint8_t &mismatchesCount, uint64_t& multiMatchCount, uint64_t& falseMatchCount);
 
 };
 

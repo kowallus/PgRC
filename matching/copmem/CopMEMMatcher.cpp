@@ -386,9 +386,10 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
 template<typename MyUINT1, typename MyUINT2>
 uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, const char *start2,
                                                      const uint_read_len_max N2, uint8_t maxMismatches,
-                                                     uint8_t minMismatches, uint8_t &mismatchesCount) {
+                                                     uint8_t minMismatches, uint8_t &mismatchesCount,
+                                                     uint64_t& multiMatchCount, uint64_t& falseMatchCount) {
     if (mismatchesCount < maxMismatches)
-        maxMismatches = mismatchesCount;
+        maxMismatches = mismatchesCount - 1;
     MyUINT1* sampledPositions = buffer.first;
     MyUINT2* cumm = buffer.second;
 
@@ -406,7 +407,6 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             curr2 += k2;
             continue;
         }
-
         memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
         memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
@@ -421,30 +421,41 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
             memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
 
-            if ((r1 != r2 && l1 != l2) || memcmp(curr1, curr2, K) != 0)
+            if ((r1 != r2 && l1 != l2) || memcmp(curr1, curr2, K) != 0) {
+                falseMatchCount++;
                 continue;
-
+            }
             uint8_t res = 0;
             const char* patternPtr = start2;
             const char* textPtr = curr1 - positionShift;
             while (patternPtr != curr2) {
                 if (*patternPtr++ != *textPtr++) {
-                    if (res++ >= maxMismatches)
+                    if (res++ >= maxMismatches) {
+                        falseMatchCount++;
                         break;
+                    }
                 }
             }
-            if (res > maxMismatches)
+            if (res > maxMismatches) {
+                falseMatchCount++;
                 continue;
+            }
             patternPtr += K;
             textPtr += K;
             while (patternPtr != start2 + N2) {
                 if (*patternPtr++ != *textPtr++) {
-                    if (res++ >= maxMismatches)
+                    if (res++ >= maxMismatches) {
+                        falseMatchCount++;
                         break;
+                    }
                 }
             }
-            if (res > maxMismatches)
+            if (res > maxMismatches){
+                falseMatchCount++;
                 continue;
+            }
+            if (mismatchesCount != UINT8_MAX)
+                multiMatchCount++;
             mismatchesCount = res;
             matchPosition = curr1 - start1 - positionShift;
             if (res <= minMismatches)
@@ -513,18 +524,21 @@ CopMEMMatcher::matchTexts(vector <TextMatch> &resMatches, const string &destText
     }
 }
 
-uint64_t CopMEMMatcher::approxMatchPattern(const char *pattern, const uint_read_len_max length, uint8_t maxMismatches,
-                    uint8_t minMismatches, uint8_t &mismatchesCount) {
+uint64_t CopMEMMatcher::approxMatchPattern(const char *pattern, const uint_read_len_max length, uint8_t maxMismatches, uint8_t minMismatches,
+        uint8_t &mismatchesCount, uint64_t& multiMatchCount, uint64_t& falseMatchCount) {
     if (bigRef == 2) {
         return processApproxMatchQueryTight<std::uint64_t, std::uint64_t>(buffer2, pattern, length, maxMismatches,
-                                                                          minMismatches, mismatchesCount);
+                                                                          minMismatches, mismatchesCount,
+                                                                          multiMatchCount, falseMatchCount);
     } else if (bigRef == 1) {
         return processApproxMatchQueryTight<std::uint64_t, std::uint32_t>(buffer1, pattern, length, maxMismatches,
-                                                                          minMismatches, mismatchesCount);
+                                                                          minMismatches, mismatchesCount,
+                                                                          multiMatchCount, falseMatchCount);
     }
     else {
         return processApproxMatchQueryTight<std::uint32_t, std::uint32_t>(buffer0, pattern, length, maxMismatches,
-                                                                          minMismatches, mismatchesCount);
+                                                                          minMismatches, mismatchesCount,
+                                                                          multiMatchCount, falseMatchCount);
     }
 }
 
