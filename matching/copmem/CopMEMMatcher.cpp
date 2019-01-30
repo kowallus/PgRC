@@ -54,6 +54,7 @@ typedef std::vector<BlockItem> BlockVector;
 
 //////////////////// GLOBAL CONSTS //////////////////////////
 const std::uint32_t HASH_SIZE = 1U << 29;
+const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
 
@@ -105,6 +106,11 @@ void CopMEMMatcher::initParams(uint32 minMatchLength) {
     calcCoprimes();
     hashFunc = hashFuncMatrix[K][H];
     v1logger = &std::cout;
+
+    LK2 = (L - K) / 2;
+    LK2_MINUS_4 = LK2 - 4;
+    K_PLUS_LK24 = K + LK2_MINUS_4;
+
 }
 
 void CopMEMMatcher::displayParams() {
@@ -179,9 +185,6 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT* cumm) {
 template<typename MyUINT1, typename MyUINT2>
 HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
-    size_t N = srcText.length();
-    const char* start = srcText.data();
-
 	const size_t hashCount = (N - K + 1) / k1;
 	const unsigned int MULTI2 = 128;
 	const unsigned int k1MULTI2 = k1 * MULTI2;
@@ -190,13 +193,13 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
 	MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
 	MyUINT2* cumm = new MyUINT2[HASH_SIZE + 2];
-	genCumm(N, start, cumm);
+	genCumm(N, start1, cumm);
 
 	uint32_t hashPositions[MULTI2];
 	MyUINT1 i1;
 
 	for (i1 = 0; i1 + K + k1MULTI2 < N ; i1 += k1MULTI2) {
-		const char* tempPointer = start + i1;
+		const char* tempPointer = start1 + i1;
 		for (unsigned int temp = 0; temp < MULTI2; ++temp) {
 			hashPositions[temp] = hashFunc(tempPointer) + 1;
 			tempPointer += k1;
@@ -217,7 +220,7 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
 	//////////////////// processing the end part of R
 	for (; i1 < N - K + 1; i1 += k1) {
-		uint32_t h = hashFunc(start + i1) + 1;
+		uint32_t h = hashFunc(start1 + i1) + 1;
 		sampledPositions[cumm[h]] = i1;
 		++cumm[h];
 	}
@@ -232,14 +235,9 @@ void CopMEMMatcher::deleteHashBuffer(HashBuffer<MyUINT1, MyUINT2> & buf) {
 }
 
 template<typename MyUINT1, typename MyUINT2>
-void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vector <TextMatch> &resMatches,
-        const string &destText, bool destIsSrc, bool revComplMatching, uint32_t minMatchLength){
-    const char* start1 = srcText.data();
-
-	const int LK2 = (L - K) / 2;
-	const int LK2_MINUS_4 = LK2 - 4;
-	const int K_PLUS_LK24 = K + LK2_MINUS_4;
-
+void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vector<TextMatch> &resMatches,
+                                                const string &destText, bool destIsSrc, bool revComplMatching,
+                                                uint32_t minMatchLength){
 	const unsigned int MULTI = 256;
 	const unsigned int k2MULTI = k2 * MULTI;
 
@@ -385,10 +383,85 @@ void CopMEMMatcher::processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vecto
 	*v1logger << "Character extensions = " << charExtensions <<  "\n";
 }
 
+template<typename MyUINT1, typename MyUINT2>
+uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, const char *start2,
+                                                     const uint_read_len_max N2, uint8_t maxMismatches,
+                                                     uint8_t minMismatches, uint8_t &mismatchesCount) {
+    if (mismatchesCount < maxMismatches)
+        maxMismatches = mismatchesCount;
+    MyUINT1* sampledPositions = buffer.first;
+    MyUINT2* cumm = buffer.second;
+
+    MyUINT2 posArray[2];
+
+    std::uint32_t l1, l2, r1, r2;
+
+    uint64_t matchPosition = NOT_MATCHED_POSITION;
+    size_t i1 = 0;
+    const char* curr2 = start2 + i1;
+    for (; i1 + K < N2 + 1; i1 += k2) {
+        memcpy(posArray, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
+
+        if (posArray[0] == posArray[1]) {
+            curr2 += k2;
+            continue;
+        }
+
+        memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
+        memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+
+        for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
+            const uint_read_len_max positionShift = curr2 - start2;
+            if (positionShift > sampledPositions[j])
+                continue;
+            if (sampledPositions[j] - positionShift + N2 > N)
+                continue;
+            const char* curr1 = start1 + sampledPositions[j];
+
+            memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
+            memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
+
+            if ((r1 != r2 && l1 != l2) || memcmp(curr1, curr2, K) != 0)
+                continue;
+
+            uint8_t res = 0;
+            const char* patternPtr = start2;
+            const char* textPtr = curr1 - positionShift;
+            while (patternPtr != curr2) {
+                if (*patternPtr++ != *textPtr++) {
+                    if (res++ >= maxMismatches)
+                        break;
+                }
+            }
+            if (res > maxMismatches)
+                continue;
+            patternPtr += K;
+            textPtr += K;
+            while (patternPtr != start2 + N2) {
+                if (*patternPtr++ != *textPtr++) {
+                    if (res++ >= maxMismatches)
+                        break;
+                }
+            }
+            if (res > maxMismatches)
+                continue;
+            mismatchesCount = res;
+            matchPosition = curr1 - start1 - positionShift;
+            if (res <= minMismatches)
+                return matchPosition;
+            maxMismatches = res - 1;
+        }
+        curr2 += k2;
+    }
+
+    return matchPosition;
+}
+
+
 using namespace std;
 
 CopMEMMatcher::CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength)
-    : srcText(srcText), L(targetMatchLength) {
+    : srcText(srcText), start1(srcText.data()), N(srcText.length()), L(targetMatchLength) {
     initHashFuncMatrix();
     if (minMatchLength > targetMatchLength)
         minMatchLength = targetMatchLength;
@@ -428,12 +501,30 @@ CopMEMMatcher::matchTexts(vector <TextMatch> &resMatches, const string &destText
     }
     resMatches.clear();
     if (bigRef == 2) {
-        processQueryTight<std::uint64_t, std::uint64_t>(buffer2, resMatches, destText, destIsSrc, revComplMatching, minMatchLength);
+        processExactMatchQueryTight<std::uint64_t, std::uint64_t>(buffer2, resMatches, destText, destIsSrc,
+                                                                  revComplMatching, minMatchLength);
     } else if (bigRef == 1) {
-        processQueryTight<std::uint64_t, std::uint32_t>(buffer1, resMatches, destText, destIsSrc, revComplMatching, minMatchLength);
+        processExactMatchQueryTight<std::uint64_t, std::uint32_t>(buffer1, resMatches, destText, destIsSrc,
+                                                                  revComplMatching, minMatchLength);
     }
     else {
-        processQueryTight<std::uint32_t, std::uint32_t>(buffer0, resMatches, destText, destIsSrc, revComplMatching, minMatchLength);
+        processExactMatchQueryTight<std::uint32_t, std::uint32_t>(buffer0, resMatches, destText, destIsSrc,
+                                                                  revComplMatching, minMatchLength);
+    }
+}
+
+uint64_t CopMEMMatcher::approxMatchPattern(const char *pattern, const uint_read_len_max length, uint8_t maxMismatches,
+                    uint8_t minMismatches, uint8_t &mismatchesCount) {
+    if (bigRef == 2) {
+        return processApproxMatchQueryTight<std::uint64_t, std::uint64_t>(buffer2, pattern, length, maxMismatches,
+                                                                          minMismatches, mismatchesCount);
+    } else if (bigRef == 1) {
+        return processApproxMatchQueryTight<std::uint64_t, std::uint32_t>(buffer1, pattern, length, maxMismatches,
+                                                                          minMismatches, mismatchesCount);
+    }
+    else {
+        return processApproxMatchQueryTight<std::uint32_t, std::uint32_t>(buffer0, pattern, length, maxMismatches,
+                                                                          minMismatches, mismatchesCount);
     }
 }
 

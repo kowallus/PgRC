@@ -14,15 +14,23 @@ typedef std::vector<SequenceItem> SequenceVector;
 template<class MyUINT1, class MyUINT2>
 using HashBuffer =  std::pair<MyUINT1*, MyUINT2* >;
 
+class processApproxMatchQueryTight;
+
 class CopMEMMatcher: public TextMatcher {
 private:
     const string &srcText;
+    const char* start1;
+    size_t N;
     int bigRef;
     const int L;
     int K, k1, k2;
     std::uint32_t(*hashFunc)(const char*);
     std::uint32_t(*hashFuncMatrix[64][6])(const char*);
     const int H = 1;
+
+    int LK2 = (L - K) / 2;
+    int LK2_MINUS_4 = LK2 - 4;
+    int K_PLUS_LK24 = K + LK2_MINUS_4;
 
     void initHashFuncMatrix();
     void initParams(uint32_t minMatchLength);
@@ -46,8 +54,13 @@ private:
     void deleteHashBuffer(HashBuffer<MyUINT1, MyUINT2> & buf);
 
     template<typename MyUINT1, typename MyUINT2>
-    void processQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vector <TextMatch> &resMatches, const string &destText,
-            bool destIsSrc, bool revComplMatching, uint32_t minMatchLength);
+    void processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, vector<TextMatch> &resMatches,
+                                     const string &destText,
+                                     bool destIsSrc, bool revComplMatching, uint32_t minMatchLength);
+
+    template<typename MyUINT1, typename MyUINT2>
+    uint64_t processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, const char *pattern, const uint_read_len_max length,
+                                 uint8_t maxMismatches, uint8_t minMismatches, uint8_t &mismatchesCount);
 
 public:
     CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
@@ -56,6 +69,10 @@ public:
 
     void matchTexts(vector<TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                     uint32_t minMatchLength) override;
+
+    uint64_t approxMatchPattern(const char *pattern, const uint_read_len_max length, uint8_t maxMismatches,
+        uint8_t minMismatches, uint8_t &mismatchesCount);
+
 };
 
 #endif //PGTOOLS_COPMEMMATCHER_H

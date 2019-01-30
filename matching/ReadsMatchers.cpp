@@ -14,7 +14,7 @@ namespace PgTools {
         while (pattern != patEnd) {
             if (*pattern++ != *text++) {
                 if (res++ >= maxMismatches)
-                    return UINT8_MAX;
+                    return NOT_MATCHED_COUNT;
             }
         }
         return res;
@@ -42,7 +42,7 @@ namespace PgTools {
     }
 
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
-    const uint64_t DefaultReadsMatcher::NOT_MATCHED_VALUE = UINT64_MAX;
+    const uint64_t DefaultReadsMatcher::NOT_MATCHED_POSITION = UINT64_MAX;
 
     DefaultReadsMatcher::DefaultReadsMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                                              uint32_t matchPrefixLength) :
@@ -72,7 +72,7 @@ namespace PgTools {
 
     void DefaultReadsMatcher::initMatching() {
         readMatchPos.clear();
-        readMatchPos.insert(readMatchPos.begin(), readsCount, NOT_MATCHED_VALUE);
+        readMatchPos.insert(readMatchPos.begin(), readsCount, NOT_MATCHED_POSITION);
         readMatchRC.clear();
         readMatchRC.insert(readMatchRC.begin(), readsCount, false);
         matchedReadsCount = 0;
@@ -145,7 +145,7 @@ namespace PgTools {
 
             bool exactMatch = readsSet->comparePackedReadWithPattern(matchReadIndex, pgPtr + matchPosition) == 0;
             if (exactMatch) {
-                if (readMatchPos[matchReadIndex] == NOT_MATCHED_VALUE) {
+                if (readMatchPos[matchReadIndex] == NOT_MATCHED_POSITION) {
                     readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                     if (revCompMode) readMatchRC[matchReadIndex] = true;
                     matchedReadsCount++;
@@ -174,7 +174,7 @@ namespace PgTools {
             : DefaultReadsMatcher(sPg, revComplPg, readsSet, matchPrefixLength), targetMismatches(targetMismatches),
             maxMismatches(maxMismatches), minMismatches(minMismatches){
         currentRead.resize(readsSet->getReadsSetProperties()->maxReadLength);
-        matchedCountPerMismatches[UINT8_MAX] = readsCount;
+        matchedCountPerMismatches[NOT_MATCHED_COUNT] = readsCount;
     }
 
     InterleavedReadsApproxMatcher::InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
@@ -208,7 +208,7 @@ namespace PgTools {
 
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
-        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, UINT8_MAX);
+        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, NOT_MATCHED_COUNT);
     }
 
     void DefaultReadsApproxMatcher::executeMatching(bool revCompMode) {
@@ -222,7 +222,7 @@ namespace PgTools {
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
                 continue;
             uint64_t matchPosition = hashMatcher->getHashMatchTextPosition();
-            const uint8_t positionShift = ((matchPatternIndex % (targetMismatches + 1)) * partLength);
+            const uint_read_len_max positionShift = ((matchPatternIndex % (targetMismatches + 1)) * partLength);
             if (positionShift > matchPosition)
                 continue;
             matchPosition -= positionShift;
@@ -233,7 +233,7 @@ namespace PgTools {
             const uint8_t mismatchesCount = readsSet->countMismatchesVsPattern(matchReadIndex, pgPtr + matchPosition,
                                                             matchingLength, maxMismatches);
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
-                if (readMismatchesCount[matchReadIndex] == UINT8_MAX)
+                if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
                  else
                     multiMatchCount++;
@@ -242,7 +242,7 @@ namespace PgTools {
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                 if (revCompMode) readMatchRC[matchReadIndex] = true;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
-            } else if (mismatchesCount == UINT8_MAX)
+            } else if (mismatchesCount == NOT_MATCHED_COUNT)
                 falseMatchCount++;
             else
                 multiMatchCount++;
@@ -266,7 +266,7 @@ namespace PgTools {
 
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
-        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, UINT8_MAX);
+        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, NOT_MATCHED_COUNT);
     }
 
     void InterleavedReadsApproxMatcher::executeMatching(bool revCompMode) {
@@ -291,7 +291,7 @@ namespace PgTools {
             const uint8_t mismatchesCount = readsSet->countMismatchesVsPattern(matchReadIndex, pgPtr + matchPosition,
                                                             matchingLength, maxMismatches);
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
-                if (readMismatchesCount[matchReadIndex] == UINT8_MAX)
+                if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
                 else
                     multiMatchCount++;
@@ -300,7 +300,7 @@ namespace PgTools {
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                 if (revCompMode) readMatchRC[matchReadIndex] = true;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
-            } else if (mismatchesCount == UINT8_MAX)
+            } else if (mismatchesCount == NOT_MATCHED_COUNT)
                 falseMatchCount++;
             else
                 multiMatchCount++;
@@ -331,15 +331,31 @@ namespace PgTools {
     void CopMEMReadsApproxMatcher::initMatching() {
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
-        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, UINT8_MAX);
+        readMismatchesCount.insert(readMismatchesCount.end(), readsCount, NOT_MATCHED_COUNT);
     }
 
     void CopMEMReadsApproxMatcher::executeMatching(bool revCompMode) {
         clock_t ref_start = clock();
         CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(sPg->getPgSequence(), partLength);
         cout << "Feeding " << (revCompMode?"rc of ":"") << "reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
-
-
+        for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
+            if (readMismatchesCount[matchReadIndex] <= minMismatches)
+                continue;
+            readsSet->getRead(matchReadIndex, (char_pg*) currentRead.data());
+            uint8_t mismatchesCount = readMismatchesCount[matchReadIndex];
+            uint64_t matchPosition = copMEMMatcher->approxMatchPattern(currentRead.data(), matchingLength,
+                    maxMismatches, minMismatches, mismatchesCount);
+            if (matchPosition == UINT64_MAX)
+                continue;
+            if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
+                matchedReadsCount++;
+                matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
+                matchedCountPerMismatches[mismatchesCount]++;
+                readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
+                if (revCompMode) readMatchRC[matchReadIndex] = true;
+                readMismatchesCount[matchReadIndex] = mismatchesCount;
+            }
+        }
         delete(copMEMMatcher);
         printApproxMatchingStats();
     }
@@ -352,7 +368,7 @@ namespace PgTools {
         clock_checkpoint();
 
         for (uint_reads_cnt_max i = 0; i < readMatchPos.size(); i++) {
-            if (readMatchPos[i] == NOT_MATCHED_VALUE)
+            if (readMatchPos[i] == NOT_MATCHED_POSITION)
                 missedPatternsDest << readsSet->getRead(i) << "\n";
             else {
                 offsetsDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"") << "\n";
@@ -370,7 +386,7 @@ namespace PgTools {
         const string &text = sPg->getPgSequence();
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            if (readMatchPos[i] == NOT_MATCHED_VALUE)
+            if (readMatchPos[i] == NOT_MATCHED_POSITION)
                 missedPatternsDest << readsSet->getRead(i) << "\n";
             else {
                 offsetsDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"");
@@ -389,7 +405,7 @@ namespace PgTools {
     const vector<uint_reads_cnt_max> DefaultReadsMatcher::getMatchedReadsIndexes() const {
         vector<uint_reads_cnt_max> matchedReads(matchedReadsCount);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            if (readMatchPos[i] != NOT_MATCHED_VALUE)
+            if (readMatchPos[i] != NOT_MATCHED_POSITION)
                 matchedReads.push_back(i);
         }
         return matchedReads;
@@ -431,7 +447,7 @@ namespace PgTools {
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
         for(uint_reads_cnt_max i = 0; i < readsCount; i++)
-            if (readMatchPos[i] != NOT_MATCHED_VALUE)
+            if (readMatchPos[i] != NOT_MATCHED_POSITION)
                 idxs[counter++] = i;
 
         std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
@@ -464,7 +480,7 @@ namespace PgTools {
         vector<bool> res;
         res.reserve(readsCount);
         for(const uint64_t matchPos: readMatchPos)
-            res.push_back(matchPos != DefaultReadsMatcher::NOT_MATCHED_VALUE);
+            res.push_back(matchPos != DefaultReadsMatcher::NOT_MATCHED_POSITION);
         return res;
     }
 

@@ -14,8 +14,10 @@ using namespace std;
 
 namespace PgTools {
 
+    static const int NOT_MATCHED_COUNT = UINT8_MAX;
+
     uint8_t
-    countMismatches(const char *pattern, const char *text, uint64_t length, uint8_t maxMismatches = UINT8_MAX);
+    countMismatches(const char *pattern, const char *text, uint64_t length, uint8_t maxMismatches = NOT_MATCHED_COUNT);
 
     class DefaultReadsMatcher {
     protected:
@@ -53,7 +55,7 @@ namespace PgTools {
 
     public:
         static const uint_read_len_max DISABLED_PREFIX_MODE;
-        static const uint64_t NOT_MATCHED_VALUE;
+        static const uint64_t NOT_MATCHED_POSITION;
 
         DefaultReadsMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                             uint32_t matchPrefixLength);
@@ -105,7 +107,7 @@ namespace PgTools {
         uint8_t maxMismatches;
         uint8_t targetMismatches = 0;
         uint8_t minMismatches = 0;
-        uint_reads_cnt_max matchedCountPerMismatches[UINT8_MAX + 1] = {};
+        uint_reads_cnt_max matchedCountPerMismatches[NOT_MATCHED_COUNT + 1] = {};
 
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
         void printApproxMatchingStats();
