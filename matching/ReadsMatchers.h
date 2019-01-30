@@ -121,7 +121,7 @@ namespace PgTools {
 
     public:
         AbstractReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                                   uint32_t matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~AbstractReadsApproxMatcher();
     };
@@ -138,7 +138,7 @@ namespace PgTools {
 
     public:
         DefaultReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                  uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~DefaultReadsApproxMatcher();
     };
@@ -155,7 +155,7 @@ namespace PgTools {
 
     public:
         InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint8_t targetMismatches, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                  uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~InterleavedReadsApproxMatcher();
     };
@@ -171,13 +171,13 @@ namespace PgTools {
 
     public:
         CopMEMReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                                  uint32_t matchPrefixLength, uint16_t targetCharsPerMismatch, uint8_t maxMismatches, uint8_t minMismatches = 0);
+                                  uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~CopMEMReadsApproxMatcher();
     };
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint16_t targetCharsPerMismatch, uint16_t minCharsPerMismatch,
+                        uint_read_len_max matchPrefixLength, uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch,
                         char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
                         IndexesMapping* orgIndexesMapping);
 }

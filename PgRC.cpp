@@ -30,9 +30,6 @@ int main(int argc, char *argv[])
                 pgRC->setNReadsLQ(true);
                 break;
             case 'm':
-                pgRC->setTargetCharsPerMismatch(atoi(optarg));
-                break;
-            case 'M':
                 valPtr = optarg + 1;
                 switch (*optarg) {
                     case 'd': pgRC->setMismatchesMode('d'); break;
@@ -40,7 +37,10 @@ int main(int argc, char *argv[])
                     case 'c': pgRC->setMismatchesMode('c'); break;
                     default: valPtr--;
                 }
-                pgRC->setMaxCharsPerMismatch(atoi(valPtr));
+                pgRC->setReadsExactMatchingChars(atoi(valPtr));
+                break;
+            case 'M':
+                pgRC->setMaxCharsPerMismatch(atoi(optarg));
                 break;
             case 'q':
                 pgRC->setError_limit_in_promils(atoi(optarg));

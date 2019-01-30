@@ -28,8 +28,8 @@ namespace PgTools {
         lqDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
         nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
         pgHqPrefix = pgFilesPrefixes + GOOD_INFIX;
-        pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + toString(targetCharsPerMismatch)
-                                      + "_M" + mismatchesMode + toString(minCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
+        pgFilesPrefixesWithM = pgFilesPrefixes + "_m" + mismatchesMode + toString(readsExactMatchingChars)
+                                      + "_M" + toString(minCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
@@ -202,7 +202,7 @@ namespace PgTools {
         divReadsSets->getLqReadsSet()->printout();
         const vector<bool>& isLqReadMappedIntoHqPg = mapReadsIntoPg(
                 hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
-                targetCharsPerMismatch, minCharsPerMismatch, mismatchesMode, 0,
+                readsExactMatchingChars, minCharsPerMismatch, mismatchesMode, 0,
                 false, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
     }
@@ -284,7 +284,7 @@ namespace PgTools {
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgFilesPrefixes << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t"
-             << (int) targetCharsPerMismatch << "\t" << mismatchesMode << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
+             << (int) readsExactMatchingChars << "\t" << mismatchesMode << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
         fout << getTimeInSec(clock(), start_t) << "\t";
         fout << getTimeInSec(div_t, start_t) << "\t";
         fout << getTimeInSec(pgDiv_t, div_t) << "\t";

@@ -13,6 +13,7 @@ namespace PgTools {
     private:
         static const int MIN_CHARS_PER_PGMATCH = 20;
         static const int MIN_CHARS_PER_MISMATCH = 4;
+        static const int MIN_READS_EXACT_MATCHING_CHARS = 20;
 
         // INPUT PARAMETERS
         uint16_t error_limit_in_promils = 1000;
@@ -20,7 +21,7 @@ namespace PgTools {
         double gen_quality_coef = 0.5;
         bool nReadsLQ = false;
         bool separateNReads = false;
-        uint16_t targetCharsPerMismatch = UINT16_MAX;
+        uint16_t readsExactMatchingChars = UINT16_MAX;
         uint16_t minCharsPerMismatch = UINT16_MAX;
         char mismatchesMode = 'd';
         uint32_t targetPgMatchLength = 50;
@@ -110,20 +111,20 @@ namespace PgTools {
             PgRCManager::separateNReads = separateNReads;
         }
 
-        void setTargetCharsPerMismatch(uint16_t targetCharsPerMismatch) {
-            if (targetCharsPerMismatch < MIN_CHARS_PER_MISMATCH || minCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {
+        void setReadsExactMatchingChars(uint16_t readsExactMatchingChars) {
+            if (readsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
+                fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n", MIN_READS_EXACT_MATCHING_CHARS);
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::readsExactMatchingChars = readsExactMatchingChars;
+        }
+
+        void setMaxCharsPerMismatch(uint16_t minCharsPerMismatch) {
+            if (minCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {
                 fprintf(stderr, "Chars per mismatch cannot be lower than %d.\n", MIN_CHARS_PER_MISMATCH);
                 exit(EXIT_FAILURE);
             }
-            PgRCManager::targetCharsPerMismatch = targetCharsPerMismatch;
-        }
-
-        void setMaxCharsPerMismatch(uint16_t maxCharsPerMismatch) {
-            if (maxCharsPerMismatch > targetCharsPerMismatch) {
-                fprintf(stdout, "allowedMaxMismatches cannot be smaller than targetMaxMismatches.\n");
-                exit(EXIT_FAILURE);
-            }
-            PgRCManager::minCharsPerMismatch = maxCharsPerMismatch;
+            PgRCManager::minCharsPerMismatch = minCharsPerMismatch;
         }
 
         void setMismatchesMode(char mismatchesMode) {
