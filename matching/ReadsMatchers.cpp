@@ -143,7 +143,7 @@ namespace PgTools {
 
     void AbstractReadsApproxMatcher::continueMatchingConstantLengthReads(DefaultReadsMatcher *pMatcher) {
         clock_checkpoint();
-        initMatchingContinuation(pMatcher);
+        this->initMatchingContinuation(pMatcher);
 
         this->executeMatching(false);
 
@@ -244,10 +244,10 @@ namespace PgTools {
     }
 
     void DefaultReadsApproxMatcher::initMatchingContinuation(DefaultReadsMatcher *pMatcher) {
-        cout << "Feeding patterns...\n" << endl;
+        cout << "Feeding unmatched patterns...\n" << endl;
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
         this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1,
-                pMatcher->getMatchedReadsBitmap(minMismatches?minMismatches - 1:0));
+                pMatcher->getMatchedReadsBitmap(minMismatches));
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
@@ -313,10 +313,10 @@ namespace PgTools {
     }
 
     void InterleavedReadsApproxMatcher::initMatchingContinuation(DefaultReadsMatcher *pMatcher) {
-        cout << "Feeding patterns...\n" << endl;
+        cout << "Feeding unmatched patterns...\n" << endl;
         hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, targetMismatches + 1);
         this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1,
-                pMatcher->getMatchedReadsBitmap(minMismatches?minMismatches - 1:0));
+                pMatcher->getMatchedReadsBitmap(minMismatches));
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
@@ -595,18 +595,20 @@ namespace PgTools {
 
         if (currentExactMatchingChars > readsExactMatchingChars) {
             AbstractReadsApproxMatcher* approxMatcher;
+            if (minMismatches < targetMismatches + 1)
+                minMismatches = targetMismatches + 1;
             switch (mismatches2ndMode) {
                 case 'd': approxMatcher = new DefaultReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
                                                                   readsExactMatchingChars, maxMismatches,
-                                                                  targetMismatches + 1);
+                                                                  minMismatches);
                     break;
                 case 'i': approxMatcher = new InterleavedReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
                                                                       readsExactMatchingChars, maxMismatches,
-                                                                      targetMismatches + 1);
+                                                                            minMismatches);
                     break;
                 case 'c': approxMatcher = new CopMEMReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
                                                                  readsExactMatchingChars, maxMismatches,
-                                                                 targetMismatches + 1);
+                                                                       minMismatches);
                     break;
                 default:
                     fprintf(stderr, "Unknown mismatches mode: %c.\n", mismatches2ndMode);

@@ -136,7 +136,7 @@ namespace PgTools {
 
         void transferMatchingResults(AbstractReadsApproxMatcher* approxMatcher) override;
 
-        const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches) override;
+        const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches = NOT_MATCHED_COUNT) override;
     };
 
     class DefaultReadsApproxMatcher: public AbstractReadsApproxMatcher {
