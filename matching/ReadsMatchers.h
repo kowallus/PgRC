@@ -15,9 +15,12 @@ using namespace std;
 namespace PgTools {
 
     static const int NOT_MATCHED_COUNT = UINT8_MAX;
+    static const int TWO_STAGE_READS_MATCHING_CHARS_THRESHOLD = 47;
 
     uint8_t
     countMismatches(const char *pattern, const char *text, uint64_t length, uint8_t maxMismatches = NOT_MATCHED_COUNT);
+
+    class AbstractReadsApproxMatcher;
 
     class DefaultReadsMatcher {
     protected:
@@ -76,7 +79,9 @@ namespace PgTools {
 
         void writeIntoPseudoGenome(const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
 
-        const vector<bool> getMatchedReadsBitmap();
+        virtual const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches = NOT_MATCHED_COUNT);
+
+        virtual void transferMatchingResults(AbstractReadsApproxMatcher* approxMatcher);
     };
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
@@ -119,11 +124,19 @@ namespace PgTools {
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override;
         void closeEntryUpdating() override;
 
+        virtual void initMatchingContinuation(DefaultReadsMatcher *pMatcher);
+
     public:
         AbstractReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                                    uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~AbstractReadsApproxMatcher();
+
+        void continueMatchingConstantLengthReads(DefaultReadsMatcher *pMatcher);
+
+        void transferMatchingResults(AbstractReadsApproxMatcher* approxMatcher) override;
+
+        const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches) override;
     };
 
     class DefaultReadsApproxMatcher: public AbstractReadsApproxMatcher {
@@ -134,6 +147,9 @@ namespace PgTools {
         uint_read_len_max partLength;
 
         void initMatching();
+
+        void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
+
         void executeMatching(bool revCompMode = false);
 
     public:
@@ -153,6 +169,8 @@ namespace PgTools {
         void initMatching();
         void executeMatching(bool revCompMode = false);
 
+        void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
+
     public:
         InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
@@ -169,6 +187,8 @@ namespace PgTools {
         void initMatching();
         void executeMatching(bool revCompMode = false);
 
+        void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
+
     public:
         CopMEMReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
@@ -178,7 +198,7 @@ namespace PgTools {
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch,
-                        char mismatchesMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
+                        char mismatches1stMode, char mismatches2ndMode, uint8_t minMismatches, bool dumpInfo, const string &pgDestFilePrefix,
                         IndexesMapping* orgIndexesMapping);
 }
 

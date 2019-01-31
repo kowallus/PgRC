@@ -44,23 +44,11 @@
 
 #include "Hashes.h"
 
-/////////////////// OWN TYPES ///////////////////////////
-
-typedef std::tuple<std::string, char*, size_t> SequenceItem2;
-typedef std::vector<SequenceItem2> SequenceVector2;
-
-typedef std::tuple <std::size_t, std::size_t, std::vector<size_t>> BlockItem;
-typedef std::vector<BlockItem> BlockVector;
-
 //////////////////// GLOBAL CONSTS //////////////////////////
 const std::uint32_t HASH_SIZE = 1U << 29;
 const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
-
-char* blockBuffer; //buffer used in buffered reading of some Query sequences
-size_t blockBufferSize;
-BlockVector blockVector;
 
 #define INIT_HASH_FUNC(n) hashFuncMatrix[n][1] = maRushPrime1HashSimplified<n>; hashFuncMatrix[n][2] = xxhash32<n>; hashFuncMatrix[n][3] = xxhash64<n>;hashFuncMatrix[n][4] = metroHash64<n>; hashFuncMatrix[n][5] = cityHash64<n>;
 void CopMEMMatcher::initHashFuncMatrix() {

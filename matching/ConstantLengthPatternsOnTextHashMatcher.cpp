@@ -20,13 +20,16 @@ void DefaultConstantLengthPatternsOnTextHashMatcher::addPattern(const char *patt
     hashToIndexMap.insert(std::pair<uint32_t, uint32_t>(hf.hashvalue, idx));
 }
 
-void DefaultConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedConstantLengthReadsSet* readsSet, uint8_t partsCount) {
+void DefaultConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedConstantLengthReadsSet* readsSet,
+        uint8_t partsCount, vector<bool> matchedReadsBitmap) {
     if (this->txt != 0) {
         cerr << "Adding patterns not permitted during iteration";
         exit(EXIT_FAILURE);
     }
     const uint_reads_cnt_max readsCount = readsSet->getReadsSetProperties()->readsCount;
     for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+        if (!matchedReadsBitmap.empty() && matchedReadsBitmap[i])
+            continue;
         uint_read_len_max offset = 0;
         for (uint8_t j = 0; j < partsCount; j++, offset += patternLength) {
             hf.reset();
@@ -69,7 +72,8 @@ void InterleavedConstantLengthPatternsOnTextHashMatcher::addPattern(const char *
 }
 
 
-void InterleavedConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedConstantLengthReadsSet *readsSet, int partsCount) {
+void InterleavedConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedConstantLengthReadsSet *readsSet,
+        int partsCount, vector<bool> matchedReadsBitmap) {
     if (this->txt != 0) {
         cerr << "Adding patterns not permitted during iteration";
         exit(EXIT_FAILURE);
@@ -77,6 +81,8 @@ void InterleavedConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(Packe
     const uint_reads_cnt_max readsCount = readsSet->getReadsSetProperties()->readsCount;
     for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
         for (uint8_t j = 0; j < partsCount; j++) {
+            if (!matchedReadsBitmap.empty() && matchedReadsBitmap[i])
+                continue;
             hf[0].reset();
             for(uint32_t k = 0; k < patternSpan; k += patternParts)
                 hf[0].eat(readsSet->getReadSymbol(i, j + k));

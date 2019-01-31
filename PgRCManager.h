@@ -23,7 +23,8 @@ namespace PgTools {
         bool separateNReads = false;
         uint16_t readsExactMatchingChars = UINT16_MAX;
         uint16_t minCharsPerMismatch = UINT16_MAX;
-        char mismatchesMode = 'd';
+        char mismatches1stMode = 'd';
+        char mismatches2ndMode = 'd';
         uint32_t targetPgMatchLength = 50;
         string pgFilesPrefixes = "";
         bool revComplPairFile = false;
@@ -128,7 +129,12 @@ namespace PgTools {
         }
 
         void setMismatchesMode(char mismatchesMode) {
-            PgRCManager::mismatchesMode = mismatchesMode;
+            PgRCManager::mismatches1stMode = mismatchesMode;
+            PgRCManager::mismatches2ndMode = mismatchesMode;
+        }
+
+        void setMismatches2ndMode(char mismatches2ndMode) {
+            PgRCManager::mismatches2ndMode = mismatches2ndMode;
         }
 
         void setMinimalPgMatchLength(uint32_t targetPgMatchLength) {

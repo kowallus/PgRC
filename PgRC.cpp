@@ -37,6 +37,14 @@ int main(int argc, char *argv[])
                     case 'c': pgRC->setMismatchesMode('c'); break;
                     default: valPtr--;
                 }
+                if (valPtr != optarg) {
+                    switch (*valPtr++) {
+                        case 'd': pgRC->setMismatches2ndMode('d'); break;
+                        case 'i': pgRC->setMismatches2ndMode('i'); break;
+                        case 'c': pgRC->setMismatches2ndMode('c'); break;
+                        default: valPtr--;
+                    }
+                }
                 pgRC->setReadsExactMatchingChars(atoi(valPtr));
                 break;
             case 'M':
@@ -65,7 +73,7 @@ int main(int argc, char *argv[])
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M [mismatchesMode]allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
+                fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M [mismatches1stMode]allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
                                 "[-q error_probability*1000] gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                         argv[0]);
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
