@@ -17,7 +17,6 @@ namespace PgTools {
     uint_read_len_max probeReadsLength(const string &srcFastqFile);
     clock_t getTimeInSec(clock_t end_t, clock_t begin_t) { return ((end_t - begin_t) / CLOCKS_PER_SEC); }
 
-
     void PgRCManager::prepareChainData() {
         qualityDivision = error_limit_in_promils < 1000;
         readLength = probeReadsLength(srcFastqFile);
@@ -28,8 +27,14 @@ namespace PgTools {
         lqDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
         nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
         pgHqPrefix = pgFilesPrefixes + GOOD_INFIX;
-        pgFilesPrefixesWithM = pgFilesPrefixes
-                + "_m" + mismatches1stMode + mismatches2ndMode + toString(readsExactMatchingChars)
+        bool enablePreReadsMatching = preReadsExactMatchingChars > 0;
+        pgFilesPrefixesWithM = pgFilesPrefixes +
+                (enablePreReadsMatching?("_l" + (((char) tolower(preMatchingMode))
+                + ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string(""))
+                + toString(preReadsExactMatchingChars))):"")
+                + "_m" + (((char) tolower(matchingMode))
+                + (toupper(matchingMode) == matchingMode?string("s"):string(""))
+                + toString(readsExactMatchingChars))
                 + "_M" + toString(minCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
@@ -203,7 +208,8 @@ namespace PgTools {
         divReadsSets->getLqReadsSet()->printout();
         const vector<bool>& isLqReadMappedIntoHqPg = mapReadsIntoPg(
                 hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
-                readsExactMatchingChars, minCharsPerMismatch, mismatches1stMode, mismatches2ndMode, 0,
+                preReadsExactMatchingChars, readsExactMatchingChars,
+                minCharsPerMismatch, preMatchingMode, matchingMode,
                 false, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
     }
@@ -284,8 +290,11 @@ namespace PgTools {
             fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad[s]\tpgMatch[s]\tpost[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
-             << pgFilesPrefixes << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t"
-             << (int) readsExactMatchingChars << "\t" << mismatches1stMode << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
+             << pgFilesPrefixes << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
+
+        if (preReadsExactMatchingChars > 0)
+            fout << (char) tolower(preMatchingMode) << ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string("")) << (int) preReadsExactMatchingChars;
+        fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
         fout << getTimeInSec(clock(), start_t) << "\t";
         fout << getTimeInSec(div_t, start_t) << "\t";
         fout << getTimeInSec(pgDiv_t, div_t) << "\t";

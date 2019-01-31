@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
     PgRCManager* pgRC = new PgRCManager();
     bool expectedPairFile = false;
 
-    while ((opt = getopt(argc, argv, "m:M:p:q:S:E:srnNitaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "l:m:M:p:q:S:E:srnNtaA?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'r':
@@ -29,21 +29,31 @@ int main(int argc, char *argv[])
             case 'n':
                 pgRC->setNReadsLQ(true);
                 break;
+            case 'l':
+                valPtr = optarg + 1;
+                switch (*optarg) {
+                    case 'd':case 'i':case 'c':
+                        if(*valPtr == 's') {
+                            valPtr++;
+                            pgRC->setPreMatchingMode(toupper(*optarg));
+                        } else
+                            pgRC->setPreMatchingMode(*optarg);
+                        break;
+                    default: valPtr--;
+                }
+                pgRC->setPreReadsExactMatchingChars(atoi(valPtr));
+                break;
             case 'm':
                 valPtr = optarg + 1;
                 switch (*optarg) {
-                    case 'd': pgRC->setMismatchesMode('d'); break;
-                    case 'i': pgRC->setMismatchesMode('i'); break;
-                    case 'c': pgRC->setMismatchesMode('c'); break;
+                    case 'd':case 'i':case 'c':
+                        if(*valPtr == 's') {
+                            valPtr++;
+                            pgRC->setMatchingMode(toupper(*optarg));
+                        } else
+                            pgRC->setMatchingMode(*optarg);
+                        break;
                     default: valPtr--;
-                }
-                if (valPtr != optarg) {
-                    switch (*valPtr++) {
-                        case 'd': pgRC->setMismatches2ndMode('d'); break;
-                        case 'i': pgRC->setMismatches2ndMode('i'); break;
-                        case 'c': pgRC->setMismatches2ndMode('c'); break;
-                        default: valPtr--;
-                    }
                 }
                 pgRC->setReadsExactMatchingChars(atoi(valPtr));
                 break;
@@ -73,8 +83,10 @@ int main(int argc, char *argv[])
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-m targetMaxCharsPerMismatch] [-M [mismatches1stMode]allowedMaxCharsPerMismatch] [-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
-                                "[-q error_probability*1000] gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
+                fprintf(stderr, "Usage: %s [-m [matchingMode]exactMatchingCharsCount] [-M maxCharsPerMismatch]\n"
+                                "[-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
+                                "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
+                                "gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                         argv[0]);
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
                 fprintf(stderr, "-n reads containing N are low quality \b-N reads containing N are processed separately\n");
@@ -82,7 +94,8 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
                 fprintf(stderr, "-s separate names for intermediate output files\n");
                 fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
-                fprintf(stderr, "Mismatches modes: d:default; i:interleaved\n");
+                fprintf(stderr, "-l enables preliminary reads matching stage\n");
+                fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
                 fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad); 6:PgMatching; 7:pairDump\n");
                 fprintf(stderr, "\n\n");
                 exit(EXIT_FAILURE);

@@ -21,10 +21,11 @@ namespace PgTools {
         double gen_quality_coef = 0.5;
         bool nReadsLQ = false;
         bool separateNReads = false;
+        uint16_t preReadsExactMatchingChars = 0;
         uint16_t readsExactMatchingChars = UINT16_MAX;
         uint16_t minCharsPerMismatch = UINT16_MAX;
-        char mismatches1stMode = 'd';
-        char mismatches2ndMode = 'd';
+        char preMatchingMode = 'd';
+        char matchingMode = 'd';
         uint32_t targetPgMatchLength = 50;
         string pgFilesPrefixes = "";
         bool revComplPairFile = false;
@@ -120,6 +121,14 @@ namespace PgTools {
             PgRCManager::readsExactMatchingChars = readsExactMatchingChars;
         }
 
+        void setPreReadsExactMatchingChars(uint16_t preReadsExactMatchingChars) {
+            if (preReadsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
+                fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n", MIN_READS_EXACT_MATCHING_CHARS);
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::preReadsExactMatchingChars = preReadsExactMatchingChars;
+        }
+
         void setMaxCharsPerMismatch(uint16_t minCharsPerMismatch) {
             if (minCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {
                 fprintf(stderr, "Chars per mismatch cannot be lower than %d.\n", MIN_CHARS_PER_MISMATCH);
@@ -128,13 +137,12 @@ namespace PgTools {
             PgRCManager::minCharsPerMismatch = minCharsPerMismatch;
         }
 
-        void setMismatchesMode(char mismatchesMode) {
-            PgRCManager::mismatches1stMode = mismatchesMode;
-            PgRCManager::mismatches2ndMode = mismatchesMode;
+        void setPreMatchingMode(char matchingModde) {
+            PgRCManager::preMatchingMode = matchingModde;
         }
 
-        void setMismatches2ndMode(char mismatches2ndMode) {
-            PgRCManager::mismatches2ndMode = mismatches2ndMode;
+        void setMatchingMode(char matchingMode) {
+            PgRCManager::matchingMode = matchingMode;
         }
 
         void setMinimalPgMatchLength(uint32_t targetPgMatchLength) {
@@ -224,6 +232,7 @@ namespace PgTools {
         void persistMappedReadsQualityDivision();
 
         void prepareForPgMatching();
+
     };
 }
 
