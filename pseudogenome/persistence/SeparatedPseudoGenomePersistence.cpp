@@ -351,6 +351,7 @@ namespace PgTools {
             }
             writeReadEntry(rlIt->peekReadEntry());
         }
+        return -1;
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writePseudoGenome(PseudoGenomeBase *pgb, IndexesMapping* orgIndexesMapping, bool revComplPairFile) {

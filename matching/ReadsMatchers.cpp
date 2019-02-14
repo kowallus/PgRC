@@ -76,7 +76,7 @@ namespace PgTools {
         readMatchRC.clear();
         readMatchRC.insert(readMatchRC.begin(), readsCount, false);
         matchedReadsCount = 0;
-        multiMatchCount = 0;
+        betterMatchCount = 0;
         falseMatchCount = 0;
     }
 
@@ -88,7 +88,7 @@ namespace PgTools {
         approxMatcher->readMatchPos = std::move(readMatchPos);
         approxMatcher->readMatchRC = std::move(readMatchRC);
         approxMatcher->matchedReadsCount = matchedReadsCount;
-        approxMatcher->multiMatchCount = multiMatchCount;
+        approxMatcher->betterMatchCount = betterMatchCount;
         approxMatcher->falseMatchCount = falseMatchCount;
     }
 
@@ -191,7 +191,7 @@ namespace PgTools {
                     if (revCompMode) readMatchRC[matchReadIndex] = true;
                     matchedReadsCount++;
                 } else
-                    multiMatchCount++;
+                    betterMatchCount++;
             } else
                 falseMatchCount++;
 /*            if (i++ < 1) {
@@ -205,7 +205,7 @@ namespace PgTools {
 
         cout << "... exact matching procedure completed in " << clock_millis() << " msec. " << endl;
         cout << "Exact matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
-             << " left; " << multiMatchCount << " multi-matches). False matches reported: " << falseMatchCount << "."
+             << " left; " << betterMatchCount << " multi-matches). False matches reported: " << falseMatchCount << "."
              << endl;
     }
 
@@ -234,7 +234,7 @@ namespace PgTools {
     void AbstractReadsApproxMatcher::printApproxMatchingStats() {
         cout << "... approximate matching procedure checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
-             << " left; " << multiMatchCount << " multi-matches). False matches reported: " << falseMatchCount << "."
+             << " left; " << betterMatchCount << " better-matches). False matches reported: " << falseMatchCount << "."
              << endl;
 
         for (uint8_t i = 0; i <= maxMismatches; i++)
@@ -289,16 +289,15 @@ namespace PgTools {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
                  else
-                    multiMatchCount++;
+                    betterMatchCount++;
                 matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
                 matchedCountPerMismatches[mismatchesCount]++;
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                 if (revCompMode) readMatchRC[matchReadIndex] = true;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
-            } else if (mismatchesCount == NOT_MATCHED_COUNT)
+            } else
                 falseMatchCount++;
-            else
-                multiMatchCount++;
+
 /*            if (mismatchesCount < UINT8_MAX && i++ < 2) {
                 cout << "Matched: " << matchReadIndex << " (" << matchPatternIndex << "); "
                      << matchPosition << "; " << (int) mismatchesCount << "; " << (revCompMode?"pair strand (RC)":"") << endl;
@@ -358,16 +357,15 @@ namespace PgTools {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
                 else
-                    multiMatchCount++;
+                    betterMatchCount++;
                 matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
                 matchedCountPerMismatches[mismatchesCount]++;
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                 if (revCompMode) readMatchRC[matchReadIndex] = true;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
-            } else if (mismatchesCount == NOT_MATCHED_COUNT)
+            } else
                 falseMatchCount++;
-            else
-                multiMatchCount++;
+
             //if (mismatchesCount < UINT8_MAX && i++ < 2) {
 /*            if (mismatchesCount < UINT8_MAX && mismatchesCount > 8) {
                 cout << "Matched: " << matchReadIndex << " (" << matchPatternIndex << "); "
@@ -413,7 +411,7 @@ namespace PgTools {
             uint8_t mismatchesCount = readMismatchesCount[matchReadIndex];
             uint64_t matchPosition = copMEMMatcher->approxMatchPattern(currentRead.data(), matchingLength,
                                                                        maxMismatches, minMismatches, mismatchesCount,
-                                                                       multiMatchCount, falseMatchCount);
+                                                                       betterMatchCount, falseMatchCount);
             if (matchPosition == UINT64_MAX)
                 continue;
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {

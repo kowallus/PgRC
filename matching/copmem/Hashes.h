@@ -11,7 +11,7 @@ extern const std::uint32_t HASH_SIZE;
 const std::uint32_t HASH_SIZE_MINUS_ONE = HASH_SIZE - 1;
 template <size_t K>
 inline std::uint32_t xxhash32(const char* key) {
-	XXH32_hash_t result = XXH32((const void*)key, K, 9876543210UL);
+	XXH32_hash_t result = XXH32((const void*)key, K, (uint32_t) 9876543210UL);
 	return (std::uint32_t)(result & HASH_SIZE_MINUS_ONE);
 }
 

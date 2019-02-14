@@ -133,6 +133,7 @@ namespace PgSAIndex {
                 rsProp->maxReadLength = this->maxReadLength;
                 rsProp->allReadsLength = this->constantReadLength?this->readsCount*this->maxReadLength:-1;
                 rsProp->readsCount = this->readsCount;
+                return rsProp;
             }
     };
 

@@ -40,7 +40,7 @@ namespace PgTools {
         const uint_read_len_max matchingLength;
 
         // stats
-        uint64_t multiMatchCount = 0;
+        uint64_t betterMatchCount = 0;
         uint64_t falseMatchCount = 0;
 
         virtual void initMatching();

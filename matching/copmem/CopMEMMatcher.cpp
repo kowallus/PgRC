@@ -144,7 +144,6 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT* cumm) {
 	const size_t MULTI1 = 128;
 	const size_t k1MULTI1 = k1 * MULTI1;
 
-	memset(cumm, sizeof(MyUINT)*(HASH_SIZE + 2), (MyUINT)0);
 	uint32_t hashPositions[MULTI1];
 	size_t i;
 
@@ -180,7 +179,7 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 	*v1logger << "Hash count = " << hashCount << std::endl;
 
 	MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
-	MyUINT2* cumm = new MyUINT2[HASH_SIZE + 2];
+	MyUINT2* cumm = new MyUINT2[HASH_SIZE + 2]();
 	genCumm(N, start1, cumm);
 
 	uint32_t hashPositions[MULTI2];
@@ -375,7 +374,7 @@ template<typename MyUINT1, typename MyUINT2>
 uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buffer, const char *start2,
                                                      const uint_read_len_max N2, uint8_t maxMismatches,
                                                      uint8_t minMismatches, uint8_t &mismatchesCount,
-                                                     uint64_t& multiMatchCount, uint64_t& falseMatchCount) {
+                                                     uint64_t& betterMatchCount, uint64_t& falseMatchCount) {
     if (mismatchesCount < maxMismatches)
         maxMismatches = mismatchesCount - 1;
     MyUINT1* sampledPositions = buffer.first;
@@ -443,7 +442,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
                 continue;
             }
             if (mismatchesCount != UINT8_MAX)
-                multiMatchCount++;
+                betterMatchCount++;
             mismatchesCount = res;
             matchPosition = curr1 - start1 - positionShift;
             if (res <= minMismatches)

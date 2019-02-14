@@ -4,6 +4,10 @@ project(PgTools)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 set(HELPER_FILES
         utils/byteswap.h utils/helper.cpp utils/helper.h)
 
