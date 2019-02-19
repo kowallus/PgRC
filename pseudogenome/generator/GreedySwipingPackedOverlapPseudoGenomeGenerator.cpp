@@ -88,10 +88,9 @@ namespace PgSAIndex {
         
         PackedReadsComparator comparePacked = PackedReadsComparator(this);
         std::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
-        
-        vector<uint_reads_cnt> sortedReadsLeft;
-                
-        sortedReadsLeft.push_back(*(sortedReadsIdxs.begin()));
+
+        uint_reads_cnt sortedReadsLeftCount = 1;
+
         uchar curSymOrder = 0;
         
         for(typename vector<uint_reads_cnt>::iterator srIt = sortedReadsIdxs.begin(); srIt != sortedReadsIdxs.end();) {
@@ -108,11 +107,11 @@ namespace PgSAIndex {
                     curSymOrder = firstSymbolOrder;
                 }
                 if (srIt != sortedReadsIdxs.end())
-                    sortedReadsLeft.push_back(*srIt);
+                    sortedReadsIdxs[sortedReadsLeftCount++] = (*(srIt));
             }
         }  
         ssiSymbolEnd[curSymOrder] = sortedSuffixIdxs.size();
-        sortedReadsIdxs = sortedReadsLeft;
+        sortedReadsIdxs.resize(sortedReadsLeftCount);
         
         cout << "Found " << (readsTotal() - this->readsLeft) << " duplicates.\n";
     }
@@ -126,8 +125,7 @@ namespace PgSAIndex {
         uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
 
         for(int i = 1 ; i < overlapIterations; i++) {
-            vector<uint_reads_cnt> sortedReadsLeft;
-            sortedReadsLeft.reserve(this->readsLeft);
+            uint_reads_cnt sortedReadsLeftCount = 0;
             vector<uint_reads_cnt> sortedSuffixLeft;
             sortedSuffixLeft.reserve(this->readsLeft);
             vector<uint_reads_cnt> ssiSymbolIdxLeft(UCHAR_MAX, 0);
@@ -136,11 +134,11 @@ namespace PgSAIndex {
             
             for(int j = 0; j < getReadsSetProperties()->symbolsCount; j++) 
                 updateSuffixQueue(j, i);
-                  
+
             typename vector<uint_reads_cnt>::iterator preIt = sortedReadsIdxs.begin();
             while (!ssiOrder.empty() || (preIt != sortedReadsIdxs.end())) {
                 if (ssiOrder.empty()) 
-                    sortedReadsLeft.push_back(*(preIt++));
+                    sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
                 else {
                     uchar j = ssiOrder.front();
                     uint_reads_cnt sufIdx = sortedSuffixIdxs[ssiSymbolIdx[j]];
@@ -172,7 +170,7 @@ namespace PgSAIndex {
                         if (cmpRes == 0) 
                             this->setReadSuccessor(sufIdx, *(preIt++), packedReadsSet->maxReadLength() - i);
                         else if (cmpRes > 0) {
-                            sortedReadsLeft.push_back(*(preIt++));
+                            sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
                             continue;
                         } else {
                             sortedSuffixLeft.push_back(sufIdx);
@@ -194,7 +192,7 @@ namespace PgSAIndex {
             }
             
             ssiSymbolEndLeft[curSymOrder] = sortedSuffixLeft.size();
-            sortedReadsIdxs.swap(sortedReadsLeft);
+            sortedReadsIdxs.resize(sortedReadsLeftCount);
             sortedSuffixIdxs.swap(sortedSuffixLeft);
             ssiSymbolIdx.swap(ssiSymbolIdxLeft);
             ssiSymbolEnd.swap(ssiSymbolEndLeft);
