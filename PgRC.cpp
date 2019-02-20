@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Usage: %s [-m [matchingMode]exactMatchingCharsCount] [-M maxCharsPerMismatch]\n"
                                 "[-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
                                 "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
-                                "gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
+                                "gen_quality_coef_in_%% readssrcfile [pairsrcfile] outputFileName\n\n",
                         argv[0]);
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
                 fprintf(stderr, "-n reads containing N are low quality\n-N reads containing N are processed separately\n");
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     pgRC->setSrcFastqFile(argv[optind++]);
     if (optind == argc - 2)
         pgRC->setPairFastqFile(argv[optind++]);
-    pgRC->setPgFilesPrefixes(argv[optind++]);
+    pgRC->setPgRCFileName(argv[optind++]);
 
     pgRC->executePgRCChain();
 

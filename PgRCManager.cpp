@@ -1,3 +1,4 @@
+#include <sys/stat.h>
 #include "PgRCManager.h"
 
 #include "matching/ReadsMatchers.h"
@@ -9,9 +10,9 @@
 
 namespace PgTools {
 
-    static const char *const BAD_INFIX = "_bad";
-    static const char *const GOOD_INFIX = "_good";
-    static const char *const N_INFIX = "_N";
+    static const char *const BAD_INFIX = "bad";
+    static const char *const GOOD_INFIX = "good";
+    static const char *const N_INFIX = "N";
     static const char *const DIVISION_EXTENSION = ".div";
 
     uint_read_len_max probeReadsLength(const string &srcFastqFile);
@@ -21,25 +22,43 @@ namespace PgTools {
         qualityDivision = error_limit_in_promils < 1000;
         readLength = probeReadsLength(srcFastqFile);
 
+        string tmpDirectoryName = pgRCFileName;
         if (qualityDivision)
-            pgFilesPrefixes = pgFilesPrefixes + "_q" + toString(error_limit_in_promils);
-        pgFilesPrefixes = pgFilesPrefixes + (nReadsLQ?"_n":"") + (separateNReads?"_N":"") + "_g" + gen_quality_str;
-        lqDivisionFile = pgFilesPrefixes + BAD_INFIX + DIVISION_EXTENSION;
-        nDivisionFile = pgFilesPrefixes + N_INFIX + DIVISION_EXTENSION;
-        pgHqPrefix = pgFilesPrefixes + GOOD_INFIX;
+            tmpDirectoryName = tmpDirectoryName + "_q" + toString(error_limit_in_promils);
+        tmpDirectoryName = tmpDirectoryName + (nReadsLQ?"_n":"") + (separateNReads?"_N":"") + "_g" + gen_quality_str;
         bool enablePreReadsMatching = preReadsExactMatchingChars > 0;
-        pgFilesPrefixesWithM = pgFilesPrefixes +
+        tmpDirectoryName = tmpDirectoryName +
                 (enablePreReadsMatching?("_l" + (((char) tolower(preMatchingMode))
-                + ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string(""))
-                + toString(preReadsExactMatchingChars))):"")
+                                                 + ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string(""))
+                                                 + toString(preReadsExactMatchingChars))):"")
                 + "_m" + (((char) tolower(matchingMode))
                 + (toupper(matchingMode) == matchingMode?string("s"):string(""))
                 + toString(readsExactMatchingChars))
-                + "_M" + toString(minCharsPerMismatch);
+                + "_M" + toString(minCharsPerMismatch)
+                + "_p" + toString(targetPgMatchLength);
+
+
+        mode_t mode = 0777;
+        int nError = mkdir(tmpDirectoryName.data(), mode);
+        if (nError != 0) {
+            srand (time(NULL));
+            tmpDirectoryName = tmpDirectoryName + "_" + toString(rand()%100000);
+            nError = mkdir(tmpDirectoryName.data(), mode);
+            if (nError != 0) {
+                fprintf(stderr, "Error creating folder %s\n", tmpDirectoryName.data());
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        lqDivisionFile = tmpDirectoryName + "/" + BAD_INFIX + DIVISION_EXTENSION;
+        nDivisionFile = tmpDirectoryName + "/" + N_INFIX + DIVISION_EXTENSION;
+        pgHqPrefix = tmpDirectoryName + "/" + GOOD_INFIX;
+
+        pgFilesPrefixesWithM = tmpDirectoryName + "/";
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
-        pgSeqFinalHqPrefix = pgFilesPrefixesWithM + "_p" + toString(targetPgMatchLength) + GOOD_INFIX;
-        pgSeqFinalLqPrefix = pgFilesPrefixesWithM + "_p" + toString(targetPgMatchLength) + BAD_INFIX;
+        pgSeqFinalHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
+        pgSeqFinalLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
         mappedLqDivisionFile = pgFilesPrefixesWithM + BAD_INFIX + DIVISION_EXTENSION;
     }
@@ -288,7 +307,7 @@ namespace PgTools {
             fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad[s]\tpgMatch[s]\tpost[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
-             << pgFilesPrefixes << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
+             << pgRCFileName << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
 
         if (preReadsExactMatchingChars > 0)
             fout << (char) tolower(preMatchingMode) << ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string("")) << (int) preReadsExactMatchingChars;

@@ -27,7 +27,7 @@ namespace PgTools {
         char preMatchingMode = 'd';
         char matchingMode = 'd';
         uint32_t targetPgMatchLength = 50;
-        string pgFilesPrefixes = "";
+        string pgRCFileName = "";
         bool revComplPairFile = false;
 
         string srcFastqFile = "";
@@ -154,8 +154,8 @@ namespace PgTools {
             PgRCManager::targetPgMatchLength = targetPgMatchLength;
         }
 
-        void setPgFilesPrefixes(const string &pgFilesPrefixes) {
-            PgRCManager::pgFilesPrefixes = pgFilesPrefixes;
+        void setPgRCFileName(const string &pgRCFileName) {
+            PgRCManager::pgRCFileName = pgRCFileName;
         }
 
         void setRevComplPairFile() {
