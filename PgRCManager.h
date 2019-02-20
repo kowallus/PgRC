@@ -34,7 +34,6 @@ namespace PgTools {
         string pairFastqFile = "";
 
         // CHAIN MANAGEMENT
-        bool sameIntermediateOutput = true;
         uint8_t skipStages = 0;
         uint8_t endAtStage = UINT8_MAX;
 
@@ -65,6 +64,8 @@ namespace PgTools {
         string pgFilesPrefixesWithM;
         string pgMappedHqPrefix;
         string pgMappedLqPrefix;
+        string pgSeqFinalHqPrefix;
+        string pgSeqFinalLqPrefix;
         string pgNPrefix;
         string mappedLqDivisionFile;
 
@@ -167,10 +168,6 @@ namespace PgTools {
 
         void setPairFastqFile(const string &pairFastqFile) {
             PgRCManager::pairFastqFile = pairFastqFile;
-        }
-
-        void separateIntermediateOutput() {
-            PgRCManager::sameIntermediateOutput = false;
         }
 
         void setSkipStages(uint8_t skipStages) {

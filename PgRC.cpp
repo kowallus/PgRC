@@ -13,15 +13,12 @@ int main(int argc, char *argv[])
     PgRCManager* pgRC = new PgRCManager();
     bool expectedPairFile = false;
 
-    while ((opt = getopt(argc, argv, "l:m:M:p:q:S:E:srnNtaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "l:m:M:p:q:S:E:rnNtaA?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'r':
                 expectedPairFile = true;
                 pgRC->setRevComplPairFile();
-                break;
-            case 's':
-                pgRC->separateIntermediateOutput();
                 break;
             case 'N':
                 pgRC->setSeparateNReads(true);
@@ -89,10 +86,9 @@ int main(int argc, char *argv[])
                                 "gen_quality_coef_in_%% readssrcfile [pairsrcfile] pgFilesPrefixes\n\n",
                         argv[0]);
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
-                fprintf(stderr, "-n reads containing N are low quality \b-N reads containing N are processed separately\n");
+                fprintf(stderr, "-n reads containing N are low quality\n-N reads containing N are processed separately\n");
                 fprintf(stderr, "-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
-                fprintf(stderr, "-s separate names for intermediate output files\n");
                 fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
                 fprintf(stderr, "-l enables preliminary reads matching stage\n");
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
@@ -106,7 +102,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    if (expectedPairFile && optind != argc - 3) {
+    if (expectedPairFile && optind != argc - 4) {
         fprintf(stderr, "Cannot use -r option without specifying a pair file.\n");
         exit(EXIT_FAILURE);
     }

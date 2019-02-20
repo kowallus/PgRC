@@ -35,15 +35,13 @@ namespace PgTools {
                 + "_m" + (((char) tolower(matchingMode))
                 + (toupper(matchingMode) == matchingMode?string("s"):string(""))
                 + toString(readsExactMatchingChars))
-                + "_M" + toString(minCharsPerMismatch) + "_p" + toString(targetPgMatchLength);
+                + "_M" + toString(minCharsPerMismatch);
         pgMappedHqPrefix = pgFilesPrefixesWithM + GOOD_INFIX;
         pgMappedLqPrefix = pgFilesPrefixesWithM + BAD_INFIX;
+        pgSeqFinalHqPrefix = pgFilesPrefixesWithM + "_p" + toString(targetPgMatchLength) + GOOD_INFIX;
+        pgSeqFinalLqPrefix = pgFilesPrefixesWithM + "_p" + toString(targetPgMatchLength) + BAD_INFIX;
         pgNPrefix = pgFilesPrefixesWithM + N_INFIX;
         mappedLqDivisionFile = pgFilesPrefixesWithM + BAD_INFIX + DIVISION_EXTENSION;
-        if (sameIntermediateOutput) {
-            pgHqPrefix = pgMappedHqPrefix;
-            lqDivisionFile = mappedLqDivisionFile;
-        }
     }
 
     void PgRCManager::executePgRCChain() {
@@ -116,7 +114,7 @@ namespace PgTools {
             prepareForPgMatching();
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
             SimplePgMatcher::matchPgInPgFiles(hqPg->getPgSequence(), lqPg->getPgSequence(),
-                    pgMappedHqPrefix, pgMappedLqPrefix, targetPgMatchLength);
+                                              pgSeqFinalHqPrefix, pgSeqFinalLqPrefix, targetPgMatchLength);
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -130,8 +128,8 @@ namespace PgTools {
     }
 
     void PgRCManager::runQualityBasedDivision() {
-        ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                srcFastqFile, pairFastqFile);
+        ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile, revComplPairFile);
         divReadsSets =
                 DividedPCLReadsSets::getQualityDivisionBasedReadsSets(allReadsIterator, readLength, error_limit_in_promils / 1000.0,
                         separateNReads, nReadsLQ);
@@ -146,8 +144,8 @@ namespace PgTools {
 
     void PgRCManager::prepareForPgGeneratorBaseReadsDivision() {
         if (!divReadsSets) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                    srcFastqFile, pairFastqFile);
+            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, revComplPairFile);
             if (qualityDivision) {
                 divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
                         allReadsIterator, readLength, lqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "");
@@ -168,8 +166,8 @@ namespace PgTools {
 
     void PgRCManager::prepareForHqPgGeneration() {
         if (!divReadsSets) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                    srcFastqFile, pairFastqFile);
+            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, revComplPairFile);
             divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
                     allReadsIterator, readLength, lqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "");
             delete (allReadsIterator);
@@ -194,8 +192,8 @@ namespace PgTools {
 
     void PgRCManager::prepareForMappingLQReadsOnHQPg() {
         if (!divReadsSets) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                    srcFastqFile, pairFastqFile);
+            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, revComplPairFile);
             divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
                     allReadsIterator, readLength, lqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "", true);
             delete (allReadsIterator);
@@ -230,8 +228,8 @@ namespace PgTools {
 
     void PgRCManager::prepareForLQPgAndNPgGeneration() {
         if (!divReadsSets) {
-            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(
-                    srcFastqFile, pairFastqFile);
+            ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                    srcFastqFile, pairFastqFile, revComplPairFile);
             divReadsSets = DividedPCLReadsSets::loadDivisionReadsSets(
                     allReadsIterator, readLength, mappedLqDivisionFile, nReadsLQ, separateNReads ? nDivisionFile : "", true);
             delete (allReadsIterator);
