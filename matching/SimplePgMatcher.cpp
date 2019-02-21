@@ -80,6 +80,8 @@ namespace PgTools {
         ofstream pgMapOffDest = SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(destPgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX, true);
         ofstream pgMapLenDest = SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(destPgFilePrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX, true);
 
+        PgSAHelpers::writeUIntByteFrugal(pgMapLenDest, minMatchLength);
+
         sort( textMatches.begin(), textMatches.end() );
         textMatches.erase( unique( textMatches.begin(), textMatches.end() ), textMatches.end() );
         cout << "Unique exact matches: " << textMatches.size() << endl;
