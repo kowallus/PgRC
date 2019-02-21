@@ -12,8 +12,10 @@ int main(int argc, char *argv[])
     int opt; // current option
     PgRCManager* pgRC = new PgRCManager();
     bool expectedPairFile = false;
+    bool srcFilePresent = false;
+    bool pairFilePresent = false;
 
-    while ((opt = getopt(argc, argv, "l:m:M:p:q:S:E:rnNtaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "i:l:m:M:p:q:g:S:E:rnNtaA?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'r':
@@ -78,12 +80,23 @@ int main(int argc, char *argv[])
             case 'A':
                 SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
                 break;
+            case 'i':
+                pgRC->setSrcFastqFile(optarg);
+                srcFilePresent = true;
+                if (argv[optind][0] != '-') {
+                    pgRC->setPairFastqFile(argv[optind++]);
+                    pairFilePresent = true;
+                }
+                break;
+            case 'g':
+                pgRC->setGen_quality_str(optarg);
+                break;
             case '?':
             default: /* '?' */
                 fprintf(stderr, "Usage: %s [-m [matchingMode]exactMatchingCharsCount] [-M maxCharsPerMismatch]\n"
                                 "[-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
                                 "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
-                                "gen_quality_coef_in_%% readssrcfile [pairsrcfile] outputFileName\n\n",
+                                "[-g gen_quality_coef_in_%%] -i readssrcfile [pairsrcfile] pgRCFileName\n\n",
                         argv[0]);
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
                 fprintf(stderr, "-n reads containing N are low quality\n-N reads containing N are processed separately\n");
@@ -97,20 +110,22 @@ int main(int argc, char *argv[])
                 exit(EXIT_FAILURE);
         }
     }
-    if (optind > (argc - 3) || optind < (argc - 4)) {
-        fprintf(stderr, "%s: Expected 3 or 4 arguments after options (found %d)\n", argv[0], argc - optind);
+    if (optind > (argc - 1) || optind < (argc - 1)) {
+        fprintf(stderr, "%s: Expected 1 argument after options (found %d)\n", argv[0], argc - optind);
         fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    if (expectedPairFile && optind != argc - 4) {
+    if (!srcFilePresent) {
+        fprintf(stderr, "Input file(s) not specified.\n");
+        fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+    if (expectedPairFile && !pairFilePresent) {
         fprintf(stderr, "Cannot use -r option without specifying a pair file.\n");
+        fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    pgRC->setGen_quality_str(argv[optind++]);
-    pgRC->setSrcFastqFile(argv[optind++]);
-    if (optind == argc - 2)
-        pgRC->setPairFastqFile(argv[optind++]);
     pgRC->setPgRCFileName(argv[optind++]);
 
     pgRC->executePgRCChain();
