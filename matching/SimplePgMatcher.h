@@ -45,6 +45,10 @@ namespace PgTools {
                 const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
                 uint32_t minMatchLength = UINT32_MAX);
 
+        static string restoreMatchedPg(string &srcPg, const string &destPgPrefix, bool revComplMatching,
+                                       bool plainTextReadMode, bool srcIsDest = false);
+
+        static string restoreAutoMatchedPg(const string &pgPrefix, bool revComplMatching);
     };
 }
 

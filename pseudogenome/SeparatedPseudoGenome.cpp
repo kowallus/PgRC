@@ -61,6 +61,18 @@ namespace PgTools {
         return pgSequence;
     }
 
+    const string SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx) {
+        string res = pgSequence.substr(this->readsList->pos[idx], this->readsList->readLength);
+        for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
+            res[this->readsList->getMisOff(idx, i)] =
+                    PgSAHelpers::code2mismatch(res[this->readsList->getMisOff(idx, i)],
+                            this->readsList->getMisSymCode(idx, i));
+        }
+        if (this->readsList->revComp[idx])
+            PgSAHelpers::reverseComplementInPlace(res);
+        return res;
+    }
+
     GeneratedSeparatedPseudoGenome::GeneratedSeparatedPseudoGenome(uint_pg_len_max sequenceLength,
                                                                    ReadsSetProperties *properties)
             : SeparatedPseudoGenome(sequenceLength, properties) {

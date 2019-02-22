@@ -30,7 +30,19 @@ namespace PgSAHelpers {
     uint8_t mismatch2code(char actual, char mismatch);
     char code2mismatch(char actual, uint8_t code);
 
-    void convertMisRevOffsets2Offsets(uint16_t *mismatchOffsets, uint8_t mismatchesCount, uint16_t readLength);
+    template<typename uint_read_len>
+    void convertMisRevOffsets2Offsets(uint_read_len *mismatchOffsets, uint8_t mismatchesCount, uint_read_len readLength) {
+        for(uint8_t i = 0; i < mismatchesCount / 2; i++) {
+            uint_read_len tmp = mismatchOffsets[mismatchesCount - i - 1];
+            mismatchOffsets[mismatchesCount - i - 1] = mismatchOffsets[i];
+            mismatchOffsets[i] = tmp;
+        }
+        uint_read_len pos = readLength;
+        for(uint8_t i = mismatchesCount; i-- > 0;) {
+            pos -= mismatchOffsets[i] + 1;
+            mismatchOffsets[i] = pos;
+        }
+    }
 
     // time routines
 
@@ -124,6 +136,18 @@ namespace PgSAHelpers {
     }
 
     void writeUIntByteFrugal(std::ostream &dest, uint64_t value);
+
+    template<typename t_val>
+    void readUIntByteFrugal(std::istream &src, t_val& value) {
+        value = 0;
+        uint8_t yByte = 0;
+        t_val base = 1;
+        do {
+            src.read((char *) &yByte, sizeof(uint8_t));
+            value += base * (yByte % 128);
+            base *= 128;
+        } while (yByte >= 128);
+    }
 
     extern bool bytePerReadLengthMode;
 

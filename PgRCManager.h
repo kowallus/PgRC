@@ -230,6 +230,12 @@ namespace PgTools {
 
         void prepareForPgMatching();
 
+        void loadAllPgs();
+        void decompressPgRC();
+
+        void writeAllReadsInSEMode(const string &tmpDirectoryPath) const;
+
+        void validateAllPgs();
     };
 }
 

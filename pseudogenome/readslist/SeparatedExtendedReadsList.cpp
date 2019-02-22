@@ -175,9 +175,15 @@ namespace PgTools {
             res->misSymCode.resize(cumCount);
             PgSAHelpers::readArray(*(rl.rlMisSymSrc), res->misSymCode.data(), sizeof(uint8_t) * cumCount);
             res->misOff.resize(cumCount);
-            res->misRevOffMode = rl.rlMisOffSrc == 0;
-            PgSAHelpers::readArray(res->misRevOffMode?*(rl.rlMisRevOffSrc):*(rl.rlMisOffSrc), res->misOff.data(),
+            bool misRevOffMode = rl.rlMisOffSrc == 0;
+            PgSAHelpers::readArray(misRevOffMode?*(rl.rlMisRevOffSrc):*(rl.rlMisOffSrc), res->misOff.data(),
                     sizeof(uint8_t) * cumCount);
+            if (misRevOffMode) {
+                for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                    PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + res->misCumCount[i],
+                            res->getMisCount(i), res->readLength);
+                }
+            }
         }
 
         return res;

@@ -20,6 +20,8 @@ namespace PgTools {
         string &getPgSequence();
         ConstantAccessExtendedReadsList *getReadsList();
 
+        const string getRead(uint_reads_cnt_max idx);
+
         virtual ~SeparatedPseudoGenome();
 
         void applyIndexesMapping(IndexesMapping *indexesMapping);

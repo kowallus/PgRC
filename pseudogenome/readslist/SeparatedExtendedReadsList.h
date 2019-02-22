@@ -18,7 +18,6 @@ namespace PgTools {
         vector<uint_reads_cnt_max> misCumCount;
         vector<uint8_t> misSymCode;
         vector<uint8_t> misOff;
-        bool misRevOffMode = false;
 
         ConstantAccessExtendedReadsList(uint_read_len_max readLength) : readLength(readLength) {}
 
@@ -42,8 +41,6 @@ namespace PgTools {
             uint8_t mismatchesCount = getMisCount(idx);
             for(uint8_t i = 0; i < mismatchesCount; i++)
                 entry.addMismatch(getMisSymCode(idx, i), getMisOff(idx, i));
-            if (misRevOffMode)
-                PgSAHelpers::convertMisRevOffsets2Offsets(entry.mismatchOffset, entry.mismatchesCount, readLength);
         }
 
         // iterator routines

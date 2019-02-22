@@ -37,16 +37,17 @@ namespace PgTools {
                 + "_M" + toString(minCharsPerMismatch)
                 + "_p" + toString(targetPgMatchLength);
 
-
-        mode_t mode = 0777;
-        int nError = mkdir(tmpDirectoryName.data(), mode);
-        if (nError != 0) {
-            srand (time(NULL));
-            tmpDirectoryName = tmpDirectoryName + "_" + toString(rand()%100000);
-            nError = mkdir(tmpDirectoryName.data(), mode);
+        if (skipStages == 0) {
+            mode_t mode = 0777;
+            int nError = mkdir(tmpDirectoryName.data(), mode);
             if (nError != 0) {
-                fprintf(stderr, "Error creating folder %s\n", tmpDirectoryName.data());
-                exit(EXIT_FAILURE);
+                srand(time(NULL));
+                tmpDirectoryName = tmpDirectoryName + "_" + toString(rand() % 100000);
+                nError = mkdir(tmpDirectoryName.data(), mode);
+                if (nError != 0) {
+                    fprintf(stderr, "Error creating folder %s\n", tmpDirectoryName.data());
+                    exit(EXIT_FAILURE);
+                }
             }
         }
 
@@ -339,6 +340,117 @@ namespace PgTools {
             delete (nPg);
             nPg = 0;
         }
+    }
+
+    void PgRCManager::decompressPgRC() {
+        start_t = clock();
+
+        string tmpDirectoryPath = pgRCFileName + "/";
+        pgMappedHqPrefix = tmpDirectoryPath + GOOD_INFIX;
+        pgMappedLqPrefix = tmpDirectoryPath + BAD_INFIX;
+        pgSeqFinalHqPrefix = tmpDirectoryPath + GOOD_INFIX;
+        pgSeqFinalLqPrefix = tmpDirectoryPath + BAD_INFIX;
+        pgNPrefix = tmpDirectoryPath + N_INFIX;
+
+        loadAllPgs();
+
+        if (srcFastqFile.empty()) {
+            writeAllReadsInSEMode(tmpDirectoryPath);
+            cout << "Decompressed ";
+        } else {
+            validateAllPgs();
+            cout << "Validated ";
+        }
+
+        cout << (hqPg->getReadsSetProperties()->readsCount + lqPg->getReadsSetProperties()->readsCount) <<
+         " reads in " << clock_millis(start_t) << " msec." << endl;
+
+        disposeChainData();
+    }
+
+    void PgRCManager::writeAllReadsInSEMode(const string &tmpDirectoryPath) const {
+        fstream fout(tmpDirectoryPath + "out", ios_base::out | ios_base::binary | std::ios::trunc);
+        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
+            fout << hqPg->getRead(i) << endl;
+
+        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
+            fout << lqPg->getRead(i) << endl;
+
+        fout.close();
+    }
+
+    void PgRCManager::validateAllPgs() {
+        uint_reads_cnt_max readsTotalCount = hqPg->getReadsSetProperties()->readsCount +
+                lqPg->getReadsSetProperties()->readsCount;
+        vector<uint_reads_cnt_max> orgIdx2rlIdx;
+        orgIdx2rlIdx.resize(readsTotalCount);
+        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
+            orgIdx2rlIdx[hqPg->getReadsList()->orgIdx[i]] = i;
+
+        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
+            orgIdx2rlIdx[lqPg->getReadsList()->orgIdx[i]] = hqPg->getReadsSetProperties()->readsCount + i;
+
+        ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
+                srcFastqFile, pairFastqFile, revComplPairFile);
+
+        vector<bool> validated(readsTotalCount, false);
+        uint_reads_cnt_max notValidatedCount = 0;
+        uint_reads_cnt_max errorsCount = 0;
+        for(uint_reads_cnt_max i = 0; i < readsTotalCount; i++) {
+            if (!allReadsIterator->moveNext()) {
+                cout << "The number of compressed reads is too big (" << (readsTotalCount - i) << " reads more)." << endl;
+                break;
+            }
+            string read;
+            uint_reads_cnt_max idx = orgIdx2rlIdx[i];
+            if (validated[idx]) {
+                notValidatedCount++;
+                continue;
+            }
+            validated[idx] = true;
+            if (idx < hqPg->getReadsSetProperties()->readsCount)
+                read = hqPg->getRead(idx);
+            else
+                read = lqPg->getRead(idx - hqPg->getReadsSetProperties()->readsCount);
+            if (read != allReadsIterator->getRead())
+                errorsCount++;
+        }
+        uint_reads_cnt_max missingCount = 0;
+        while (allReadsIterator->moveNext())
+            missingCount++;
+        if (missingCount)
+            cout << "The number of compressed reads is too small (" << (missingCount) << " reads missing)." << endl;
+        if (notValidatedCount)
+            cout << notValidatedCount << " of compressed reads could not been properly validated." << endl;
+        if (errorsCount)
+            cout << "Found " << errorsCount << " errors in compressed reads." << endl;
+        if (!missingCount && !notValidatedCount && !errorsCount)
+            cout << "Validation successful!" << endl;
+
+        delete (allReadsIterator);
+
+    }
+
+    void PgRCManager::loadAllPgs() {
+        string tmpPg = SimplePgMatcher::restoreAutoMatchedPg(pgSeqFinalHqPrefix, true);
+
+        PseudoGenomeHeader* pgh = 0;
+        ReadsSetProperties* prop = 0;
+        bool plainTextReadMode = false;
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalHqPrefix, pgh, prop, plainTextReadMode);
+        ConstantAccessExtendedReadsList* caeRl =
+                ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalHqPrefix, pgh->getPseudoGenomeLength());
+        hqPg = new SeparatedPseudoGenome(move(tmpPg), caeRl, prop);
+        delete(pgh);
+        delete(prop);
+
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalLqPrefix, pgh, prop, plainTextReadMode);
+        tmpPg = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgSeqFinalLqPrefix, true, plainTextReadMode);
+        caeRl =
+                ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
+        lqPg = new SeparatedPseudoGenome(move(tmpPg), caeRl, prop);
+        delete(pgh);
+        delete(prop);
     }
 
     uint_read_len_max probeReadsLength(const string &srcFastqFile) {

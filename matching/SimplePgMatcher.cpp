@@ -62,8 +62,10 @@ namespace PgTools {
         return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPgLength, 1)+ "%)";
     }
 
+    static const char MATCH_MARK = 128;
+
     void SimplePgMatcher::markAndRemoveExactMatches(const string &destPgFilePrefix, string &destPg, bool revComplMatching,
-            uint32_t minMatchLength) {
+                                                    uint32_t minMatchLength) {
         this->targetPgPrefix = destPgFilePrefix;
         this->revComplMatching = revComplMatching;
         this->destPgLength = destPg.length();
@@ -113,7 +115,7 @@ namespace PgTools {
             uint64_t length = match.posDestText - pos;
             destPg.replace(nPos, length, destPg, pos, length);
             nPos += length;
-            destPg[nPos++] = 128;
+            destPg[nPos++] = MATCH_MARK;
             if (isPgLengthStd)
                 PgSAHelpers::writeValue<uint32_t>(pgMapOffDest, match.posSrcText);
             else
@@ -163,6 +165,60 @@ namespace PgTools {
         matcher.markAndRemoveExactMatches(hqPgPrefix, hqPgSequence, true, minMatchLength);
         cout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
 
+    }
+
+    string
+    SimplePgMatcher::restoreMatchedPg(string &srcPg, const string &destPgPrefix, bool revComplMatching,
+                                      bool plainTextReadMode, bool srcIsDest) {
+        string destPg = SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(destPgPrefix);
+        bool isPgLengthStd = srcPg.length() <= UINT32_MAX;
+        if (srcIsDest)
+            srcPg.resize(0);
+        string tmp;
+        string& resPg = srcIsDest?srcPg:tmp;
+        uint64_t posDest = 0;
+        uint32_t minMatchLength = 0;
+        ifstream pgMapOffSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(destPgPrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX);
+        ifstream pgMapLenSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(destPgPrefix, SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX);
+        PgSAHelpers::readUIntByteFrugal(pgMapLenSrc, minMatchLength);
+        uint64_t markPos = 0;
+        while ((markPos = destPg.find(MATCH_MARK, posDest)) != std::string::npos) {
+            resPg.append(destPg, posDest, markPos - posDest);
+            posDest = markPos + 1;
+            uint64_t matchSrcPos = 0;
+            if (isPgLengthStd) {
+                uint32_t tmp;
+                PgSAHelpers::readValue<uint32_t>(pgMapOffSrc, tmp, plainTextReadMode);
+                matchSrcPos = tmp;
+            } else
+                PgSAHelpers::readValue<uint64_t>(pgMapOffSrc, matchSrcPos, plainTextReadMode);
+            uint16_t matchLength = 0;
+            PgSAHelpers::readUIntByteFrugal(pgMapLenSrc, matchLength);
+            matchLength += minMatchLength;
+            if (revComplMatching)
+                resPg.append(reverseComplement(srcPg.substr(matchSrcPos, matchLength)));
+            else
+                resPg.append(srcPg.substr(matchSrcPos, matchLength));
+        }
+        resPg.append(destPg, posDest, destPg.length() - posDest);
+
+        cout << "Restored Pg sequence of length: " << resPg.length() << endl;
+
+        return resPg;
+    }
+
+    string
+    SimplePgMatcher::restoreAutoMatchedPg(const string &pgPrefix, bool revComplMatching) {
+        PseudoGenomeHeader* pgh = 0;
+        ReadsSetProperties* prop = 0;
+        bool plainTextReadMode = false;
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgPrefix, pgh, prop, plainTextReadMode);
+        string tmpPg;
+        tmpPg.resize(pgh->getPseudoGenomeLength());
+        tmpPg = SimplePgMatcher::restoreMatchedPg(tmpPg, pgPrefix, true, plainTextReadMode, true);
+        delete(pgh);
+        delete(prop);
+        return tmpPg;
     }
 }
 
