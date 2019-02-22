@@ -293,7 +293,7 @@ namespace PgTools {
                 matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
                 matchedCountPerMismatches[mismatchesCount]++;
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
-                if (revCompMode) readMatchRC[matchReadIndex] = true;
+                readMatchRC[matchReadIndex] = revCompMode;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
             } else
                 falseMatchCount++;
@@ -361,7 +361,7 @@ namespace PgTools {
                 matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
                 matchedCountPerMismatches[mismatchesCount]++;
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
-                if (revCompMode) readMatchRC[matchReadIndex] = true;
+                readMatchRC[matchReadIndex] = revCompMode;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
             } else
                 falseMatchCount++;
@@ -420,7 +420,7 @@ namespace PgTools {
                 matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
                 matchedCountPerMismatches[mismatchesCount]++;
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
-                if (revCompMode) readMatchRC[matchReadIndex] = true;
+                readMatchRC[matchReadIndex] = revCompMode;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
             }
         }
