@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
-    if (!srcFilePresent) {
+    if (!srcFilePresent && !decompressMode) {
         fprintf(stderr, "Input file(s) not specified.\n");
         fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
