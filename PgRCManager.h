@@ -7,6 +7,13 @@
 #include "readsset/DividedPCLReadsSets.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
+#include <condition_variable>
+#include <queue>
+#include <mutex>
+#include <thread>
+
+#define ENABLE_PARALLEL_DECOMPRESSION false
+
 namespace PgTools {
 
     class PgRCManager {
@@ -233,9 +240,21 @@ namespace PgTools {
         void loadAllPgs();
         void decompressPgRC();
 
+        const size_t CHUNK_SIZE_IN_BYTES = 100000;
+
         void writeAllReadsInSEMode(const string &tmpDirectoryPath) const;
 
+        std::mutex mut;
+        std::queue<string> out_queue;
+        std::condition_variable data_cond;
+        void writeAllReadsInSEModeParallel(const string &tmpDirectoryPath);
+        void pushOutToQueue(string &out);
+        void finishWritingParallel();
+        void writeFromQueue(const string &tmpDirectoryPath);
+
         void validateAllPgs();
+
+        uint_reads_cnt_max dnaStreamSize() const;
     };
 }
 

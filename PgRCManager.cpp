@@ -353,9 +353,13 @@ namespace PgTools {
         pgNPrefix = tmpDirectoryPath + N_INFIX;
 
         loadAllPgs();
+        cout << "... loaded Pgs (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
 
         if (srcFastqFile.empty()) {
-            writeAllReadsInSEMode(tmpDirectoryPath);
+            if (ENABLE_PARALLEL_DECOMPRESSION && dnaStreamSize() < CHUNK_SIZE_IN_BYTES)
+                writeAllReadsInSEModeParallel(tmpDirectoryPath);
+            else
+                writeAllReadsInSEMode(tmpDirectoryPath);
             cout << "Decompressed ";
         } else {
             validateAllPgs();
@@ -368,15 +372,93 @@ namespace PgTools {
         disposeChainData();
     }
 
+    void PgRCManager::pushOutToQueue(string &out) {
+        std::lock_guard<std::mutex> _(this->mut);
+        out_queue.push(std::move(out));
+        data_cond.notify_one();
+        out.resize(0);
+        out.reserve(CHUNK_SIZE_IN_BYTES);
+    }
+
+    void PgRCManager::finishWritingParallel() {
+        std::lock_guard<std::mutex> _(this->mut);
+        out_queue.push(std::move(""));
+        data_cond.notify_one();
+    }
+
+    void PgRCManager::writeAllReadsInSEModeParallel(const string &tmpDirectoryPath) {
+        cout << "... parallel mode" << endl;
+        std::thread writing(&PgRCManager::writeFromQueue, this, tmpDirectoryPath);
+        string res;
+        uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
+        res.reserve(CHUNK_SIZE_IN_BYTES);
+        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++) {
+            if (res.size() > res_size_guard) {
+                pushOutToQueue(res);
+            }
+            res.append(hqPg->getRead(i));
+            res.push_back('\n');
+        }
+
+        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
+            if (res.size() > res_size_guard) {
+                pushOutToQueue(res);
+            }
+            res.append(lqPg->getRead(i));
+            res.push_back('\n');
+        }
+        pushOutToQueue(res);
+        cout << "... finished loading queue (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
+        finishWritingParallel();
+        writing.join();
+    }
+
+    void PgRCManager::writeFromQueue(const string &tmpDirectoryPath) {
+        fstream fout(tmpDirectoryPath + "out", ios_base::out | ios_base::binary | std::ios::trunc);
+        string out;
+        do {
+            std::unique_lock<std::mutex> lk(mut);
+            data_cond.wait(
+                    lk,[this]{return !out_queue.empty();});
+            out = out_queue.front();
+            out_queue.pop();
+            lk.unlock();
+            fout << out;
+        } while (!out.empty());
+        fout.close();
+    }
+
     void PgRCManager::writeAllReadsInSEMode(const string &tmpDirectoryPath) const {
         fstream fout(tmpDirectoryPath + "out", ios_base::out | ios_base::binary | std::ios::trunc);
-        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
-            fout << hqPg->getRead(i) << endl;
+        string res;
+        uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
+        uint64_t totalSize = dnaStreamSize();
+        res.reserve(totalSize < res_size_guard?totalSize:res_size_guard + (hqPg->getReadsSetProperties()->maxReadLength + 1));
+        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++) {
+            if (res.size() > res_size_guard) {
+                fout << res;
+                res.resize(0);
+            }
+            res.append(hqPg->getRead(i));
+            res.push_back('\n');
+        }
 
-        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
-            fout << lqPg->getRead(i) << endl;
+        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
+            if (res.size() > res_size_guard) {
+                fout << res;
+                res.resize(0);
+            }
+            res.append(lqPg->getRead(i));
+            res.push_back('\n');
+        }
 
+        fout << res;
         fout.close();
+    }
+
+    uint_reads_cnt_max PgRCManager::dnaStreamSize() const {
+        return (hqPg->getReadsSetProperties()->readsCount + lqPg->getReadsSetProperties()->readsCount) *
+               (hqPg->getReadsSetProperties()->maxReadLength + 1);
     }
 
     void PgRCManager::validateAllPgs() {
