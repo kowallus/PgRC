@@ -94,7 +94,7 @@ set(MATCHER_FILES
         matching/copmem/CopMEMMatcher.cpp matching/copmem/CopMEMMatcher.h)
 
 set(LZMA_FILES
-        lzma/LzmaLib.h lzma/LzmaLib.c
+        utils/LzmaLib.h utils/LzmaLib.cpp
         lzma/LzmaEnc.h lzma/LzmaEnc.c
         lzma/LzmaDec.h lzma/LzmaDec.c
         lzma/Alloc.h lzma/Alloc.c

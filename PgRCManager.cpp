@@ -303,30 +303,15 @@ namespace PgTools {
 
     void PgRCManager::compressSequences() {
         string& hqPgSeq = hqPg->getPgSequence();
-        size_t propsSize = LZMA_PROPS_SIZE;
-        size_t destLen = hqPgSeq.size() + hqPgSeq.size() / 3 + 128;
-        string outBuf;
-        outBuf.resize(propsSize + destLen);
         cout << "Before: " << hqPgSeq.size() << endl;
-        int res = LzmaCompress(
-                (unsigned char*) outBuf.data() + LZMA_PROPS_SIZE,
-                &destLen,
-                (unsigned char*) hqPgSeq.data(), hqPgSeq.size(),
-                (unsigned char*) outBuf.data(), &propsSize,
-                -1, 0, -1, -1, -1, -1, -1);
-
-        assert(propsSize == LZMA_PROPS_SIZE);
-        assert(res == SZ_OK);
-        size_t outBufSize = propsSize + destLen;
-        cout << "After: " << outBufSize << endl;
-        outBuf.resize(outBufSize);
-        destLen = hqPgSeq.size();
+        size_t compLen = 0;
+        char* compSeq = Compress(compLen, hqPgSeq.data(), hqPgSeq.size(),
+                LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
+        cout << "After: " << compLen << endl;
         string destBuf;
-        destBuf.resize(destLen);
-        res = LzmaUncompress((unsigned char*) destBuf.data(),
-                       &destLen,
-                       (unsigned char*) outBuf.data() + LZMA_PROPS_SIZE, &outBufSize,
-                       (unsigned char*) outBuf.data(), propsSize);
+        destBuf.resize(hqPgSeq.size());
+        Uncompress((char*) destBuf.data(), hqPgSeq.size(), compSeq, compLen, LZMA_CODER);
+
         cout << "Finally: " << (destBuf == hqPgSeq?"OK":"error") << endl;
     }
 

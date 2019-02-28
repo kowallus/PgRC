@@ -3,7 +3,7 @@
 
 #include "utils/helper.h"
 #include "pgsaconfig.h"
-#include "lzma/LzmaLib.h"
+#include "utils/LzmaLib.h"
 
 #include "readsset/DividedPCLReadsSets.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
