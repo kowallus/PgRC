@@ -6,7 +6,6 @@
 #include "../lzma/LzmaDec.h"
 #include "../lzma/LzmaEnc.h"
 #include "LzmaLib.h"
-#include "helper.h"
 
 /*
 RAM requirements for LZMA:
@@ -119,7 +118,7 @@ SZ_ERROR_THREAD     - errors in multithreading functions (only for Mt version)
 */
 
 MY_STDAPI LzmaCompress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,
-        int coder_level, int numThreads) {
+                       uint8_t coder_level, int numThreads) {
     CLzmaEncProps props;
     LzmaEncProps_Init(&props);
     LzmaEncProps_Set(&props, coder_level, srcLen, numThreads);
@@ -158,7 +157,7 @@ MY_STDAPI LzmaUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
     return LzmaDecode(dest, destLen, src, srcLen, props, (unsigned) propsSize, LZMA_FINISH_ANY, &status, &g_Alloc);
 }
 
-char* Compress(size_t &destLen, const char *src, size_t srcLen, int coder_type, int coder_level) {
+char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level) {
 
     unsigned char* dest = 0;
     int res = 0;
@@ -177,11 +176,13 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, int coder_type, 
         fprintf(stderr, "Error during compression (code: %d).\n", res);
         exit(EXIT_FAILURE);
     }
+    cout << "Compressed " << srcLen << " bytes to " << destLen << " bytes (ratio "
+        << PgSAHelpers::toString(((double) destLen)/srcLen, 3) << ")." << endl;
 
     return (char*) dest;
 }
 
-void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, int coder_type) {
+void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type) {
     int res = 0;
 
     size_t outLen = destLen;
@@ -206,4 +207,27 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, int 
         fprintf(stderr, "Error during decompression (code: %d).\n", res);
         exit(EXIT_FAILURE);
     }
+}
+
+void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level) {
+    PgSAHelpers::writeValue<uint64_t>(dest, srcLen, false);
+    size_t compLen = 0;
+    char* compSeq = Compress(compLen, src, srcLen, coder_type, coder_level);
+    PgSAHelpers::writeValue<uint64_t>(dest, compLen, false);
+    PgSAHelpers::writeValue<uint8_t>(dest, coder_type, false);
+    PgSAHelpers::writeArray(dest, (void*) compSeq, compLen);
+    delete(compSeq);
+}
+
+void readCompressed(istream &src, string& dest) {
+    size_t destLen = 0;
+    size_t srcLen = 0;
+    uint8_t coder_type = 0;
+    PgSAHelpers::readValue<uint64_t>(src, destLen, false);
+    dest.resize(destLen);
+    PgSAHelpers::readValue<uint64_t>(src, srcLen, false);
+    PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
+    const char* srcArray = (const char*) PgSAHelpers::readArray(src, srcLen);
+    Uncompress((char*) dest.data(), destLen, srcArray, srcLen, coder_type);
+    delete(srcArray);
 }

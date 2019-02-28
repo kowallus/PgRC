@@ -143,9 +143,9 @@ namespace PgTools {
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
-            SimplePgMatcher::matchPgInPgFiles(hqPg->getPgSequence(), lqPg->getPgSequence(),
-                                              pgSeqFinalHqPrefix, pgSeqFinalLqPrefix, targetPgMatchLength);
-            compressSequences();
+            SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(), pgrcOut,
+                                          pgSeqFinalHqPrefix, pgSeqFinalLqPrefix, targetPgMatchLength);
+//            testCompressSequences();
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -312,13 +312,11 @@ namespace PgTools {
 
     }
 
-    void PgRCManager::compressSequences() {
+    void PgRCManager::testCompressSequences() {
         string& hqPgSeq = hqPg->getPgSequence();
-        cout << "Before: " << hqPgSeq.size() << endl;
         size_t compLen = 0;
         char* compSeq = Compress(compLen, hqPgSeq.data(), hqPgSeq.size(),
                 LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
-        cout << "After: " << compLen << endl;
         string destBuf;
         destBuf.resize(hqPgSeq.size());
         Uncompress((char*) destBuf.data(), hqPgSeq.size(), compSeq, compLen, LZMA_CODER);
@@ -355,7 +353,7 @@ namespace PgTools {
         if (std::ifstream(pgRCFileName))
             remove(pgRCFileName.c_str());
         if (rename(pgRCTempFileName.c_str(), pgRCFileName.c_str()) != 0) {
-            fprintf(stderr, "Error preparing output file: %s\n", pgRCFileName);
+            fprintf(stderr, "Error preparing output file: %s\n", pgRCFileName.c_str());
             exit(EXIT_FAILURE);
         };
     }
@@ -384,14 +382,17 @@ namespace PgTools {
         string tmpDirectoryPath = pgRCFileName + "/";
         ifstream pgrcIn(pgRCFileName);
         if (pgrcIn) {
-            for(int i = 0; i < strlen(PGRC_HEADER); i++)
+            for(int i = 0; i < strlen(PGRC_HEADER); i++) {
                 if (PGRC_HEADER[i] != pgrcIn.get()) {
                     fprintf(stderr, "Error processing header.\n");
                     exit(EXIT_FAILURE);
                 }
+            }
             separateNReads = (bool) pgrcIn.get();
+
             pgrcIn >> tmpDirectoryPath;
             tmpDirectoryPath = tmpDirectoryPath + "/";
+            pgrcIn.get();
         }
 
         pgMappedHqPrefix = tmpDirectoryPath + GOOD_INFIX;
@@ -400,7 +401,7 @@ namespace PgTools {
         pgSeqFinalLqPrefix = tmpDirectoryPath + BAD_INFIX;
         pgNPrefix = tmpDirectoryPath + N_INFIX;
 
-        loadAllPgs();
+        loadAllPgs(pgrcIn);
         cout << "... loaded Pgs (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
 
         if (srcFastqFile.empty()) {
@@ -561,8 +562,12 @@ namespace PgTools {
 
     }
 
-    void PgRCManager::loadAllPgs() {
-        string tmpPg = SimplePgMatcher::restoreAutoMatchedPg(pgSeqFinalHqPrefix, true);
+    void PgRCManager::loadAllPgs(istream& pgrcIn) {
+        string hqPgSeq, lqPgSeq;
+        if (pgrcIn)
+            SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgSeq, lqPgSeq);
+        else
+            hqPgSeq = SimplePgMatcher::restoreAutoMatchedPg(pgSeqFinalHqPrefix, true);
 
         PseudoGenomeHeader* pgh = 0;
         ReadsSetProperties* prop = 0;
@@ -570,15 +575,15 @@ namespace PgTools {
         SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalHqPrefix, pgh, prop, plainTextReadMode);
         ConstantAccessExtendedReadsList* caeRl =
                 ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalHqPrefix, pgh->getPseudoGenomeLength());
-        hqPg = new SeparatedPseudoGenome(move(tmpPg), caeRl, prop);
+        hqPg = new SeparatedPseudoGenome(move(hqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
 
         SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalLqPrefix, pgh, prop, plainTextReadMode);
-        tmpPg = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgSeqFinalLqPrefix, true, plainTextReadMode);
-        caeRl =
-                ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
-        lqPg = new SeparatedPseudoGenome(move(tmpPg), caeRl, prop);
+        if (!pgrcIn)
+            lqPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgSeqFinalLqPrefix, true, plainTextReadMode);
+        caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
+        lqPg = new SeparatedPseudoGenome(move(lqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
     }

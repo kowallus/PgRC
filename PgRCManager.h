@@ -241,7 +241,7 @@ namespace PgTools {
 
         void finalizeCompression();
 
-        void loadAllPgs();
+        void loadAllPgs(istream& pgrcIn);
         void decompressPgRC();
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
@@ -260,7 +260,7 @@ namespace PgTools {
 
         uint_reads_cnt_max dnaStreamSize() const;
 
-        void compressSequences();
+        void testCompressSequences();
     };
 }
 

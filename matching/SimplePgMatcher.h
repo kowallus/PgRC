@@ -13,19 +13,16 @@ namespace PgTools {
 
     class SimplePgMatcher {
     private:
-
-        const string srcPgPrefix;
         uint32_t targetMatchLength;
 
         TextMatcher* matcher;
         const string& srcPg;
 
-        string targetPgPrefix;
         uint64_t destPgLength;
         vector<TextMatch> textMatches;
         bool revComplMatching;
 
-        void exactMatchPg(string& destPg, uint32_t minMatchLength);
+        void exactMatchPg(string& destPg, bool destPgIsSrcPg, uint32_t minMatchLength);
 
         void correctDestPositionDueToRevComplMatching();
         void resolveMappingCollisionsInTheSameText();
@@ -33,22 +30,34 @@ namespace PgTools {
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
     public:
-        SimplePgMatcher(const string& srcPgPrefix, const string& srcPg, uint32_t targetMatchLength,
+        SimplePgMatcher(const string& srcPg, uint32_t targetMatchLength,
                 uint32_t minMatchLength = UINT32_MAX);
 
         virtual ~SimplePgMatcher();
 
-        void markAndRemoveExactMatches(const string &destPgPrefix, string &destPg, bool revComplMatching,
-                uint32_t minMatchLength = UINT32_MAX);
+        void markAndRemoveExactMatches(bool destPgIsSrcPg,
+                string &destPg, bool revComplMatching, uint32_t minMatchLength = UINT32_MAX);
 
-        static void matchPgInPgFiles(string& hqPgSequence, string& lqPgSequence,
-                const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
-                uint32_t minMatchLength = UINT32_MAX);
+        string pgMapped;
+        string pgMapOff;
+        string pgMapLen;
 
-        static string restoreMatchedPg(string &srcPg, const string &destPgPrefix, bool revComplMatching,
-                                       bool plainTextReadMode, bool srcIsDest = false);
+        static void matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut,
+                                 const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
+                                 uint32_t minMatchLength = UINT32_MAX);
+
+        static void restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence);
+
+        static string restoreMatchedPg(string &srcPg, size_t srcLen, const string& destPg,
+                istream &pgMapOffSrc, istream &pgMapLenSrc,
+                bool revComplMatching, bool plainTextReadMode, bool srcIsDest = false);
+
+        static string restoreMatchedPg(string &srcPg, const string& destPgPrefix,
+                                       bool revComplMatching, bool plainTextReadMode);
 
         static string restoreAutoMatchedPg(const string &pgPrefix, bool revComplMatching);
+
+        void writeMatchingResult(const string &pgPrefix);
     };
 }
 
