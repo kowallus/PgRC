@@ -93,6 +93,16 @@ set(MATCHER_FILES
         matching/TextMatchers.cpp matching/TextMatchers.h
         matching/copmem/CopMEMMatcher.cpp matching/copmem/CopMEMMatcher.h)
 
+set(LZMA_FILES
+        lzma/LzmaLib.h lzma/LzmaLib.c
+        lzma/LzmaEnc.h lzma/LzmaEnc.c
+        lzma/LzmaDec.h lzma/LzmaDec.c
+        lzma/Alloc.h lzma/Alloc.c
+        lzma/LzFindMt.h lzma/LzFindMt.c
+        lzma/LzFind.h lzma/LzFind.c
+        lzma/Threads.h lzma/Threads.c
+        )
+
 add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
 add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
 add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
@@ -103,7 +113,8 @@ add_executable(PgValidator PgValidator.cpp ${PG_FILES})
 add_executable(Pgs2Pairs Pgs2Pairs.cpp ${PG_FILES})
 
 set(CMAKE_EXE_LINKER_FLAGS " -static")
-add_executable(PgRC PgRC.cpp ${MATCHER_FILES} ${PG_GEN_FILES} PgRCManager.cpp PgRCManager.h)
+add_executable(PgRC PgRC.cpp PgRCManager.cpp PgRCManager.h ${MATCHER_FILES} ${PG_GEN_FILES} ${LZMA_FILES})
+target_compile_definitions(PgRC PUBLIC "-D_WIN32 -DUNDER_CE")
 target_link_libraries(PgRC -static-libgcc -static-libstdc++)
 add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 target_link_libraries(PgMatcher -static-libgcc -static-libstdc++)

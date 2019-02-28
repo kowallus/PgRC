@@ -3,6 +3,7 @@
 
 #include "utils/helper.h"
 #include "pgsaconfig.h"
+#include "lzma/LzmaLib.h"
 
 #include "readsset/DividedPCLReadsSets.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
@@ -255,6 +256,8 @@ namespace PgTools {
         void validateAllPgs();
 
         uint_reads_cnt_max dnaStreamSize() const;
+
+        void compressSequences();
     };
 }
 

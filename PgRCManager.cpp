@@ -135,6 +135,7 @@ namespace PgTools {
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
             SimplePgMatcher::matchPgInPgFiles(hqPg->getPgSequence(), lqPg->getPgSequence(),
                                               pgSeqFinalHqPrefix, pgSeqFinalLqPrefix, targetPgMatchLength);
+            compressSequences();
         }
         gooder_t = clock();
         if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -298,6 +299,35 @@ namespace PgTools {
 
     void PgRCManager::persistMEMMappedPgSequences() {
 
+    }
+
+    void PgRCManager::compressSequences() {
+        string& hqPgSeq = hqPg->getPgSequence();
+        size_t propsSize = LZMA_PROPS_SIZE;
+        size_t destLen = hqPgSeq.size() + hqPgSeq.size() / 3 + 128;
+        string outBuf;
+        outBuf.resize(propsSize + destLen);
+        cout << "Before: " << hqPgSeq.size() << endl;
+        int res = LzmaCompress(
+                (unsigned char*) outBuf.data() + LZMA_PROPS_SIZE,
+                &destLen,
+                (unsigned char*) hqPgSeq.data(), hqPgSeq.size(),
+                (unsigned char*) outBuf.data(), &propsSize,
+                -1, 0, -1, -1, -1, -1, -1);
+
+        assert(propsSize == LZMA_PROPS_SIZE);
+        assert(res == SZ_OK);
+        size_t outBufSize = propsSize + destLen;
+        cout << "After: " << outBufSize << endl;
+        outBuf.resize(outBufSize);
+        destLen = hqPgSeq.size();
+        string destBuf;
+        destBuf.resize(destLen);
+        res = LzmaUncompress((unsigned char*) destBuf.data(),
+                       &destLen,
+                       (unsigned char*) outBuf.data() + LZMA_PROPS_SIZE, &outBufSize,
+                       (unsigned char*) outBuf.data(), propsSize);
+        cout << "Finally: " << (destBuf == hqPgSeq?"OK":"error") << endl;
     }
 
     void PgRCManager::reportTimes() {
