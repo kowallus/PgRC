@@ -15,12 +15,21 @@ namespace PgTools {
     static const char *const N_INFIX = "N";
     static const char *const DIVISION_EXTENSION = ".div";
 
+    static const char *const TEMPORARY_FILE_SUFFIX = ".temp";
+    static const char *const PGRC_HEADER = "PgRC";
+
     uint_read_len_max probeReadsLength(const string &srcFastqFile);
     clock_t getTimeInSec(clock_t end_t, clock_t begin_t) { return ((end_t - begin_t) / CLOCKS_PER_SEC); }
 
     void PgRCManager::prepareChainData() {
         qualityDivision = error_limit_in_promils < 1000;
         readLength = probeReadsLength(srcFastqFile);
+
+        if (std::ifstream(pgRCFileName))
+            fprintf(stderr, "Warning: file %s already exists\n", pgRCFileName.data());
+        pgrcOut = fstream(pgRCFileName + TEMPORARY_FILE_SUFFIX, ios::out | ios::binary | ios::trunc);
+        pgrcOut.write(PGRC_HEADER, strlen(PGRC_HEADER));
+        pgrcOut.put(separateNReads);
 
         string tmpDirectoryName = pgRCFileName;
         if (qualityDivision)
@@ -36,7 +45,6 @@ namespace PgTools {
                 + toString(readsExactMatchingChars))
                 + "_M" + toString(minCharsPerMismatch)
                 + "_p" + toString(targetPgMatchLength);
-
         if (skipStages == 0) {
             mode_t mode = 0777;
             int nError = mkdir(tmpDirectoryName.data(), mode);
@@ -50,6 +58,8 @@ namespace PgTools {
                 }
             }
         }
+        pgrcOut.write(tmpDirectoryName.data(), tmpDirectoryName.length());
+        pgrcOut << endl;
 
         lqDivisionFile = tmpDirectoryName + "/" + BAD_INFIX + DIVISION_EXTENSION;
         nDivisionFile = tmpDirectoryName + "/" + N_INFIX + DIVISION_EXTENSION;
@@ -144,6 +154,7 @@ namespace PgTools {
             else
                 SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
         }
+        finalizeCompression();
         disposeChainData();
         reportTimes();
     }
@@ -338,6 +349,17 @@ namespace PgTools {
         fout << getTimeInSec(clock(), gooder_t) << endl;
     }
 
+    void PgRCManager::finalizeCompression() {
+        pgrcOut.close();
+        string pgRCTempFileName = pgRCFileName + TEMPORARY_FILE_SUFFIX;
+        if (std::ifstream(pgRCFileName))
+            remove(pgRCFileName.c_str());
+        if (rename(pgRCTempFileName.c_str(), pgRCFileName.c_str()) != 0) {
+            fprintf(stderr, "Error preparing output file: %s\n", pgRCFileName);
+            exit(EXIT_FAILURE);
+        };
+    }
+
     void PgRCManager::disposeChainData() {
         if (divReadsSets) {
             delete (divReadsSets);
@@ -359,8 +381,19 @@ namespace PgTools {
 
     void PgRCManager::decompressPgRC() {
         start_t = clock();
-
         string tmpDirectoryPath = pgRCFileName + "/";
+        ifstream pgrcIn(pgRCFileName);
+        if (pgrcIn) {
+            for(int i = 0; i < strlen(PGRC_HEADER); i++)
+                if (PGRC_HEADER[i] != pgrcIn.get()) {
+                    fprintf(stderr, "Error processing header.\n");
+                    exit(EXIT_FAILURE);
+                }
+            separateNReads = (bool) pgrcIn.get();
+            pgrcIn >> tmpDirectoryPath;
+            tmpDirectoryPath = tmpDirectoryPath + "/";
+        }
+
         pgMappedHqPrefix = tmpDirectoryPath + GOOD_INFIX;
         pgMappedLqPrefix = tmpDirectoryPath + BAD_INFIX;
         pgSeqFinalHqPrefix = tmpDirectoryPath + GOOD_INFIX;

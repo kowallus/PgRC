@@ -59,6 +59,7 @@ namespace PgTools {
         // CHAIN VARIABLES
         uint_read_len_max readLength;
         uint8_t stageCount;
+        fstream pgrcOut;
 
         DividedPCLReadsSets* divReadsSets = 0;
         SeparatedPseudoGenome *hqPg = 0;
@@ -237,6 +238,8 @@ namespace PgTools {
         void persistMappedReadsQualityDivision();
 
         void prepareForPgMatching();
+
+        void finalizeCompression();
 
         void loadAllPgs();
         void decompressPgRC();
