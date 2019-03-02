@@ -102,6 +102,7 @@ namespace PgSAHelpers {
     void* readWholeArray(std::istream&, size_t& arraySizeInBytes);
     void* readWholeArrayFromFile(string srcFile, size_t& arraySizeInBytes);
     void writeArrayToFile(string destFile, void* srcArray, size_t arraySize);
+    void writeStringToFile(string destFile, const string &src);
 
     extern bool plainTextWriteMode;
     const static string TEXT_MODE_ID = "TXT";

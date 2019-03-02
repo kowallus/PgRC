@@ -8,6 +8,7 @@
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 #include "../readslist/iterator/ReadsListIteratorExtendedWrapper.h"
 #include "../readslist/SeparatedExtendedReadsList.h"
+#include "../../utils/LzmaLib.h"
 
 namespace PgTools {
 
@@ -23,7 +24,7 @@ namespace PgTools {
         static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
                 IndexesMapping* orgIndexesMapping, bool revComplPairFile = false);
         static void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, const string &pseudoGenomePrefix,
-            bool skipPgSequence = false);
+            ostream* pgrcOut = 0, bool skipPgSequence = false);
         static SeparatedPseudoGenome* loadSeparatedPseudoGenome(const string &pgPrefix, bool skipReadsList = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
@@ -69,23 +70,26 @@ namespace PgTools {
 
     class SeparatedPseudoGenomeOutputBuilder {
     private:
-        const string &pseudoGenomePrefix;
-        ofstream* pgDest = 0;
-        ofstream* pgPropDest = 0;
-        ofstream* rlPosDest = 0;
-        ofstream* rlOrgIdxDest = 0;
-        ofstream* rlRevCompDest = 0;
-        ofstream* rlMisCntDest = 0;
-        ofstream* rlMisSymDest = 0;
-        ofstream* rlMisPosDest = 0;
+        const string pseudoGenomePrefix;
 
-        ofstream* rlOffDest = 0;
-        ofstream* rlMisRevOffDest = 0;
+        bool onTheFlyMode() { return !pseudoGenomePrefix.empty(); }
+
+        ostream* pgDest = 0;
+        ostream* pgPropDest = 0;
+        ostream* rlPosDest = 0;
+        ostream* rlOrgIdxDest = 0;
+        ostream* rlRevCompDest = 0;
+        ostream* rlMisCntDest = 0;
+        ostream* rlMisSymDest = 0;
+        ostream* rlMisPosDest = 0;
+
+        ostream* rlOffDest = 0;
+        ostream* rlMisRevOffDest = 0;
 
         bool disableRevComp = false;
         bool disableMismatches = false;
 
-        void initDest(ofstream* &dest, const string &fileSuffix);
+        void initDest(ostream *&dest, const string &fileSuffix);
         void initReadsListDests();
 
         DefaultReadsListIteratorInterface *rlIt = 0;
@@ -97,11 +101,15 @@ namespace PgTools {
         PseudoGenomeHeader* pgh = 0;
         ReadsSetProperties* rsProp = 0;
 
-        void freeDest(ofstream* &dest);
+        void prebuildAssert(bool requireOnTheFlyMode);
+        void buildProps();
+
+        void freeDest(ostream* &dest);
         void freeDests();
     public:
 
-        SeparatedPseudoGenomeOutputBuilder(const string &pseudoGenomePrefix, bool disableRevComp = false, bool disableMismatches = false);
+        SeparatedPseudoGenomeOutputBuilder(bool disableRevComp = false, bool disableMismatches = false);
+        SeparatedPseudoGenomeOutputBuilder(const string pseudoGenomePrefix, bool disableRevComp = false, bool disableMismatches = false);
 
         virtual ~SeparatedPseudoGenomeOutputBuilder();
 
@@ -119,6 +127,11 @@ namespace PgTools {
         void appendPseudoGenome(const string &pg);
 
         void build();
+        void build(const string &pgPrefix);
+        void compressedBuild(ostream &pgrcOut);
+
+        void compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type, uint8_t coder_level, int coder_param = -1);
+        void destToFile(ostream *dest, const string &fileName);
     };
 
 

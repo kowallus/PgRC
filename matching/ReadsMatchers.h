@@ -47,7 +47,7 @@ namespace PgTools {
         virtual void executeMatching(bool revCompMode = false) = 0;
         virtual void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) = 0;
 
-        virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
+        virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
                 bool enableRevComp, bool enableMismatches) = 0;
 
         virtual void initEntryUpdating() = 0;
@@ -71,7 +71,7 @@ namespace PgTools {
 
         void writeMatchesInfo(const string &outPrefix);
 
-        void writeIntoPseudoGenome(const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
+        void writeIntoPseudoGenome(ostream& pgrcOut, const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
 
         virtual const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches = NOT_MATCHED_COUNT - 1);
 
@@ -87,7 +87,7 @@ namespace PgTools {
         void executeMatching(bool revCompMode = false);
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
-        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
+        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
                 bool enableRevComp, bool enableMismatches) override;
 
         void initEntryUpdating() override {};
@@ -114,7 +114,7 @@ namespace PgTools {
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
         void printApproxMatchingStats();
 
-        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(const string &outPgPrefix,
+        SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
                                                                                      bool enableRevComp, bool enableMismatches) override;
         void initEntryUpdating() override;
         string currentRead;
@@ -197,7 +197,7 @@ namespace PgTools {
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars, uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch,
-                        char preMatchingMode, char matchingMode, bool dumpInfo, const string &pgDestFilePrefix,
+                        char preMatchingMode, char matchingMode, bool dumpInfo, ostream& pgrcOut, const string &pgDestFilePrefix,
                         IndexesMapping* orgIndexesMapping);
 }
 

@@ -471,14 +471,14 @@ namespace PgTools {
     }
 
     SeparatedPseudoGenomeOutputBuilder *AbstractReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            const string &outPgPrefix, bool enableRevComp, bool enableMismatches) {
-        return new SeparatedPseudoGenomeOutputBuilder(outPgPrefix,
+            bool enableRevComp, bool enableMismatches) {
+        return new SeparatedPseudoGenomeOutputBuilder(
                 !enableRevComp && !this->revComplPg, !enableMismatches && this->maxMismatches == 0);
     }
 
     SeparatedPseudoGenomeOutputBuilder *DefaultReadsExactMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            const string &outPgPrefix, bool enableRevComp, bool enableMismatches){
-        return new SeparatedPseudoGenomeOutputBuilder(outPgPrefix,
+            bool enableRevComp, bool enableMismatches){
+        return new SeparatedPseudoGenomeOutputBuilder(
                 !enableRevComp && !this->revComplPg, !enableMismatches);
     }
 
@@ -493,7 +493,7 @@ namespace PgTools {
 
     void AbstractReadsApproxMatcher::closeEntryUpdating() { }
 
-    void DefaultReadsMatcher::writeIntoPseudoGenome(const string &outPgPrefix, IndexesMapping* orgIndexesMapping) {
+    void DefaultReadsMatcher::writeIntoPseudoGenome(ostream& pgrcOut, const string &outPgPrefix, IndexesMapping* orgIndexesMapping) {
         clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
@@ -508,7 +508,7 @@ namespace PgTools {
         DefaultReadsListIteratorInterface* rlIt = sPg->getReadsList();
         bool isRevCompEnabled = sPg->getReadsList()->isRevCompEnabled();
         bool areMismatchesEnabled = sPg->getReadsList()->areMismatchesEnabled();
-        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(outPgPrefix,
+        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(
                 isRevCompEnabled, areMismatchesEnabled);
         builder->setReadsSourceIterator(rlIt);
         builder->copyPseudoGenomeProperties(sPg);
@@ -521,7 +521,8 @@ namespace PgTools {
             builder->writeExtraReadEntry(entry);
         }
         builder->writeReadsFromIterator();
-        builder->build();
+        builder->build(outPgPrefix);
+        builder->compressedBuild(pgrcOut);
         delete(builder);
         closeEntryUpdating();
         cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
@@ -545,7 +546,7 @@ namespace PgTools {
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars, uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch,
-                        char preMatchingMode, char matchingMode, bool dumpInfo, const string &pgDestFilePrefix,
+                        char preMatchingMode, char matchingMode, bool dumpInfo, ostream &pgrcOut, const string &pgDestFilePrefix,
                         IndexesMapping* orgIndexesMapping) {
         uint_read_len_max readLength = readsSet->maxReadLength();
         uint8_t maxMismatches = readLength / minCharsPerMismatch;
@@ -628,7 +629,7 @@ namespace PgTools {
         const vector<bool> res = matcher->getMatchedReadsBitmap();
 
         if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
-            matcher->writeIntoPseudoGenome(pgDestFilePrefix, orgIndexesMapping);
+            matcher->writeIntoPseudoGenome(pgrcOut, pgDestFilePrefix, orgIndexesMapping);
 
         delete(matcher);
         return res;

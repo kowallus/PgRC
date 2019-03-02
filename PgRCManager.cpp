@@ -240,7 +240,7 @@ namespace PgTools {
                 hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
-                false, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
+                false, pgrcOut, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
     }
 
@@ -251,7 +251,7 @@ namespace PgTools {
     }
 
     void PgRCManager::persistMappedHQPgReadsList() {
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgMappedHqPrefix, true);
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgMappedHqPrefix, 0, true);
     }
 
     void PgRCManager::persistHQPgSequence() {
@@ -283,7 +283,7 @@ namespace PgTools {
     }
 
     void PgRCManager::persistLQPgReadsList() {
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix, true);
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix, &pgrcOut, true);
     }
 
     void PgRCManager::runNPgGeneration() {

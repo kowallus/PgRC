@@ -108,6 +108,10 @@ void PgSAHelpers::writeArrayToFile(string destFile, void* srcArray, size_t array
     cout << "Write " << arraySize << " bytes to " << destFile << " in " << clock_millis() << " msec \n";
 }
 
+void PgSAHelpers::writeStringToFile(string destFile, const string &src) {
+    writeArrayToFile(destFile, (void*) src.data(), src.length());
+}
+
 bool PgSAHelpers::plainTextWriteMode = false;
 
 void PgSAHelpers::writeReadMode(std::ostream &dest, bool plainTextWriteMode) {

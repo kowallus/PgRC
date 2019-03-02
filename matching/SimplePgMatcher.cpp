@@ -77,9 +77,9 @@ namespace PgTools {
         if (destPgIsSrcPg)
             resolveMappingCollisionsInTheSameText();
 
-        stringstream pgDest;
-        stringstream pgMapOffDest;
-        stringstream pgMapLenDest;
+        ostringstream pgDest;
+        ostringstream pgMapOffDest;
+        ostringstream pgMapLenDest;
 
         PgSAHelpers::writeUIntByteFrugal(pgMapLenDest, minMatchLength);
 
@@ -128,9 +128,9 @@ namespace PgTools {
         destPg.resize(nPos);
         PgSAHelpers::writeArray(pgDest, (void*) (destPg.data()), destPg.length());
 
-        pgMapped = std::move(pgDest.str());
-        pgMapOff = std::move(pgMapOffDest.str());
-        pgMapLen = std::move(pgMapLenDest.str());
+        pgMapped = pgDest.str();
+        pgMapOff = pgMapOffDest.str();
+        pgMapLen = pgMapLenDest.str();
 
         cout << "Preparing output time: " << clock_millis(post_start) << endl;
         cout << "Final size of Pg: " << nPos << " (removed: " <<
@@ -138,12 +138,12 @@ namespace PgTools {
     }
 
     void SimplePgMatcher::writeMatchingResult(const string &pgPrefix) {
-        PgSAHelpers::writeArrayToFile(pgPrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX,
-                                      (void*) pgMapped.data(), pgMapped.length());
-        PgSAHelpers::writeArrayToFile(pgPrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX,
-                                      (void*) pgMapOff.data(), pgMapOff.length());
-        PgSAHelpers::writeArrayToFile(pgPrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX,
-                                      (void*) pgMapLen.data(), pgMapLen.length());
+        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX,
+                                      pgMapped);
+        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX,
+                                      pgMapOff);
+        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomePersistence::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX,
+                                      pgMapLen);
     }
 
     void SimplePgMatcher::resolveMappingCollisionsInTheSameText() {
@@ -165,6 +165,7 @@ namespace PgTools {
                                        const string &hqPgPrefix, const string &lqPgPrefix,
                                        uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
         clock_t ref_start = clock();
+        bool isPgLengthStd = hqPgSequence.length() <= UINT32_MAX;
         PgTools::SimplePgMatcher matcher(hqPgSequence, targetMatchLength, minMatchLength);
         cout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
         clock_t lq_start = clock();
@@ -188,11 +189,21 @@ namespace PgTools {
 
         pgSeq.append(std::move(lqPgMapped));
         lqPgMapped.clear();
-        writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
-        writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
-        writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
-        writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
-        writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
+        cout << "Joined mapped sequences (good&bad)... ";
+        writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+                PGRC_DATAPERIODCODE_8_t);
+        cout << "Good sequence mapping - offsets... ";
+        writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+                isPgLengthStd?PGRC_DATAPERIODCODE_32_t:PGRC_DATAPERIODCODE_64_t);
+        cout << "lengths... ";
+        writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+                        PGRC_DATAPERIODCODE_8_t);
+        cout << "Bad sequence mapping - offsets... ";
+        writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+                        isPgLengthStd?PGRC_DATAPERIODCODE_32_t:PGRC_DATAPERIODCODE_64_t);
+        cout << "lengths... ";
+        writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+                        PGRC_DATAPERIODCODE_8_t);
     }
 
     void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence) {
