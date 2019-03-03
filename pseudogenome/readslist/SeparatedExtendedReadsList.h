@@ -55,6 +55,10 @@ namespace PgTools {
         static ConstantAccessExtendedReadsList* loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
                 uint_pg_len_max pgLengthPosGuard = 0, bool skipMismatches = false);
 
+        static ConstantAccessExtendedReadsList* loadConstantAccessExtendedReadsList(istream& pgrcIn,
+                                                                PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp,
+                                                                const string pseudoGenomePrefix = "");
+
         bool isRevCompEnabled();
 
         bool areMismatchesEnabled();
@@ -65,17 +69,21 @@ namespace PgTools {
     template <int maxMismatches>
     class SeparatedExtendedReadsListIterator : public ExtendedReadsListIteratorInterface<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> {
     private:
-        const string &pseudoGenomePrefix;
-        ifstream *rlPosSrc = 0;
-        ifstream *rlOrgIdxSrc = 0;
-        ifstream *rlRevCompSrc = 0;
-        ifstream *rlMisCntSrc = 0;
-        ifstream *rlMisSymSrc = 0;
-        ifstream *rlMisOffSrc = 0;
+        const string pseudoGenomePrefix;
 
-        ifstream* rlOffSrc = 0;
-        ifstream* rlMisRevOffSrc = 0;
+        bool fromFileMode() { return !pseudoGenomePrefix.empty(); }
 
+        istream *rlPosSrc = 0;
+        istream *rlOrgIdxSrc = 0;
+        istream *rlRevCompSrc = 0;
+        istream *rlMisCntSrc = 0;
+        istream *rlMisSymSrc = 0;
+        istream *rlMisOffSrc = 0;
+
+        istream* rlOffSrc = 0;
+        istream* rlMisRevOffSrc = 0;
+
+        bool ownProps = true;
         PseudoGenomeHeader* pgh = 0;
         ReadsSetProperties* rsProp = 0;
         bool plainTextReadMode = false;
@@ -84,12 +92,16 @@ namespace PgTools {
 
         ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> entry;
 
-        void initSrc(ifstream *&src, const string &fileSuffix);
+        void initSrc(istream *&src, const string &fileSuffix);
+        void initSrc(istream *&src, istream &pgrcIn);
         void initSrcs();
-        void freeSrc(ifstream *&src);
+        void initSrcs(istream &pgrcIn);
+        void freeSrc(istream *&src);
         void freeSrcs();
 
         SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix);
+        SeparatedExtendedReadsListIterator(istream& pgrcIn, PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp,
+                                           const string pseudoGenomePrefix = "");
 
     public:
         ~SeparatedExtendedReadsListIterator() override;
@@ -105,9 +117,15 @@ namespace PgTools {
 
         static SeparatedExtendedReadsListIterator<maxMismatches>* getIterator(const string &pseudoGenomePrefix);
 
+
         friend ConstantAccessExtendedReadsList* ConstantAccessExtendedReadsList::
             loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
                 uint_pg_len_max pgLengthPosGuard, bool skipMismatches);
+
+        friend ConstantAccessExtendedReadsList* ConstantAccessExtendedReadsList::
+            loadConstantAccessExtendedReadsList(istream& pgrcIn,
+                                                PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp,
+                                                const string pseudoGenomePrefix);
     };
 
     typedef SeparatedExtendedReadsListIterator<UINT8_MAX> DefaultSeparatedExtendedReadsListIterator;

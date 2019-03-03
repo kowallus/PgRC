@@ -109,7 +109,7 @@ namespace PgSAHelpers {
     const static string BINARY_MODE_ID = "BIN";
 
     void writeReadMode(std::ostream &dest, bool plainTextWriteMode);
-    bool readReadMode(std::istream &src);
+    bool confirmTextReadMode(std::istream &src);
 
     template<typename t_val>
     void writeValue(std::ostream &dest, const t_val value, bool plainTextWriteMode) {

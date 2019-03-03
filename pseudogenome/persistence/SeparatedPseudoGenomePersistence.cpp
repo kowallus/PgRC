@@ -168,7 +168,7 @@ namespace PgTools {
         }
         pgh = new PseudoGenomeHeader(pgPropSrc);
         rsProp = new ReadsSetProperties(pgPropSrc);
-        plainTextReadMode = readReadMode(pgPropSrc);
+        plainTextReadMode = confirmTextReadMode(pgPropSrc);
         pgPropSrc.close();
     }
 
@@ -278,7 +278,8 @@ namespace PgTools {
             fprintf(stderr, "Error during compression: an input stream missing.\n");
             exit(EXIT_FAILURE);
         }
-        writeCompressed(pgrcOut, ((ostringstream*) dest)->str(), coder_type, coder_level, coder_param);
+        const string tmp = ((ostringstream*) dest)->str();
+        writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::freeDest(ostream* &dest) {
@@ -322,6 +323,10 @@ namespace PgTools {
         pgh->setReadsCount(readsCounter);
         rsProp->readsCount = readsCounter;
         rsProp->allReadsLength = rsProp->constantReadLength ? readsCounter * rsProp->maxReadLength : -1;
+        if (pgPropDest) {
+            delete (pgPropDest);
+            pgPropDest = 0;
+        }
         initDest(pgPropDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_PROPERTIES_SUFFIX);
         pgh->write(*pgPropDest);
         rsProp->write(*pgPropDest);

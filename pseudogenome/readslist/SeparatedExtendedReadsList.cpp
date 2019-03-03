@@ -7,10 +7,22 @@ namespace PgTools {
     template <int maxMismatches>
     SeparatedExtendedReadsListIterator<maxMismatches>::SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix)
             : pseudoGenomePrefix(pseudoGenomePrefix) {
+        ownProps = true;
         SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pseudoGenomePrefix, pgh, rsProp, plainTextReadMode);
         if (PgSAReadsSet::isReadLengthMin(pgh->getMaxReadLength()))
             PgSAHelpers::bytePerReadLengthMode = true;
         initSrcs();
+    }
+
+    template<int maxMismatches>
+    SeparatedExtendedReadsListIterator<maxMismatches>::SeparatedExtendedReadsListIterator(istream& pgrcIn,
+            PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp, const string pseudoGenomePrefix)
+            : pseudoGenomePrefix(pseudoGenomePrefix), pgh(pgh), rsProp(rsProp),
+            plainTextReadMode(false) {
+        ownProps = false;
+        if (PgSAReadsSet::isReadLengthMin(pgh->getMaxReadLength()))
+            PgSAHelpers::bytePerReadLengthMode = true;
+        initSrcs(pgrcIn);
     }
 
     template<int maxMismatches>
@@ -20,17 +32,21 @@ namespace PgTools {
 
     template <int maxMismatches>
     SeparatedExtendedReadsListIterator<maxMismatches>::~SeparatedExtendedReadsListIterator() {
-        delete(pgh);
-        delete(rsProp);
+        if (ownProps) {
+            delete (pgh);
+            delete (rsProp);
+        }
         freeSrcs();
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(ifstream *&src, const string &fileSuffix) {
-        src = new ifstream(pseudoGenomePrefix + fileSuffix, ios_base::in | ios_base::binary);
-        if (src->fail()) {
-            delete (src);
-            src = 0;
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(istream *&src, const string &fileSuffix) {
+        if (!pseudoGenomePrefix.empty()) {
+            src = new ifstream(pseudoGenomePrefix + fileSuffix, ios_base::in | ios_base::binary);
+            if (src->fail()) {
+                delete (src);
+                src = 0;
+            }
         }
     }
 
@@ -51,9 +67,31 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsListIterator<maxMismatches>::freeSrc(ifstream *&src) {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(istream *&src, istream& pgrcIn) {
+        string tmp;
+        readCompressed(pgrcIn, tmp);
+        src = new istringstream(tmp);
+    }
+
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrcs(istream& pgrcIn) {
+        initSrc(rlOffSrc, pgrcIn);
+        initSrc(rlRevCompSrc, pgrcIn);
+        initSrc(rlMisCntSrc, pgrcIn);
+        if (maxMismatches == 0 && rlMisCntSrc) {
+            fprintf(stderr, "WARNING: mismatches unsupported in current routine working on %s Pg\n", pseudoGenomePrefix.c_str());
+        }
+        initSrc(rlMisSymSrc, pgrcIn);
+        initSrc(rlMisRevOffSrc, pgrcIn);
+
+        initSrc(rlOrgIdxSrc, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
+    }
+
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::freeSrc(istream *&src) {
         if (src) {
-            src->close();
+/*            if (fromFileMode())
+                ((ifstream*) src)->close();*/
             delete (src);
             src = 0;
         }
@@ -182,6 +220,69 @@ namespace PgTools {
                 for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
                     PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + res->misCumCount[i],
                             res->getMisCount(i), res->readLength);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    ConstantAccessExtendedReadsList* ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(
+            istream& pgrcIn, PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp, const string pseudoGenomePrefix) {
+        DefaultSeparatedExtendedReadsListIterator rl(pgrcIn, pgh, rsProp, pseudoGenomePrefix);
+        ConstantAccessExtendedReadsList *res = new ConstantAccessExtendedReadsList(rl.pgh->getMaxReadLength());
+        if (rl.plainTextReadMode) {
+            fprintf(stderr, "Unsupported text plain read mode in decompressing ConstantAccessExtendedReadsList.");
+            exit(EXIT_FAILURE);
+        }
+
+        const uint_reads_cnt_max readsCount = rl.pgh->getReadsCount();
+        res->orgIdx.resize(readsCount, 0);
+        if (rl.rlOrgIdxSrc)
+            PgSAHelpers::readArray(*(rl.rlOrgIdxSrc), res->orgIdx.data(), sizeof(uint_reads_cnt_std) * readsCount);
+        if (rl.rlRevCompSrc) {
+            res->revComp.resize(readsCount, false);
+            uint8_t revComp = 0;
+            for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                PgSAHelpers::readValue<uint8_t>(*(rl.rlRevCompSrc), revComp, rl.plainTextReadMode);
+                res->revComp[i] = revComp == 1;
+            }
+        }
+        res->pos.reserve(readsCount + 1);
+        if (rl.rlOffSrc) {
+            uint_pg_len_max pos = 0;
+            uint_read_len_max offset = 0;
+            for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                PgSAHelpers::readReadLengthValue(*(rl.rlOffSrc), offset, rl.plainTextReadMode);
+                pos = pos + offset;
+                res->pos.push_back(pos);
+            }
+        } else {
+            res->pos.resize(readsCount);
+            PgSAHelpers::readArray(*(rl.rlPosSrc), res->pos.data(), sizeof(uint_pg_len_max) * readsCount);
+        }
+        if (pgh->getPseudoGenomeLength())
+            res->pos.push_back(pgh->getPseudoGenomeLength());
+        if (rl.rlMisCntSrc) {
+            uint_reads_cnt_max cumCount = 0;
+            uint8_t mismatchesCount = 0;
+            res->misCumCount.reserve(readsCount + 1);
+            res->misCumCount.push_back(0);
+            for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                PgSAHelpers::readValue<uint8_t>(*(rl.rlMisCntSrc), mismatchesCount, rl.plainTextReadMode);
+                cumCount += mismatchesCount;
+                res->misCumCount.push_back(cumCount);
+            }
+            res->misSymCode.resize(cumCount);
+            PgSAHelpers::readArray(*(rl.rlMisSymSrc), res->misSymCode.data(), sizeof(uint8_t) * cumCount);
+            res->misOff.resize(cumCount);
+            bool misRevOffMode = rl.rlMisOffSrc == 0;
+            PgSAHelpers::readArray(misRevOffMode?*(rl.rlMisRevOffSrc):*(rl.rlMisOffSrc), res->misOff.data(),
+                                   sizeof(uint8_t) * cumCount);
+            if (misRevOffMode) {
+                for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                    PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + res->misCumCount[i],
+                                                                       res->getMisCount(i), res->readLength);
                 }
             }
         }

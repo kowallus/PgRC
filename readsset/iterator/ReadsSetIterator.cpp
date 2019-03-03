@@ -25,7 +25,7 @@ namespace PgSAReadsSet {
             fprintf(stderr, "cannot open reads indexes mapping file %s\n", mappingFile.c_str());
             exit(EXIT_FAILURE);
         }
-        bool plainTextReadMode = readReadMode(*divSource);
+        bool plainTextReadMode = confirmTextReadMode(*divSource);
         uint_reads_cnt_max readsCount;
         readValue(*divSource, readsCount, plainTextReadMode);
         VectorMapping* mapping = new VectorMapping({}, readsCount);

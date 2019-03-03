@@ -118,14 +118,14 @@ void PgSAHelpers::writeReadMode(std::ostream &dest, bool plainTextWriteMode) {
     dest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << "\n";
 }
 
-bool PgSAHelpers::readReadMode(std::istream &src) {
+bool PgSAHelpers::confirmTextReadMode(std::istream &src) {
     string readMode;
     src >> readMode;
     if (readMode != TEXT_MODE_ID && readMode != BINARY_MODE_ID) {
         fprintf(stderr, "Expected READ MODE id (not: %s)\n", readMode.c_str());
         exit(EXIT_FAILURE);
     }
-    src.get();
+    char check = src.get();
     return readMode == TEXT_MODE_ID;
 }
 

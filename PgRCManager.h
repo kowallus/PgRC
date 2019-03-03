@@ -17,6 +17,8 @@
 
 namespace PgTools {
 
+    static const char PGRC_SE_MODE = 0;
+
     class PgRCManager {
     private:
         static const int MIN_CHARS_PER_PGMATCH = 20;
@@ -242,6 +244,7 @@ namespace PgTools {
         void finalizeCompression();
 
         void loadAllPgs(istream& pgrcIn);
+        void loadAllPgs();
         void decompressPgRC();
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;

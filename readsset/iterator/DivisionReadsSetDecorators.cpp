@@ -71,7 +71,7 @@ namespace PgTools {
             bool ignoreNReads, bool ignoreNoNReads)
             :coreIterator(coreIterator), divSource(divSource), visitComplement(visitComplement),
             ignoreNReads(ignoreNReads), ignoreNoNReads(ignoreNoNReads) {
-        plainTextReadMode = readReadMode(*divSource);
+        plainTextReadMode = confirmTextReadMode(*divSource);
         uint_reads_cnt_max readsCount = 0;
         readValue(*divSource, readsCount, plainTextReadMode);
         readValue(*divSource, currentDivIdx, plainTextReadMode);
@@ -134,7 +134,7 @@ namespace PgTools {
         indexesMapping.clear();
         divSource->clear();
         divSource->seekg(0);
-        readReadMode(*divSource);
+        confirmTextReadMode(*divSource);
         uint_reads_cnt_max readsCount = 0;
         readValue(*divSource, readsCount, plainTextReadMode);
         readValue(*divSource, currentDivIdx, plainTextReadMode);
