@@ -100,6 +100,8 @@ set(LZMA_FILES
         lzma/Alloc.h lzma/Alloc.c
         lzma/LzFindMt.h lzma/LzFindMt.c
         lzma/LzFind.h lzma/LzFind.c
+        lzma/Ppmd7.h lzma/Ppmd7.c
+        lzma/Ppmd7Enc.c lzma/Ppmd7Dec.c
         lzma/Threads.h lzma/Threads.c
         )
 

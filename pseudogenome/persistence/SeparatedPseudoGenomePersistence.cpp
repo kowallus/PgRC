@@ -368,15 +368,20 @@ namespace PgTools {
 
         int lzma_coder_param = this->rsProp->maxReadLength <= UINT8_MAX?PGRC_DATAPERIODCODE_8_t:PGRC_DATAPERIODCODE_16_t;
         cout << "Reads list offsets... ";
-        compressDest(rlOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+//        compressDest(rlOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+        compressDest(rlOffDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
         cout << "Reverse complements info... ";
-        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
+//        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
+        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
         cout << "Mismatches counts... ";
-        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+//        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
         cout << "Mismatched symbols codes... ";
-        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+//        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
         cout << "Mismatches offsets (rev-coded)... ";
-        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+//        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
+        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
