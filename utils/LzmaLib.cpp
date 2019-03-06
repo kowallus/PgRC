@@ -76,15 +76,23 @@ fb - Word size (the number of fast bytes).
 void LzmaEncProps_Set(CLzmaEncProps *p, int coder_level, size_t dataLength, int numThreads, 
         int dataPeriodCode = -1) {
     switch(coder_level) {
-        case PGRC_CODER_LEVEL_NORMAL:
-            p->level = -1;
-            p->dictSize = 0;
-            p->lc = -1;
-            p->lp = -1;
-            p->pb = -1;
-            p->fb = -1;
+        case PGRC_CODER_LEVEL_FAST:
+            p->level = 5;
+            p->dictSize = 1 << 24;
+            p->lc = 3;
+            p->lp = dataPeriodCode;
+            p->pb = dataPeriodCode;
+            p->fb = 32;
             break;
-        case PGRC_CODER_LEVEL_MAXIMUM:
+        case PGRC_CODER_LEVEL_NORMAL:
+            p->level = 9;
+            p->dictSize = 3 << 29;
+            p->lc = 3;
+            p->lp = dataPeriodCode;
+            p->pb = dataPeriodCode;
+            p->fb = 273;
+            break;
+        case PGRC_CODER_LEVEL_MAX:
             p->level = 9;
             p->dictSize = 3 << 29;
             p->lc = 3; // test 4 for big files
@@ -103,18 +111,23 @@ void LzmaEncProps_Set(CLzmaEncProps *p, int coder_level, size_t dataLength, int 
 
 void Ppmd7_SetProps(uint32_t &memSize, uint8_t coder_level, size_t dataLength, int& order_param) {
     switch(coder_level) {
+        case PGRC_CODER_LEVEL_FAST:
+            memSize = (uint32_t) 16 << 20;
+            order_param = 2;
+            break;
         case PGRC_CODER_LEVEL_NORMAL:
-            memSize = (uint32_t) 128 << 20;
+            memSize = (uint32_t) 192 << 20;
             if (order_param > 2)
                 order_param--;
             break;
-        case PGRC_CODER_LEVEL_MAXIMUM:
+        case PGRC_CODER_LEVEL_MAX:
             memSize = (uint32_t) 192 << 20;
             break;
         default:
             fprintf(stderr, "Unsupported %d PgRC coding level for LZMA compression.\n", coder_level);
             exit(EXIT_FAILURE);
     }
+    cout << " ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order_param << ") ...";
     const unsigned kMult = 16;
     if (memSize / kMult > dataLength)
     {
@@ -212,7 +225,6 @@ MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned ch
     if (!Ppmd7_Alloc(&ppmd, memSize, &g_Alloc))
         return SZ_ERROR_MEM;
     Ppmd7_Init(&ppmd, coder_param);
-    cout << " ppmd (mem = " << (memSize >> 20) << "MB; ord = " << coder_param << ") ...";
     CPpmd7z_RangeEnc rEnc;
     Ppmd7z_RangeEnc_Init(&rEnc);
     size_t propsSize = 5;
@@ -254,6 +266,7 @@ MY_STDAPI LzmaUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
     size_t propsSize = LZMA_PROPS_SIZE;
     size_t srcBufSize = *srcLen - LZMA_PROPS_SIZE;
     ELzmaStatus status;
+    cout << "... lzma ... ";
     return LzmaDecode(dest, destLen, src + propsSize, &srcBufSize, src, (unsigned) propsSize, LZMA_FINISH_ANY, &status, &g_Alloc);
 }
 
@@ -302,6 +315,7 @@ MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
         return SZ_ERROR_MEM;
     unsigned int order = src[0];
     Ppmd7_Init(&ppmd, order);
+    cout << "... ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order << ") ... ";
     CPpmd7z_RangeDec rDec;
     Ppmd7z_RangeDec_CreateVTable(&rDec);
     CByteInBufWrap _inStream((unsigned char *) src + propsSize, *srcLen - propsSize);
@@ -362,10 +376,9 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
 }
 
 void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type) {
+    clock_t start_t = clock();
     int res = 0;
-
     size_t outLen = destLen;
-
     switch (coder_type) {
     case LZMA_CODER:
         res = LzmaUncompress((unsigned char*) dest, &outLen,
@@ -386,6 +399,8 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint
         fprintf(stderr, "Error during decompression (code: %d).\n", res);
         exit(EXIT_FAILURE);
     }
+    cout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
+         << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
 }
 
 void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,

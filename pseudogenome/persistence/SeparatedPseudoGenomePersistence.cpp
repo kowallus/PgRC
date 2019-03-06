@@ -16,14 +16,23 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg,
-            const string &pseudoGenomePrefix, ostream* pgrcOut, bool skipPgSequence) {
+            const string &pseudoGenomePrefix, bool skipPgSequence) {
         clock_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(sPg->getReadsList()->isRevCompEnabled(),
                 sPg->getReadsList()->areMismatchesEnabled());
-        builder.writeSeparatedPseudoGenome(sPg, skipPgSequence);
-        if (!pseudoGenomePrefix.empty()) builder.build(pseudoGenomePrefix);
-        if (pgrcOut) builder.compressedBuild(*pgrcOut);
+        builder.feedSeparatedPseudoGenome(sPg, skipPgSequence);
+        builder.build(pseudoGenomePrefix);
         cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << clock_millis() << " msec." << endl << endl;
+    }
+
+    void SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(SeparatedPseudoGenome *sPg,
+                                                                      ostream* pgrcOut, uint8_t compressionLevel) {
+        clock_checkpoint();
+        SeparatedPseudoGenomeOutputBuilder builder(sPg->getReadsList()->isRevCompEnabled(),
+                                                   sPg->getReadsList()->areMismatchesEnabled());
+        builder.feedSeparatedPseudoGenome(sPg, true);
+        builder.compressedBuild(*pgrcOut, compressionLevel);
+        cout << "Compressed Pg reads list files in " << clock_millis() << " msec." << endl << endl;
     }
 
     SeparatedPseudoGenome* SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(const string &pgPrefix,
@@ -342,6 +351,8 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::build(const string &pgPrefix) {
+        if (pgPrefix.empty())
+            return;
         prebuildAssert(false);
         buildProps();
         writeReadMode(*pgPropDest, plainTextWriteMode);
@@ -359,29 +370,29 @@ namespace PgTools {
         destToFile(rlMisPosDest, pgPrefix + SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut) {
+    void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut, uint8_t coder_level) {
         prebuildAssert(false);
         buildProps();
         writeReadMode(*pgPropDest, false);
         const string tmp = ((ostringstream*) pgPropDest)->str();
         pgrcOut.write(tmp.data(), tmp.length());
 
-        int lzma_coder_param = this->rsProp->maxReadLength <= UINT8_MAX?PGRC_DATAPERIODCODE_8_t:PGRC_DATAPERIODCODE_16_t;
+//        int lzma_coder_param = this->rsProp->maxReadLength <= UINT8_MAX?PGRC_DATAPERIODCODE_8_t:PGRC_DATAPERIODCODE_16_t;
         cout << "Reads list offsets... ";
 //        compressDest(rlOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlOffDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
+        compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Reverse complements info... ";
 //        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
-        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
+        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Mismatches counts... ";
 //        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
+        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Mismatched symbols codes... ";
 //        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
+        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Mismatches offsets (rev-coded)... ";
 //        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, PGRC_CODER_LEVEL_MAXIMUM, 3);
+        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
@@ -423,6 +434,7 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::setReadsSourceIterator(DefaultReadsListIteratorInterface *rlIt) {
+        rlIt->rewind();
         this->rlIt = rlIt;
     }
 
@@ -507,7 +519,7 @@ namespace PgTools {
         }
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, bool skipPgSequence) {
+    void SeparatedPseudoGenomeOutputBuilder::feedSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, bool skipPgSequence) {
         if (!skipPgSequence) {
             initDest(pgDest, SeparatedPseudoGenomePersistence::PSEUDOGENOME_FILE_SUFFIX);
             const string &pg = sPg->getPgSequence();

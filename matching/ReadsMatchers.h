@@ -71,7 +71,8 @@ namespace PgTools {
 
         void writeMatchesInfo(const string &outPrefix);
 
-        void writeIntoPseudoGenome(ostream& pgrcOut, const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
+        void writeIntoPseudoGenome(ostream& pgrcOut, uint8_t compressionLevel,
+                const string &outPgPrefix, IndexesMapping* orgIndexesMapping);
 
         virtual const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches = NOT_MATCHED_COUNT - 1);
 
@@ -196,9 +197,10 @@ namespace PgTools {
     };
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars, uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch,
-                        char preMatchingMode, char matchingMode, bool dumpInfo, ostream& pgrcOut, const string &pgDestFilePrefix,
-                        IndexesMapping* orgIndexesMapping);
+                        uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
+                        uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
+                        char matchingMode, bool dumpInfo, ostream& pgrcOut, uint8_t compressionLevel,
+                        const string &pgDestFilePrefix, IndexesMapping* orgIndexesMapping);
 }
 
 #endif //PGTOOLS_READSMATCHERS_H

@@ -148,6 +148,13 @@ namespace PgTools {
         return false;
     }
 
+    template<int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::rewind() {
+        fprintf(stderr, "Error: Rewinding SeparatedExtendedReadsListIterator unimplemented.");
+        exit(EXIT_FAILURE);
+    }
+
+
     template <int maxMismatches>
     PgTools::ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &
     SeparatedExtendedReadsListIterator<maxMismatches>::peekReadEntry() {
@@ -286,7 +293,7 @@ namespace PgTools {
                 }
             }
         }
-
+        cout << "Loaded Pg reads list containing " << readsCount << " reads." << endl;
         return res;
     }
 
@@ -297,6 +304,10 @@ namespace PgTools {
             return true;
         }
         return false;
+    }
+
+    void ConstantAccessExtendedReadsList::rewind() {
+        current = -1;
     }
 
     bool ConstantAccessExtendedReadsList::isRevCompEnabled() {

@@ -161,7 +161,7 @@ namespace PgTools {
         }
     }
 
-    void SimplePgMatcher::matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut,
+    void SimplePgMatcher::matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut, uint8_t coder_level,
                                        const string &hqPgPrefix, const string &lqPgPrefix,
                                        uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
         clock_t ref_start = clock();
@@ -190,19 +190,19 @@ namespace PgTools {
         pgSeq.append(std::move(lqPgMapped));
         lqPgMapped.clear();
         cout << "Joined mapped sequences (good&bad)... ";
-        writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+        writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, coder_level,
                 PGRC_DATAPERIODCODE_8_t);
         cout << "Good sequence mapping - offsets... ";
-        writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+        writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, coder_level,
                 isPgLengthStd?PGRC_DATAPERIODCODE_32_t:PGRC_DATAPERIODCODE_64_t);
         cout << "lengths... ";
-        writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+        writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
         cout << "Bad sequence mapping - offsets... ";
-        writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+        writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, coder_level,
                         isPgLengthStd?PGRC_DATAPERIODCODE_32_t:PGRC_DATAPERIODCODE_64_t);
         cout << "lengths... ";
-        writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM,
+        writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
     }
 

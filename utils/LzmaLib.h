@@ -21,8 +21,9 @@ const static int PGRC_DATAPERIODCODE_32_t = 2;
 const static int PGRC_DATAPERIODCODE_64_t = 3;
 const static int PGRC_DATAPERIODCODE_128_t = 4;
 
-const static uint8_t PGRC_CODER_LEVEL_NORMAL = 3;
-const static uint8_t PGRC_CODER_LEVEL_MAXIMUM = 4;
+const static uint8_t PGRC_CODER_LEVEL_FAST = 1;
+const static uint8_t PGRC_CODER_LEVEL_NORMAL = 2;
+const static uint8_t PGRC_CODER_LEVEL_MAX = 3;
 
 char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
         int coder_param = -1);

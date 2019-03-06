@@ -24,7 +24,9 @@ namespace PgTools {
         static void writePseudoGenome(PseudoGenomeBase* pgb, const string &pseudoGenomePrefix,
                 IndexesMapping* orgIndexesMapping, bool revComplPairFile = false);
         static void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, const string &pseudoGenomePrefix,
-            ostream* pgrcOut = 0, bool skipPgSequence = false);
+            bool skipPgSequence = false);
+        static void compressSeparatedPseudoGenomeReadsList(SeparatedPseudoGenome *sPg, ostream* pgrcOut,
+                uint8_t compressionLevel);
         static SeparatedPseudoGenome* loadSeparatedPseudoGenome(const string &pgPrefix, bool skipReadsList = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
@@ -123,12 +125,12 @@ namespace PgTools {
         void writeExtraReadEntry(const DefaultReadsListEntry &rlEntry);
 
         void writePseudoGenome(PseudoGenomeBase* pgb, IndexesMapping* orgIndexesMapping, bool revComplPairFile = "false");
-        void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, bool skipPgSequence = false);
+        void feedSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, bool skipPgSequence = false);
         void appendPseudoGenome(const string &pg);
 
         void build();
         void build(const string &pgPrefix);
-        void compressedBuild(ostream &pgrcOut);
+        void compressedBuild(ostream &pgrcOut, uint8_t coder_level);
 
         void compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type, uint8_t coder_level, int coder_param = -1);
         void destToFile(ostream *dest, const string &fileName);

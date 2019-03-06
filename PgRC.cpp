@@ -17,9 +17,13 @@ int main(int argc, char *argv[])
     bool compressionParamPresent = false;
     bool decompressMode = false;
 
-    while ((opt = getopt(argc, argv, "i:l:m:M:p:q:g:S:E:dvrnNtaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dvrnNtaA?")) != -1) {
         char* valPtr;
         switch (opt) {
+            case 'c':
+                compressionParamPresent = true;
+                pgRC->setCompressionLevel(atoi(optarg));
+                break;
             case 'd':
                 decompressMode = true;
                 break;
@@ -116,7 +120,8 @@ int main(int argc, char *argv[])
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-m [matchingMode]exactMatchingCharsCount] [-M maxCharsPerMismatch]\n"
+                fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)]\n"
+                                "[-m [matchingMode]exactMatchingCharsCount] [-M maxCharsPerMismatch]\n"
                                 "[-d] [-r] [-n] [-N] [-a] [-A] [-t] [-s]\n"
                                 "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
                                 "[-g gen_quality_coef_in_%%] -i readssrcfile [pairsrcfile] pgRCFileName\n\n",

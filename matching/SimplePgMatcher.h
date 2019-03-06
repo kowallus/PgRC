@@ -42,7 +42,7 @@ namespace PgTools {
         string pgMapOff;
         string pgMapLen;
 
-        static void matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut,
+        static void matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut, uint8_t coder_level,
                                  const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
                                  uint32_t minMatchLength = UINT32_MAX);
 

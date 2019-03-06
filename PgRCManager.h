@@ -26,6 +26,7 @@ namespace PgTools {
         static const int MIN_READS_EXACT_MATCHING_CHARS = 20;
 
         // INPUT PARAMETERS
+        uint8_t compressionLevel = PGRC_CODER_LEVEL_NORMAL;
         uint16_t error_limit_in_promils = 1000;
         string gen_quality_str = "50";
         double gen_quality_coef = 0.5;
@@ -92,6 +93,15 @@ namespace PgTools {
         }
 
         void executePgRCChain();
+
+        void setCompressionLevel(int compressionLevel) {
+            if (compressionLevel > PGRC_CODER_LEVEL_MAX || compressionLevel < PGRC_CODER_LEVEL_FAST) {
+                fprintf(stderr, "Generate quality coefficient should be between %d and %d.\n",
+                        PGRC_CODER_LEVEL_FAST, PGRC_CODER_LEVEL_MAX);
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::compressionLevel = compressionLevel;
+        }
 
         void setError_limit_in_promils(uint16_t error_limit_in_promils) {
             if (error_limit_in_promils > 1000) {

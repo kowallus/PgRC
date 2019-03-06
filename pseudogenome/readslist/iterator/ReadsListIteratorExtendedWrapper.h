@@ -51,6 +51,10 @@ namespace PgTools {
             return currentIdx++ < readsList->getReadsCount();
         }
 
+        void rewind() override {
+            currentIdx = 0;
+        }
+
         DefaultReadsListEntry &peekReadEntry() override {
             return entry;
         }

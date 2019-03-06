@@ -49,6 +49,7 @@ namespace PgTools {
         int64_t current = -1;
 
         bool moveNext() override;
+        void rewind() override;
 
         DefaultReadsListEntry &peekReadEntry() { return entry; };
 
@@ -107,6 +108,7 @@ namespace PgTools {
         ~SeparatedExtendedReadsListIterator() override;
 
         bool moveNext() override;
+        void rewind() override;
 
         ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max>&
         peekReadEntry() override;

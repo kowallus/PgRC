@@ -49,6 +49,7 @@ namespace PgTools {
         virtual ~ExtendedReadsListIteratorInterface() {};
 
         virtual bool moveNext() = 0;
+        virtual void rewind() = 0;
 
         virtual ReadsListEntry<maxMismatches, uint_read_len, uint_reads_cnt, uint_pg_len>& peekReadEntry() = 0;
     };

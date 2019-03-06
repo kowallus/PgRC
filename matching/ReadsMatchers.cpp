@@ -493,7 +493,8 @@ namespace PgTools {
 
     void AbstractReadsApproxMatcher::closeEntryUpdating() { }
 
-    void DefaultReadsMatcher::writeIntoPseudoGenome(ostream& pgrcOut, const string &outPgPrefix, IndexesMapping* orgIndexesMapping) {
+    void DefaultReadsMatcher::writeIntoPseudoGenome(ostream& pgrcOut, uint8_t compressionLevel,
+            const string &outPgPrefix, IndexesMapping* orgIndexesMapping) {
         clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
@@ -522,7 +523,7 @@ namespace PgTools {
         }
         builder->writeReadsFromIterator();
         builder->build(outPgPrefix);
-        builder->compressedBuild(pgrcOut);
+        builder->compressedBuild(pgrcOut, compressionLevel);
         delete(builder);
         closeEntryUpdating();
         cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
@@ -545,9 +546,10 @@ namespace PgTools {
     }
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
-                        uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars, uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch,
-                        char preMatchingMode, char matchingMode, bool dumpInfo, ostream &pgrcOut, const string &pgDestFilePrefix,
-                        IndexesMapping* orgIndexesMapping) {
+                        uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
+                        uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
+                        char matchingMode, bool dumpInfo, ostream &pgrcOut, uint8_t compressionLevel,
+                        const string &pgDestFilePrefix, IndexesMapping* orgIndexesMapping) {
         uint_read_len_max readLength = readsSet->maxReadLength();
         uint8_t maxMismatches = readLength / minCharsPerMismatch;
         if (readsExactMatchingChars > readLength)
@@ -628,8 +630,8 @@ namespace PgTools {
 
         const vector<bool> res = matcher->getMatchedReadsBitmap();
 
-        if (!pgDestFilePrefix.empty() && matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
-            matcher->writeIntoPseudoGenome(pgrcOut, pgDestFilePrefix, orgIndexesMapping);
+        if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
+            matcher->writeIntoPseudoGenome(pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping);
 
         delete(matcher);
         return res;

@@ -144,7 +144,7 @@ namespace PgTools {
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
-            SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(), pgrcOut,
+            SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(), pgrcOut, compressionLevel,
                                           extraFilesForValidation?pgSeqFinalHqPrefix:"",
                                           extraFilesForValidation?pgSeqFinalLqPrefix:"", targetPgMatchLength);
 //            testCompressSequences();
@@ -242,7 +242,7 @@ namespace PgTools {
                 hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
-                false, pgrcOut, extraFilesForValidation?pgMappedHqPrefix:"", divReadsSets->getLqReadsIndexesMapping());
+                false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
     }
 
@@ -253,7 +253,6 @@ namespace PgTools {
     }
 
     void PgRCManager::compressMappedHQPgReadsList() {
-        //SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgMappedHqPrefix, 0, true);
         cout << "Error: unimplemented standalone compressMEMMappedPgSequences!" << endl;
         exit(EXIT_FAILURE);
     }
@@ -287,8 +286,9 @@ namespace PgTools {
     }
 
     void PgRCManager::compressLQPgReadsList() {
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, extraFilesForValidation?pgMappedLqPrefix:"",
-                &pgrcOut, true);
+        SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(lqPg, &pgrcOut, compressionLevel);
+        if (extraFilesForValidation)
+            SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix, true);
     }
 
     void PgRCManager::runNPgGeneration() {
@@ -302,7 +302,9 @@ namespace PgTools {
     }
 
     void PgRCManager::persistNPg() {
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(nPg, pgNPrefix);
+        SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(nPg, &pgrcOut, compressionLevel);
+        if (extraFilesForValidation)
+            SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(nPg, pgNPrefix);
     }
 
     void PgRCManager::prepareForPgMatching() {
@@ -322,7 +324,7 @@ namespace PgTools {
         string& hqPgSeq = hqPg->getPgSequence();
         size_t compLen = 0;
         char* compSeq = Compress(compLen, hqPgSeq.data(), hqPgSeq.size(),
-                LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM);
+                LZMA_CODER, PGRC_CODER_LEVEL_MAX);
         string destBuf;
         destBuf.resize(hqPgSeq.size());
         Uncompress((char*) destBuf.data(), hqPgSeq.size(), compSeq, compLen, LZMA_CODER);
