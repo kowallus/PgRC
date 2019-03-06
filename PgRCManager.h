@@ -31,6 +31,7 @@ namespace PgTools {
         double gen_quality_coef = 0.5;
         bool nReadsLQ = false;
         bool separateNReads = false;
+        bool extraFilesForValidation = false;
         uint16_t preReadsExactMatchingChars = 0;
         uint16_t readsExactMatchingChars = UINT16_MAX;
         uint16_t minCharsPerMismatch = UINT16_MAX;
@@ -109,20 +110,24 @@ namespace PgTools {
             PgRCManager::gen_quality_str = gen_quality_str;
         }
 
-        void setNReadsLQ(bool nReadsLQ) {
+        void setNReadsLQ() {
             if (separateNReads) {
                 fprintf(stderr, "Reads containing N should be processed either separately or consider low quality");
                 exit(EXIT_FAILURE);
             }
-            PgRCManager::nReadsLQ = nReadsLQ;
+            PgRCManager::nReadsLQ = true;
         }
 
-        void setSeparateNReads(bool separateNReads) {
+        void setSeparateNReads() {
             if (nReadsLQ) {
-                fprintf(stderr, "Reads containing N should be processed either separately or consider low quality");
+                fprintf(stderr, "Reads containing N should be processed either separately or considered low quality");
                 exit(EXIT_FAILURE);
             }
-            PgRCManager::separateNReads = separateNReads;
+            PgRCManager::separateNReads = true;
+        }
+
+        void setValidationOutputMode() {
+            PgRCManager::extraFilesForValidation = true;
         }
 
         void setReadsExactMatchingChars(uint16_t readsExactMatchingChars) {
@@ -215,17 +220,17 @@ namespace PgTools {
 
         void persistHQPg();
 
-        void persistMappedHQPgReadsList();
+        void compressMappedHQPgReadsList();
 
         void persistLQPg();
 
-        void persistLQPgReadsList();
+        void compressLQPgReadsList();
 
         void persistHQPgSequence();
 
         void persistNPg();
 
-        void persistMEMMappedPgSequences();
+        void compressMEMMappedPgSequences();
 
         void prepareForPgGeneratorBaseReadsDivision();
 

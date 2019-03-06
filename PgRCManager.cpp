@@ -46,7 +46,7 @@ namespace PgTools {
                 + toString(readsExactMatchingChars))
                 + "_M" + toString(minCharsPerMismatch)
                 + "_p" + toString(targetPgMatchLength);
-        if (skipStages == 0) {
+        if (extraFilesForValidation && skipStages == 0) {
             mode_t mode = 0777;
             int nError = mkdir(tmpDirectoryName.data(), mode);
             if (nError != 0) {
@@ -115,7 +115,7 @@ namespace PgTools {
                 disposeChainData();
             } else {
                 //// Already done during runMappingLQReadsOnHQPg()
-//                persistMappedHQPgReadsList();
+//                compressMappedHQPgReadsList();
                 hqPg->disposeReadsList();
             }
         }
@@ -134,7 +134,7 @@ namespace PgTools {
                 if (hqPg)
                     persistHQPgSequence();
             } else {
-                persistLQPgReadsList();
+                compressLQPgReadsList();
             }
             delete(divReadsSets);
             divReadsSets = 0;
@@ -145,16 +145,17 @@ namespace PgTools {
             prepareForPgMatching();
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
             SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(), pgrcOut,
-                                          pgSeqFinalHqPrefix, pgSeqFinalLqPrefix, targetPgMatchLength);
+                                          extraFilesForValidation?pgSeqFinalHqPrefix:"",
+                                          extraFilesForValidation?pgSeqFinalLqPrefix:"", targetPgMatchLength);
 //            testCompressSequences();
         }
         gooder_t = clock();
-        if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
+/*        if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
             if (separateNReads)
                 SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
             else
                 SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
-        }
+        }*/
         finalizeCompression();
         disposeChainData();
         reportTimes();
@@ -241,7 +242,7 @@ namespace PgTools {
                 hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
-                false, pgrcOut, pgMappedHqPrefix, divReadsSets->getLqReadsIndexesMapping());
+                false, pgrcOut, extraFilesForValidation?pgMappedHqPrefix:"", divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
     }
 
@@ -251,8 +252,10 @@ namespace PgTools {
             divReadsSets->getNReadsIndexesMapping()->saveMapping(nDivisionFile);
     }
 
-    void PgRCManager::persistMappedHQPgReadsList() {
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgMappedHqPrefix, 0, true);
+    void PgRCManager::compressMappedHQPgReadsList() {
+        //SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(hqPg, pgMappedHqPrefix, 0, true);
+        cout << "Error: unimplemented standalone compressMEMMappedPgSequences!" << endl;
+        exit(EXIT_FAILURE);
     }
 
     void PgRCManager::persistHQPgSequence() {
@@ -283,8 +286,9 @@ namespace PgTools {
         SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix);
     }
 
-    void PgRCManager::persistLQPgReadsList() {
-        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, pgMappedLqPrefix, &pgrcOut, true);
+    void PgRCManager::compressLQPgReadsList() {
+        SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(lqPg, extraFilesForValidation?pgMappedLqPrefix:"",
+                &pgrcOut, true);
     }
 
     void PgRCManager::runNPgGeneration() {
@@ -309,8 +313,9 @@ namespace PgTools {
     }
 
 
-    void PgRCManager::persistMEMMappedPgSequences() {
-
+    void PgRCManager::compressMEMMappedPgSequences() {
+        cout << "Error: unimplemented standalone compressMEMMappedPgSequences!" << endl;
+        exit(EXIT_FAILURE);
     }
 
     void PgRCManager::testCompressSequences() {

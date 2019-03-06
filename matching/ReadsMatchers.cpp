@@ -628,7 +628,7 @@ namespace PgTools {
 
         const vector<bool> res = matcher->getMatchedReadsBitmap();
 
-        if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
+        if (!pgDestFilePrefix.empty() && matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
             matcher->writeIntoPseudoGenome(pgrcOut, pgDestFilePrefix, orgIndexesMapping);
 
         delete(matcher);
