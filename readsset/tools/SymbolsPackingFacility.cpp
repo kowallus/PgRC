@@ -2,6 +2,47 @@
 
 namespace PgSAIndex {
 
+    static const vector<char> binaryCodes { 0, 1 };
+    static const vector<char> trenaryCodes { 0, 1, 2 };
+    static const vector<char> quaternaryCodes { 0, 1, 2, 3 };
+
+    static const vector<char> acgtSymbols { 'A', 'C', 'G', 'T' };
+    static const vector<char> acgtnSymbols { 'A', 'C', 'G', 'N', 'T' };
+
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::BinaryPacker(binaryCodes);
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::TrenaryPacker(trenaryCodes);
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::QuaternaryPacker(quaternaryCodes);
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTPacker(acgtSymbols);
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTNPacker(acgtnSymbols);
+
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element>::SymbolsPackingFacility(const vector<char> symbolsList):
+         symbolsCount(symbolsList.size()),
+         symbolsPerElement(SymbolsPackingFacility<uint_element>::maxSymbolsPerElement(symbolsCount)) {
+        uint_max combinationCount = powuint(symbolsCount, symbolsPerElement);
+        maxValue = combinationCount - 1;
+        if (maxValue > (int) (uint_element) - 1)
+            cout << "ERROR in symbols packaging: max value for type: " << (int) (uint_element) - 1 << " while max " << " \n";
+
+        reverse = new char_pg*[combinationCount];
+        reverseFlat = new char_pg[combinationCount * symbolsPerElement];
+
+        clear = new uint_element*[combinationCount];
+        clearFlat = new uint_element[combinationCount * symbolsPerElement];
+
+        std::copy(symbolsList.begin(), symbolsList.end(), std::begin(this->symbolsList));
+        memset(symbolOrder, -1, UCHAR_MAX);
+        for (uint_symbols_cnt i = 0; i < symbolsCount; i++)
+            symbolOrder[(unsigned char) symbolsList[(unsigned char) i]] = i;
+
+        buildReverseAndClearIndexes();
+    }
+
     template<typename uint_element>
     SymbolsPackingFacility<uint_element>::SymbolsPackingFacility(ReadsSetProperties* readsSetProperties, uchar symbolsPerElement)
     : symbolsCount(readsSetProperties->symbolsCount),
@@ -111,6 +152,15 @@ namespace PgSAIndex {
             dest[i++] = packSuffixSymbols(source, left);
 
         return i;
+    }
+
+    template<typename uint_element>
+    string SymbolsPackingFacility<uint_element>::packSequence(const char_pg *source, const uint_max length) {
+        size_t packedLength = (length + symbolsPerElement - 1) / symbolsPerElement * sizeof(uint_element);
+        string tmp;
+        tmp.resize(packedLength);
+        this->packSequence(source, length, (uint_element*) tmp.data());
+        return tmp;
     }
 
     template<typename uint_element>

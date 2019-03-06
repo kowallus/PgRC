@@ -281,16 +281,6 @@ namespace PgTools {
             PgSAHelpers::writeStringToFile(fileName, ((ostringstream*) dest)->str());
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type,
-            uint8_t coder_level, int coder_param) {
-        if (onTheFlyMode() || !dest) {
-            fprintf(stderr, "Error during compression: an input stream missing.\n");
-            exit(EXIT_FAILURE);
-        }
-        const string tmp = ((ostringstream*) dest)->str();
-        writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param);
-    }
-
     void SeparatedPseudoGenomeOutputBuilder::freeDest(ostream* &dest) {
         if (dest) {
             if (onTheFlyMode())
@@ -370,6 +360,20 @@ namespace PgTools {
         destToFile(rlMisPosDest, pgPrefix + SeparatedPseudoGenomePersistence::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
     }
 
+    void SeparatedPseudoGenomeOutputBuilder::compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type,
+                                                          uint8_t coder_level, int coder_param, SymbolsPackingFacility<uint8_t>* symPacker) {
+        if (onTheFlyMode() || !dest) {
+            fprintf(stderr, "Error during compression: an input stream missing.\n");
+            exit(EXIT_FAILURE);
+        }
+        string tmp = ((ostringstream*) dest)->str();
+        if (symPacker) {
+            PgSAHelpers::writeValue<uint64_t>(pgrcOut, tmp.length(), false);
+            tmp = symPacker->packSequence(tmp.data(), tmp.length());
+        }
+        writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param);
+    }
+
     void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut, uint8_t coder_level) {
         prebuildAssert(false);
         buildProps();
@@ -383,7 +387,8 @@ namespace PgTools {
         compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Reverse complements info... ";
 //        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
-        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 3,
+                &SymbolsPackingFacility<uint8_t>::BinaryPacker);
         cout << "Mismatches counts... ";
 //        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
         compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 3);

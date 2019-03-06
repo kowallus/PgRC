@@ -41,6 +41,7 @@ namespace PgSAIndex {
 
         public:
             SymbolsPackingFacility(ReadsSetProperties* readsSetProperties, uchar symbolsPerElement);
+            SymbolsPackingFacility(const vector<char> symbolsList);
             
             ~SymbolsPackingFacility();
             
@@ -67,6 +68,7 @@ namespace PgSAIndex {
             uint_element packPrefixSymbols(const char_pg* symbols, const uint_max length);
             
             uint_max packSequence(const char_pg* source, const uint_max length, uint_element* dest);
+            string packSequence(const char_pg* source, const uint_max length);
 
             uint_element clearSuffix(const uint_element value, uchar prefixLength);
             
@@ -78,10 +80,14 @@ namespace PgSAIndex {
             int compareSequences(uint_element* lSeq, uint_element* rSeq, uint_max pos, uint_max length);
             int compareSuffixWithPrefix(uint_element* sufSeq, uint_element* preSeq, uint_max sufPos, uint_max length);
 
-        int compareSequenceWithUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length);
+            int compareSequenceWithUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length);
 
-        uint8_t countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length,
+            uint8_t countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length,
                                               uint8_t maxMismatches);
+
+            static SymbolsPackingFacility<uint_element> BinaryPacker, TrenaryPacker, QuaternaryPacker,
+                ACGTPacker, ACGTNPacker;
+
     };
     
 }

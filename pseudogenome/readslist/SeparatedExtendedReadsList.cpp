@@ -67,16 +67,22 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(istream *&src, istream& pgrcIn) {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(istream *&src, istream& pgrcIn,
+                                                                    SymbolsPackingFacility<uint8_t>* symPacker) {
+        uint64_t resLength = 0;
+        if (symPacker)
+            PgSAHelpers::readValue<uint64_t>(pgrcIn, resLength, false);
         string tmp;
         readCompressed(pgrcIn, tmp);
+        if (symPacker)
+            tmp = symPacker->reverseSequence((uint8_t*) tmp.data(), 0, resLength);
         src = new istringstream(tmp);
     }
 
     template <int maxMismatches>
     void SeparatedExtendedReadsListIterator<maxMismatches>::initSrcs(istream& pgrcIn) {
         initSrc(rlOffSrc, pgrcIn);
-        initSrc(rlRevCompSrc, pgrcIn);
+        initSrc(rlRevCompSrc, pgrcIn, &SymbolsPackingFacility<uint8_t>::BinaryPacker);
         initSrc(rlMisCntSrc, pgrcIn);
         if (maxMismatches == 0 && rlMisCntSrc) {
             fprintf(stderr, "WARNING: mismatches unsupported in current routine working on %s Pg\n", pseudoGenomePrefix.c_str());

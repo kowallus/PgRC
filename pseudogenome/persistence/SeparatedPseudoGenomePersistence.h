@@ -132,7 +132,8 @@ namespace PgTools {
         void build(const string &pgPrefix);
         void compressedBuild(ostream &pgrcOut, uint8_t coder_level);
 
-        void compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type, uint8_t coder_level, int coder_param = -1);
+        void compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type, uint8_t coder_level, int coder_param = -1,
+                          SymbolsPackingFacility<uint8_t>* symPacker = 0);
         void destToFile(ostream *dest, const string &fileName);
     };
 
