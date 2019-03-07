@@ -95,9 +95,10 @@ namespace PgTools {
         ReadsListEntry<maxMismatches, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> entry;
 
         void initSrc(istream *&src, const string &fileSuffix);
-        void initSrc(istream *&src, istream &pgrcIn, SymbolsPackingFacility<uint8_t>* symPacker = 0);
         void initSrcs();
-        void initSrcs(istream &pgrcIn);
+        void decompressSrc(istream *&src, istream &pgrcIn, SymbolsPackingFacility<uint8_t> *symPacker = 0);
+        void decompressMisRevOffSrc(istream &pgrcIn, bool trasposeMode = false);
+        void decompressSrcs(istream &pgrcIn);
         void freeSrc(istream *&src);
         void freeSrcs();
 

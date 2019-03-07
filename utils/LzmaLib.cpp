@@ -127,7 +127,7 @@ void Ppmd7_SetProps(uint32_t &memSize, uint8_t coder_level, size_t dataLength, i
             fprintf(stderr, "Unsupported %d PgRC coding level for LZMA compression.\n", coder_level);
             exit(EXIT_FAILURE);
     }
-    cout << " ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order_param << ") ...";
+    cout << " ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order_param << ") ... ";
     const unsigned kMult = 16;
     if (memSize / kMult > dataLength)
     {

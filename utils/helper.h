@@ -87,6 +87,19 @@ namespace PgSAHelpers {
         return moduloBySmallInteger(dividend, divisor, divideBySmallInteger(dividend, divisor));
     }
 
+    template<typename t_val>
+    string transpose(string matrix, uint64_t rows, uint64_t cols) {
+        string tRes;
+        tRes.resize(matrix.size());
+        t_val* nMatrix = (t_val*) matrix.data();
+        t_val* tMatrix = (t_val*) tRes.data();
+        for(uint64_t i = 0; i < rows; i++) {
+            for(uint8_t m = 0; m < cols; m++)
+                tMatrix[m * rows + i] = nMatrix[i * cols + m];
+        }
+        return tRes;
+    }
+
     // string comparison routines
 
     int readsSufPreCmp(const char* suffixPart, const char* prefixRead);

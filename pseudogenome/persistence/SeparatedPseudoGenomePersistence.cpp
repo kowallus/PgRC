@@ -374,6 +374,50 @@ namespace PgTools {
         writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param);
     }
 
+    void SeparatedPseudoGenomeOutputBuilder::compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level,
+            bool transposeMode) {
+        const uint8_t MISMATCHES_COUNT_DESTS_LIMIT = 12;
+        PgSAHelpers::writeValue<uint8_t>(pgrcOut, MISMATCHES_COUNT_DESTS_LIMIT);
+        vector<uint8_t> misCnt2DestIdx; // NOT-TESTED => {0, 1, 2, 3, 4, 5, 6, 7, 7, 9, 9, 9 };
+        misCnt2DestIdx.insert(misCnt2DestIdx.end(), UINT8_MAX, MISMATCHES_COUNT_DESTS_LIMIT);
+        for(uint8_t m = 1; m < MISMATCHES_COUNT_DESTS_LIMIT; m++) {
+            misCnt2DestIdx[m] = m;
+            PgSAHelpers::writeValue<uint8_t>(pgrcOut, misCnt2DestIdx[m]);
+        }
+        ostringstream dests[UINT8_MAX];
+        istringstream misRevOffSrc(((ostringstream*) rlMisRevOffDest)->str());
+        istringstream misCntSrc(((ostringstream*) rlMisCntDest)->str());
+
+        uint8_t misCnt = 0;
+        uint16_t revOff = 0;
+        for(uint_reads_cnt_max i = 0; i < readsCounter; i++) {
+             PgSAHelpers::readValue<uint8_t>(misCntSrc, misCnt, false);
+             for(uint8_t m = 0; m < misCnt; m++) {
+                 PgSAHelpers::readReadLengthValue(misRevOffSrc, revOff, false);
+                 PgSAHelpers::writeReadLengthValue(dests[misCnt2DestIdx[misCnt]], revOff);
+             }
+        }
+
+
+        if (transposeMode) {
+            for (uint8_t d = 1; d < MISMATCHES_COUNT_DESTS_LIMIT; d++) {
+                if (misCnt2DestIdx[d] == misCnt2DestIdx[d - 1] || misCnt2DestIdx[d] == misCnt2DestIdx[d + 1])
+                    continue;
+                string matrix = dests[d].str();
+                uint64_t readsCount = matrix.size() / d / (bytePerReadLengthMode ? 1 : 2);
+                if (bytePerReadLengthMode)
+                    dests[d].str(transpose<uint8_t>(matrix, readsCount, d));
+                else
+                    dests[d].str(transpose<uint16_t>(matrix, readsCount, d));
+            }
+        }
+
+        for(uint8_t m = 1; m <= MISMATCHES_COUNT_DESTS_LIMIT; m++) {
+            cout << (int) m << ": ";
+            compressDest(&dests[m], pgrcOut, PPMD7_CODER, coder_level, 2);
+        }
+    }
+
     void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut, uint8_t coder_level) {
         prebuildAssert(false);
         buildProps();
@@ -396,9 +440,10 @@ namespace PgTools {
 //        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
         compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2);
 //                &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
-        cout << "Mismatches offsets (rev-coded)... ";
+        cout << "Mismatches offsets (rev-coded)... " << endl;
 //        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+//        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+        compressRlMisRevOffDest(pgrcOut, coder_level);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {

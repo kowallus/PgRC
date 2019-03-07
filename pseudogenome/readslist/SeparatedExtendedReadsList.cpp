@@ -22,7 +22,7 @@ namespace PgTools {
         ownProps = false;
         if (PgSAReadsSet::isReadLengthMin(pgh->getMaxReadLength()))
             PgSAHelpers::bytePerReadLengthMode = true;
-        initSrcs(pgrcIn);
+        decompressSrcs(pgrcIn);
     }
 
     template<int maxMismatches>
@@ -67,8 +67,8 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrc(istream *&src, istream& pgrcIn,
-                                                                    SymbolsPackingFacility<uint8_t>* symPacker) {
+    void SeparatedExtendedReadsListIterator<maxMismatches>::decompressSrc(istream *&src, istream &pgrcIn,
+                                                                          SymbolsPackingFacility<uint8_t> *symPacker) {
         uint64_t resLength = 0;
         if (symPacker)
             PgSAHelpers::readValue<uint64_t>(pgrcIn, resLength, false);
@@ -80,15 +80,56 @@ namespace PgTools {
     }
 
     template <int maxMismatches>
-    void SeparatedExtendedReadsListIterator<maxMismatches>::initSrcs(istream& pgrcIn) {
-        initSrc(rlOffSrc, pgrcIn);
-        initSrc(rlRevCompSrc, pgrcIn);//, &SymbolsPackingFacility<uint8_t>::BinaryPacker);
-        initSrc(rlMisCntSrc, pgrcIn);
+    void SeparatedExtendedReadsListIterator<maxMismatches>::decompressMisRevOffSrc(istream &pgrcIn, bool transposeMode) {
+        uint8_t mismatchesCountSrcsLimit = 0;
+        PgSAHelpers::readValue<uint8_t>(pgrcIn, mismatchesCountSrcsLimit, false);
+        vector<uint8_t> misCnt2SrcIdx(UINT8_MAX, mismatchesCountSrcsLimit);
+        for(uint8_t m = 1; m < mismatchesCountSrcsLimit; m++)
+            PgSAHelpers::readValue<uint8_t>(pgrcIn, misCnt2SrcIdx[m], false);
+
+        istream* srcs[UINT8_MAX];
+        for(uint8_t m = 1; m <= mismatchesCountSrcsLimit; m++) {
+            cout << (int) m << ": ";
+            decompressSrc(srcs[m], pgrcIn);
+        }
+
+        if (transposeMode) {
+            for (uint8_t s = 1; s < mismatchesCountSrcsLimit; s++) {
+                if (misCnt2SrcIdx[s] == misCnt2SrcIdx[s - 1] || misCnt2SrcIdx[s] == misCnt2SrcIdx[s + 1])
+                    continue;
+                string matrix = ((istringstream *) srcs[s])->str();
+                uint64_t readsCount = matrix.size() / s / (bytePerReadLengthMode ? 1 : 2);
+                if (bytePerReadLengthMode)
+                    ((istringstream *) srcs[s])->str(transpose<uint8_t>(matrix, s, readsCount));
+                else
+                    ((istringstream *) srcs[s])->str(transpose<uint16_t>(matrix, s, readsCount));
+            }
+        }
+
+        ostringstream misRevOffDest;
+        uint8_t misCnt = 0;
+        uint16_t revOff = 0;
+        for(uint_reads_cnt_max i = 0; i < this->rsProp->readsCount; i++) {
+            PgSAHelpers::readValue<uint8_t>(*rlMisCntSrc, misCnt, false);
+            for(uint8_t m = 0; m < misCnt; m++) {
+                PgSAHelpers::readReadLengthValue(*srcs[misCnt2SrcIdx[misCnt]], revOff, false);
+                PgSAHelpers::writeReadLengthValue(misRevOffDest, revOff);
+            }
+        }
+        rlMisCntSrc->seekg(0, ios::beg);
+        rlMisRevOffSrc = new istringstream(misRevOffDest.str());
+    }
+
+    template <int maxMismatches>
+    void SeparatedExtendedReadsListIterator<maxMismatches>::decompressSrcs(istream &pgrcIn) {
+        decompressSrc(rlOffSrc, pgrcIn);
+        decompressSrc(rlRevCompSrc, pgrcIn);//, &SymbolsPackingFacility<uint8_t>::BinaryPacker);
+        decompressSrc(rlMisCntSrc, pgrcIn);
         if (maxMismatches == 0 && rlMisCntSrc) {
             fprintf(stderr, "WARNING: mismatches unsupported in current routine working on %s Pg\n", pseudoGenomePrefix.c_str());
         }
-        initSrc(rlMisSymSrc, pgrcIn);//, &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
-        initSrc(rlMisRevOffSrc, pgrcIn);
+        decompressSrc(rlMisSymSrc, pgrcIn);//, &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
+        decompressMisRevOffSrc(pgrcIn);
 
         initSrc(rlOrgIdxSrc, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);
     }
