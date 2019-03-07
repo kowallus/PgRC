@@ -26,13 +26,20 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(SeparatedPseudoGenome *sPg,
-                                                                      ostream* pgrcOut, uint8_t compressionLevel) {
+                                                                      ostream* pgrcOut, uint8_t coder_level,
+                                                                      bool skipPgSequence) {
         clock_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(sPg->getReadsList()->isRevCompEnabled(),
                                                    sPg->getReadsList()->areMismatchesEnabled());
         builder.feedSeparatedPseudoGenome(sPg, true);
-        builder.compressedBuild(*pgrcOut, compressionLevel);
-        cout << "Compressed Pg reads list files in " << clock_millis() << " msec." << endl << endl;
+        builder.compressedBuild(*pgrcOut, coder_level);
+        cout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
+        if (!skipPgSequence) {
+            clock_checkpoint();
+            writeCompressed(*pgrcOut, sPg->getPgSequence().data(), sPg->getPgSequence().size(), LZMA_CODER, coder_level,
+                            PGRC_DATAPERIODCODE_8_t);
+            cout << "Compressed Pg sequence in " << clock_millis() << " msec." << endl << endl;
+        }
     }
 
     SeparatedPseudoGenome* SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(const string &pgPrefix,

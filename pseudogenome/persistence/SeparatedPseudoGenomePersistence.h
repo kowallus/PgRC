@@ -26,7 +26,7 @@ namespace PgTools {
         static void writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg, const string &pseudoGenomePrefix,
             bool skipPgSequence = false);
         static void compressSeparatedPseudoGenomeReadsList(SeparatedPseudoGenome *sPg, ostream* pgrcOut,
-                uint8_t compressionLevel);
+                uint8_t coder_level, bool skipPgSequence = true);
         static SeparatedPseudoGenome* loadSeparatedPseudoGenome(const string &pgPrefix, bool skipReadsList = false);
 
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);

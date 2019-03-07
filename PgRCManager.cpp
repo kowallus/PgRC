@@ -122,12 +122,6 @@ namespace PgTools {
         match_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForLQPgAndNPgGeneration();
-            if (separateNReads) {
-                runNPgGeneration();
-                persistNPg();
-                delete(nPg);
-                nPg = 0;
-            }
             runLQPgGeneration();
             if (disableInMemoryMode || endAtStage == stageCount) {
                 persistLQPg();
@@ -135,6 +129,12 @@ namespace PgTools {
                     persistHQPgSequence();
             } else {
                 compressLQPgReadsList();
+            }
+            if (separateNReads) {
+                runNPgGeneration();
+                persistNPg();
+                delete(nPg);
+                nPg = 0;
             }
             delete(divReadsSets);
             divReadsSets = 0;
@@ -302,7 +302,7 @@ namespace PgTools {
     }
 
     void PgRCManager::persistNPg() {
-        SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(nPg, &pgrcOut, compressionLevel);
+        SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(nPg, &pgrcOut, compressionLevel, false);
         if (extraFilesForValidation)
             SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(nPg, pgNPrefix);
     }
@@ -431,8 +431,9 @@ namespace PgTools {
             cout << "Validated ";
         }
 
-        cout << (hqPg->getReadsSetProperties()->readsCount + lqPg->getReadsSetProperties()->readsCount) <<
-         " reads in " << clock_millis(start_t) << " msec." << endl;
+        cout << (hqPg->getReadsSetProperties()->readsCount + lqPg->getReadsSetProperties()->readsCount +
+                (nPg?nPg->getReadsSetProperties()->readsCount:0)) <<
+                " reads in " << clock_millis(start_t) << " msec." << endl;
 
         disposeChainData();
     }
@@ -464,12 +465,19 @@ namespace PgTools {
             res.append(hqPg->getRead(i));
             res.push_back('\n');
         }
-
         for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
             }
             res.append(lqPg->getRead(i));
+            res.push_back('\n');
+        }
+        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
+        for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++) {
+            if (res.size() > res_size_guard) {
+                pushOutToQueue(res);
+            }
+            res.append(nPg->getRead(i));
             res.push_back('\n');
         }
         pushOutToQueue(res);
@@ -507,7 +515,6 @@ namespace PgTools {
             res.append(hqPg->getRead(i));
             res.push_back('\n');
         }
-
         for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
             if (res.size() > res_size_guard) {
                 fout << res;
@@ -516,7 +523,15 @@ namespace PgTools {
             res.append(lqPg->getRead(i));
             res.push_back('\n');
         }
-
+        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
+        for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++) {
+            if (res.size() > res_size_guard) {
+                fout << res;
+                res.resize(0);
+            }
+            res.append(nPg->getRead(i));
+            res.push_back('\n');
+        }
         fout << res;
         fout.close();
     }
@@ -527,8 +542,10 @@ namespace PgTools {
     }
 
     void PgRCManager::validateAllPgs() {
-        uint_reads_cnt_max readsTotalCount = hqPg->getReadsSetProperties()->readsCount +
-                lqPg->getReadsSetProperties()->readsCount;
+        uint_reads_cnt_max nonNPgReadsCount = hqPg->getReadsSetProperties()->readsCount
+                                              + lqPg->getReadsSetProperties()->readsCount;
+        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
+        uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
         vector<uint_reads_cnt_max> orgIdx2rlIdx;
         orgIdx2rlIdx.resize(readsTotalCount);
         for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
@@ -536,6 +553,10 @@ namespace PgTools {
 
         for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
             orgIdx2rlIdx[lqPg->getReadsList()->orgIdx[i]] = hqPg->getReadsSetProperties()->readsCount + i;
+
+
+        for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++)
+            orgIdx2rlIdx[nPg->getReadsList()->orgIdx[i]] = nonNPgReadsCount + i;
 
         ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, revComplPairFile);
@@ -557,8 +578,10 @@ namespace PgTools {
             validated[idx] = true;
             if (idx < hqPg->getReadsSetProperties()->readsCount)
                 read = hqPg->getRead(idx);
-            else
+            else if (idx < nonNPgReadsCount)
                 read = lqPg->getRead(idx - hqPg->getReadsSetProperties()->readsCount);
+            else
+                read = nPg->getRead(idx - nonNPgReadsCount);
             if (read != allReadsIterator->getRead())
                 errorsCount++;
         }
@@ -597,6 +620,20 @@ namespace PgTools {
         ConstantAccessExtendedReadsList* lqCaeRl =
                 ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
                         &lqPgh, &lqRsProp, srcFastqFile.empty()?"":pgSeqFinalLqPrefix);
+        if (separateNReads) {
+            PseudoGenomeHeader nPgh(pgrcIn);
+            ReadsSetProperties nRsProp(pgrcIn);
+            if (confirmTextReadMode(pgrcIn)) {
+                cout << "Reads list text mode unsupported during decompression." << endl;
+                exit(EXIT_FAILURE);
+            }
+            ConstantAccessExtendedReadsList* nCaeRl =
+                    ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
+                            &nPgh, &nRsProp, srcFastqFile.empty()?"":pgNPrefix);
+            string nPgSeq;
+            readCompressed(pgrcIn, nPgSeq);
+            nPg = new SeparatedPseudoGenome(move(nPgSeq), nCaeRl, &nRsProp);
+        }
         string hqPgSeq, lqPgSeq;
         SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgSeq, lqPgSeq);
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), hqCaeRl, &hqRsProp);
