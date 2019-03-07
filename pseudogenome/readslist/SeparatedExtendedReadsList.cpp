@@ -82,12 +82,12 @@ namespace PgTools {
     template <int maxMismatches>
     void SeparatedExtendedReadsListIterator<maxMismatches>::initSrcs(istream& pgrcIn) {
         initSrc(rlOffSrc, pgrcIn);
-        initSrc(rlRevCompSrc, pgrcIn, &SymbolsPackingFacility<uint8_t>::BinaryPacker);
+        initSrc(rlRevCompSrc, pgrcIn);//, &SymbolsPackingFacility<uint8_t>::BinaryPacker);
         initSrc(rlMisCntSrc, pgrcIn);
         if (maxMismatches == 0 && rlMisCntSrc) {
             fprintf(stderr, "WARNING: mismatches unsupported in current routine working on %s Pg\n", pseudoGenomePrefix.c_str());
         }
-        initSrc(rlMisSymSrc, pgrcIn);
+        initSrc(rlMisSymSrc, pgrcIn);//, &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
         initSrc(rlMisRevOffSrc, pgrcIn);
 
         initSrc(rlOrgIdxSrc, SeparatedPseudoGenomePersistence::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX);

@@ -387,14 +387,15 @@ namespace PgTools {
         compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Reverse complements info... ";
 //        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
-        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 3,
-                &SymbolsPackingFacility<uint8_t>::BinaryPacker);
+        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2);
+//                &SymbolsPackingFacility<uint8_t>::BinaryPacker);
         cout << "Mismatches counts... ";
 //        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2);
         cout << "Mismatched symbols codes... ";
 //        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2);
+//                &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
         cout << "Mismatches offsets (rev-coded)... ";
 //        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
         compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
