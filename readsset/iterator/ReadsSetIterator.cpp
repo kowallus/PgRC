@@ -12,7 +12,7 @@ namespace PgSAReadsSet {
         }
         writeReadMode(mappingDest, PgSAHelpers::plainTextWriteMode);
         writeValue(mappingDest, readsCount);
-        for(uint_reads_cnt_max orgIdx: this->mapping) {
+        for(uint_reads_cnt_max orgIdx: this->mappingWithGuard) {
             writeValue(mappingDest, orgIdx);
         }
         writeValue(mappingDest, readsCount);
@@ -32,14 +32,14 @@ namespace PgSAReadsSet {
         uint_reads_cnt_max orgIdx = 0;
         do {
             readValue(*divSource, orgIdx, plainTextReadMode);
-            mapping->mapping.push_back(orgIdx);
+            mapping->mappingWithGuard.push_back(orgIdx);
         } while (orgIdx != readsCount);
         delete(divSource);
         return mapping;
     }
 
     vector<uint_reads_cnt_max> &VectorMapping::getMappingVector() {
-        return mapping;
+        return mappingWithGuard;
     }
 
     template<typename uint_read_len>

@@ -20,8 +20,9 @@ void DefaultConstantLengthPatternsOnTextHashMatcher::addPattern(const char *patt
     hashToIndexMap.insert(std::pair<uint32_t, uint32_t>(hf.hashvalue, idx));
 }
 
-void DefaultConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedConstantLengthReadsSet* readsSet,
-        uint8_t partsCount, vector<bool> matchedReadsBitmap) {
+void DefaultConstantLengthPatternsOnTextHashMatcher::addReadsSetOfPatterns(ConstantLengthReadsSetInterface *readsSet,
+                                                                           uint8_t partsCount,
+                                                                           vector<bool> matchedReadsBitmap) {
     if (this->txt != 0) {
         cerr << "Adding patterns not permitted during iteration";
         exit(EXIT_FAILURE);
@@ -72,7 +73,7 @@ void InterleavedConstantLengthPatternsOnTextHashMatcher::addPattern(const char *
 }
 
 
-void InterleavedConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(PackedConstantLengthReadsSet *readsSet,
+void InterleavedConstantLengthPatternsOnTextHashMatcher::addPackedPatterns(ConstantLengthReadsSetInterface *readsSet,
         int partsCount, vector<bool> matchedReadsBitmap) {
     if (this->txt != 0) {
         cerr << "Adding patterns not permitted during iteration";

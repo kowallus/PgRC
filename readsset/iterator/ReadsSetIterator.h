@@ -31,20 +31,44 @@ namespace PgSAReadsSet {
 
     class VectorMapping : public IndexesMapping {
     private:
-        vector<uint_reads_cnt_max> mapping;
+        vector<uint_reads_cnt_max> mappingWithGuard;
         uint_reads_cnt_max readsCount;
     public:
-        VectorMapping(vector<uint_reads_cnt_max> &&mapping, uint_reads_cnt_max readsCount) :
-        mapping(std::move(mapping)), readsCount(readsCount) {}
+        VectorMapping(vector<uint_reads_cnt_max> &&mappingWithGuard, uint_reads_cnt_max readsCount) :
+        mappingWithGuard(std::move(mappingWithGuard)), readsCount(readsCount) {}
 
-        uint_reads_cnt_max getReadOriginalIndex(uint_reads_cnt_max idx) override { return mapping[idx]; }
-        uint_reads_cnt_max getMappedReadsCount() override { return mapping.size(); }
+        uint_reads_cnt_max getReadOriginalIndex(uint_reads_cnt_max idx) override { return mappingWithGuard[idx]; }
+        uint_reads_cnt_max getMappedReadsCount() override { return mappingWithGuard.size() - 1; }
         uint_reads_cnt_max getReadsTotalCount() override { return readsCount; }
 
         vector<uint_reads_cnt_max> &getMappingVector();
 
         void saveMapping(string mappingFile);
         static VectorMapping* loadMapping(string mappingFile);
+    };
+
+    class SumOfMappings : public IndexesMapping {
+    private:
+        IndexesMapping* im1 = 0;
+        IndexesMapping* im2 = 0;
+        uint_reads_cnt_max idxBeg2 = 0;
+        inline IndexesMapping *getIm(uint_reads_cnt_max i) const { return (i < idxBeg2 ? im1 : im2); }
+        inline uint_reads_cnt_max getImIdx(uint_reads_cnt_max i) const { return i < idxBeg2 ? i : i - idxBeg2; }
+    public:
+        SumOfMappings(IndexesMapping *im1, IndexesMapping *im2) : im1(im1), im2(im2),
+            idxBeg2(im1->getMappedReadsCount()){}
+
+        uint_reads_cnt_max getReadOriginalIndex(uint_reads_cnt_max idx) override {
+            return getIm(idx)->getReadOriginalIndex(getImIdx(idx));
+        }
+
+        uint_reads_cnt_max getMappedReadsCount() override {
+            return im1->getMappedReadsCount() + im2->getMappedReadsCount();
+        }
+
+        uint_reads_cnt_max getReadsTotalCount() override {
+            return im1->getReadsTotalCount();
+        }
     };
 
     template < typename uint_read_len >

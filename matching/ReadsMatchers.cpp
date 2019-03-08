@@ -1,6 +1,5 @@
 #include "ReadsMatchers.h"
 
-#include "../readsset/PackedConstantLengthReadsSet.h"
 #include "../readsset/persistance/ReadsSetPersistence.h"
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
@@ -44,12 +43,12 @@ namespace PgTools {
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
     const uint64_t DefaultReadsMatcher::NOT_MATCHED_POSITION = UINT64_MAX;
 
-    DefaultReadsMatcher::DefaultReadsMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
+    DefaultReadsMatcher::DefaultReadsMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                              uint32_t matchPrefixLength) :
                                              sPg(sPg), pgPtr(sPg->getPgSequence().data()),
                                              pgLength(sPg->getPgSequence().length()), revComplPg(revComplPg),
                                              readsSet(readsSet), matchPrefixLength(matchPrefixLength),
-                                             readLength(readsSet->minReadLength()),
+                                             readLength(readsSet->maxReadLength()),
                                              matchingLength(readLength > matchPrefixLength ? matchPrefixLength : readLength),
                                              readsCount(readsSet->readsCount()) { }
 
@@ -164,13 +163,13 @@ namespace PgTools {
     }
 
     DefaultReadsExactMatcher::DefaultReadsExactMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
-                                                       PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength)
+                                                       ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength)
             : DefaultReadsMatcher(sPg, revComplPg, readsSet, matchPrefixLength) {}
 
     void DefaultReadsExactMatcher::initMatching() {
         cout << "Feeding patterns...\n" << endl;
         this->hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(matchingLength);
-        this->hashMatcher->addPackedPatterns(readsSet);
+        this->hashMatcher->addReadsSetOfPatterns(readsSet);
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
         DefaultReadsMatcher::initMatching();
     }
@@ -184,7 +183,7 @@ namespace PgTools {
             const uint64_t matchPosition = hashMatcher->getHashMatchTextPosition();
             const uint_reads_cnt_max matchReadIndex = hashMatcher->getHashMatchPatternIndex();
 
-            bool exactMatch = readsSet->comparePackedReadWithPattern(matchReadIndex, pgPtr + matchPosition) == 0;
+            bool exactMatch = readsSet->compareReadWithPattern(matchReadIndex, pgPtr + matchPosition) == 0;
             if (exactMatch) {
                 if (readMatchPos[matchReadIndex] == NOT_MATCHED_POSITION) {
                     readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
@@ -210,7 +209,7 @@ namespace PgTools {
     }
 
     AbstractReadsApproxMatcher::AbstractReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
-                                                           PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength,
+                                                           ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength,
                                                            uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches)
             : DefaultReadsMatcher(sPg, revComplPg, readsSet, matchPrefixLength),
             targetMismatches(readsSet->maxReadLength() / readsExactMatchingChars - 1),
@@ -220,13 +219,13 @@ namespace PgTools {
     }
 
     InterleavedReadsApproxMatcher::InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
-                                                                 PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength,
+                                                                 ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength,
                                                 uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches)
             : AbstractReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
                     maxMismatches, minMismatches), partLength(readsExactMatchingChars)  {}
 
     DefaultReadsApproxMatcher::DefaultReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
-                                                         PackedConstantLengthReadsSet *readsSet, uint32_t matchPrefixLength,
+                                                         ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength,
                                                          uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches)
              :AbstractReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
                      maxMismatches, minMismatches), partLength(readsExactMatchingChars) {}
@@ -244,7 +243,7 @@ namespace PgTools {
     void DefaultReadsApproxMatcher::initMatching() {
         cout << "Feeding patterns...\n" << endl;
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
-        this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1);
+        this->hashMatcher->addReadsSetOfPatterns(readsSet, targetMismatches + 1);
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         DefaultReadsMatcher::initMatching();
@@ -255,8 +254,8 @@ namespace PgTools {
     void DefaultReadsApproxMatcher::initMatchingContinuation(DefaultReadsMatcher *pMatcher) {
         cout << "Feeding unmatched patterns...\n" << endl;
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
-        this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1,
-                pMatcher->getMatchedReadsBitmap(minMismatches));
+        this->hashMatcher->addReadsSetOfPatterns(readsSet, targetMismatches + 1,
+                                                 pMatcher->getMatchedReadsBitmap(minMismatches));
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
@@ -281,10 +280,10 @@ namespace PgTools {
                 continue;
             if (readMatchPos[matchReadIndex] == (revCompMode?pgLength-(matchPosition+matchingLength):matchPosition))
                 continue;
-            uint8_t currentMatchesLimit = readMismatchesCount[matchReadIndex]==NOT_MATCHED_COUNT?maxMismatches
+            uint8_t currentMismatchesLimit = readMismatchesCount[matchReadIndex]==NOT_MATCHED_COUNT?maxMismatches
                     :(readMismatchesCount[matchReadIndex] - 1);
             const uint8_t mismatchesCount = readsSet->countMismatchesVsPattern(matchReadIndex, pgPtr + matchPosition,
-                                                            matchingLength, currentMatchesLimit);
+                                                            matchingLength, currentMismatchesLimit);
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     matchedReadsCount++;
@@ -379,7 +378,7 @@ namespace PgTools {
     }
 
     CopMEMReadsApproxMatcher::CopMEMReadsApproxMatcher(SeparatedPseudoGenome *sPg, bool revComplPg,
-                                                       PackedConstantLengthReadsSet *readsSet,
+                                                       ConstantLengthReadsSetInterface *readsSet,
                                                        uint32_t matchPrefixLength, uint16_t readsExactMatchingChars,
                                                        uint8_t maxMismatches, uint8_t minMismatches)
             : AbstractReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
@@ -545,7 +544,7 @@ namespace PgTools {
         return res;
     }
 
-    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, PackedConstantLengthReadsSet *readsSet,
+    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream &pgrcOut, uint8_t compressionLevel,

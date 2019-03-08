@@ -225,4 +225,20 @@ namespace PgTools {
         lqReadIdx.resize(newLqCounter);
     }
 
+
+    void DividedPCLReadsSets::removeReadsFromNReadsSet(const vector<bool> &isReadMappedIntoHqPg,
+            uint_reads_cnt_max nBegIdx) {
+        vector<uint_reads_cnt_max> &nReadIdx = nMapping->getMappingVector();
+        uint_reads_cnt_max newNCounter = 0;
+        for(uint_reads_cnt_max nCounter = 0; nCounter < nReadsSet->readsCount(); nCounter++) {
+            if (!isReadMappedIntoHqPg[nCounter + nBegIdx]) {
+                nReadIdx[newNCounter] = nReadIdx[nCounter];
+                nReadsSet->copyRead(nCounter, newNCounter++);
+            }
+        }
+        nReadsSet->resize(newNCounter);
+        nReadIdx[newNCounter++] = nMapping->getReadsTotalCount();
+        nReadIdx.resize(newNCounter);
+    }
+
 }

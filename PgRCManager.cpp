@@ -240,12 +240,25 @@ namespace PgTools {
 
     void PgRCManager::runMappingLQReadsOnHQPg() {
         divReadsSets->getLqReadsSet()->printout();
-        const vector<bool>& isLqReadMappedIntoHqPg = mapReadsIntoPg(
-                hqPg, true, divReadsSets->getLqReadsSet(), DefaultReadsMatcher::DISABLED_PREFIX_MODE,
+        if (separateNReads)
+            divReadsSets->getNReadsSet()->printout();
+        ConstantLengthReadsSetInterface* readsSet =
+                separateNReads?((ConstantLengthReadsSetInterface*) new SumOfConstantLengthReadsSets(
+                        divReadsSets->getLqReadsSet(), divReadsSets->getNReadsSet())): divReadsSets->getLqReadsSet();
+        IndexesMapping* mapping = separateNReads?((IndexesMapping*) new SumOfMappings(
+                divReadsSets->getLqReadsIndexesMapping(), divReadsSets->getNReadsIndexesMapping())):divReadsSets->getLqReadsIndexesMapping();
+        const vector<bool>& isReadMappedIntoHqPg = mapReadsIntoPg(
+                hqPg, true, readsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
-                false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", divReadsSets->getLqReadsIndexesMapping());
-        divReadsSets->removeReadsFromLqReadsSet(isLqReadMappedIntoHqPg);
+                false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);
+        uint_reads_cnt_max nBegIdx = divReadsSets->getLqReadsSet()->readsCount();
+        divReadsSets->removeReadsFromLqReadsSet(isReadMappedIntoHqPg);
+        if (separateNReads) {
+            delete(mapping);
+            delete(readsSet);
+            divReadsSets->removeReadsFromNReadsSet(isReadMappedIntoHqPg, nBegIdx);
+        }
     }
 
     void PgRCManager::persistMappedReadsQualityDivision() {
@@ -552,11 +565,8 @@ namespace PgTools {
         orgIdx2rlIdx.resize(readsTotalCount);
         for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
             orgIdx2rlIdx[hqPg->getReadsList()->orgIdx[i]] = i;
-
         for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
             orgIdx2rlIdx[lqPg->getReadsList()->orgIdx[i]] = hqPg->getReadsSetProperties()->readsCount + i;
-
-
         for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++)
             orgIdx2rlIdx[nPg->getReadsList()->orgIdx[i]] = nonNPgReadsCount + i;
 

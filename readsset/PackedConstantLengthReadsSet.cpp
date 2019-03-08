@@ -100,7 +100,7 @@ namespace PgSAReadsSet {
         return sPacker->compareSuffixWithPrefix(packedReads.data() + sufIdx * (size_t) packedLength, packedReads.data() + preIdx * (size_t) packedLength, sufOffset, properties->maxReadLength - sufOffset);
     }
 
-    int PackedConstantLengthReadsSet::comparePackedReadWithPattern(const uint_reads_cnt_max i, const char *pattern) {
+    int PackedConstantLengthReadsSet::compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern) {
         return sPacker->compareSequenceWithUnpacked(packedReads.data() + i * (size_t) packedLength, pattern, properties->maxReadLength);
     }
 

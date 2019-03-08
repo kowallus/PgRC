@@ -11,7 +11,7 @@ using namespace PgSAIndex;
 
 namespace PgSAReadsSet {
 
-    class PackedConstantLengthReadsSet: public ReadsSetBase, public ReadsSetInterface< uint_read_len_max, uint_reads_cnt_max >
+    class PackedConstantLengthReadsSet: public ConstantLengthReadsSetInterface
     {
         private:
             vector<uint_ps_element_min> packedReads;
@@ -42,14 +42,14 @@ namespace PgSAReadsSet {
             inline const string getRead(uint_reads_cnt_max i) { return sPacker->reverseSequence(packedReads.data() + (size_t) packedLength * i, 0, readLength(i));};
             inline void getRead(uint_reads_cnt_max i, string &res) { sPacker->reverseSequence(packedReads.data() + (size_t) packedLength * i, 0, readLength(i), res);};
             inline void getRead(uint_reads_cnt_max i, char_pg* res) { sPacker->reverseSequence(packedReads.data() + (size_t) packedLength * i, 0, readLength(i), res);};
-            inline char getReadSymbol(uint_reads_cnt_max i, uint32_t pos) { return sPacker->reverseValue(packedReads.data() + i * (size_t) packedLength, pos); };
+            inline char getReadSymbol(uint_reads_cnt_max i, uint_read_len_max pos) { return sPacker->reverseValue(packedReads.data() + i * (size_t) packedLength, pos); };
             inline uint_read_len_max readLength(uint_reads_cnt_max i) { return maxReadLength(); };
 
             int comparePackedReads(uint_reads_cnt_max lIdx, uint_reads_cnt_max rIdx);
             int comparePackedReads(uint_reads_cnt_max lIdx, uint_reads_cnt_max rIdx, uint_read_len_max offset);
             int compareSuffixWithPrefix(uint_reads_cnt_max sufIdx, uint_reads_cnt_max preIdx, uint_read_len_max sufOffset);
 
-            int comparePackedReadWithPattern(const uint_reads_cnt_max i, const char *pattern);
+            int compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern);
             uint8_t countMismatchesVsPattern(uint_reads_cnt_max i, const char *pattern, uint_read_len_max length, uint8_t maxMismatches);
 
             uint_read_len_max maxReadLengthVirtual() { return maxReadLength(); };
