@@ -11,14 +11,14 @@ namespace PgTools {
             uint32_t minMatchLength)
             :srcPg(srcPg), targetMatchLength(targetMatchLength) {
         cout << "Source pseudogenome length: " << srcPg.length() << endl;
-
+        if (srcPg.size() >= targetMatchLength)
+            matcher = new CopMEMMatcher(srcPg, targetMatchLength, minMatchLength);
         //matcher = new DefaultTextMatcher(srcPg, targetMatchLength);
-        matcher = new CopMEMMatcher(srcPg, targetMatchLength, minMatchLength);
-
     }
 
     SimplePgMatcher::~SimplePgMatcher() {
-        delete(matcher);
+        if (matcher)
+            delete(matcher);
     }
 
     void SimplePgMatcher::exactMatchPg(string& destPg, bool destPgIsSrcPg, uint32_t minMatchLength) {
@@ -66,6 +66,13 @@ namespace PgTools {
 
     void SimplePgMatcher::markAndRemoveExactMatches(
             bool destPgIsSrcPg, string &destPg, bool revComplMatching, uint32_t minMatchLength) {
+        if (!matcher) {
+            pgMapped = destPg;
+            pgMapOff.clear();
+            pgMapLen.clear();
+            return;
+        }
+
         this->revComplMatching = revComplMatching;
         this->destPgLength = destPg.length();
 

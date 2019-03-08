@@ -56,7 +56,7 @@ bool DefaultConstantLengthPatternsOnTextHashMatcher::moveNext() {
         if (indexIter != indexIterEnd)
             return true;
     }
-    while(++this->txtPos <= txtSize - patternLength) {
+    while(++this->txtPos <= (int64_t) txtSize - patternLength) {
         auto indexIterRange = hashToIndexMap.equal_range(hf.hashvalue);
         hf.update(this->txt[this->txtPos], this->txt[this->txtPos + patternLength]);
         indexIter = indexIterRange.first;
