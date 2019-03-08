@@ -161,9 +161,10 @@ namespace PgTools {
         }
     }
 
-    void SimplePgMatcher::matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut, uint8_t coder_level,
-                                       const string &hqPgPrefix, const string &lqPgPrefix,
-                                       uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
+    void SimplePgMatcher::matchPgsInPg(string &hqPgSequence, string &lqPgSequence, string &nPgSequence,
+                                        ostream &pgrcOut, uint8_t coder_level,
+                                        const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
+                                        uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
         clock_t ref_start = clock();
         bool isPgLengthStd = hqPgSequence.length() <= UINT32_MAX;
         PgTools::SimplePgMatcher matcher(hqPgSequence, targetMatchLength, minMatchLength);
@@ -176,6 +177,17 @@ namespace PgTools {
         string lqPgMapOff = std::move(matcher.pgMapOff);
         string lqPgMapLen = std::move(matcher.pgMapLen);
         cout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
+
+        clock_t n_start = clock();
+        matcher.markAndRemoveExactMatches(false, nPgSequence, true, minMatchLength);
+        if (!nPgPrefix.empty())
+            matcher.writeMatchingResult(nPgPrefix);
+        string nPgMapped = std::move(matcher.pgMapped);
+        string nPgMapOff = std::move(matcher.pgMapOff);
+        string nPgMapLen = std::move(matcher.pgMapLen);
+        if (!nPgMapped.empty())
+            cout << "PgMatching nPg finished in " << clock_millis(n_start) << " msec. " << endl;
+
         clock_t hq_start = clock();
         matcher.markAndRemoveExactMatches(true, hqPgSequence, true, minMatchLength);
         if (!hqPgPrefix.empty())
@@ -186,10 +198,15 @@ namespace PgTools {
         cout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
 
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, pgSeq.length(), false);
-
+        PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, lqPgMapped.length(), false);
+        PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, nPgMapped.length(), false);
         pgSeq.append(std::move(lqPgMapped));
+        pgSeq.append(std::move(nPgMapped));
         lqPgMapped.clear();
-        cout << "Joined mapped sequences (good&bad)... ";
+        nPgMapped.clear();
+
+
+        cout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
         writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, coder_level,
                 PGRC_DATAPERIODCODE_8_t);
         cout << "Good sequence mapping - offsets... ";
@@ -204,17 +221,29 @@ namespace PgTools {
         cout << "lengths... ";
         writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
+        if (!nPgSequence.empty()) {
+            cout << "N sequence mapping - offsets... ";
+            writeCompressed(pgrcOut, nPgMapOff.data(), nPgMapOff.size(), LZMA_CODER, coder_level,
+                            isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t);
+            cout << "lengths... ";
+            writeCompressed(pgrcOut, nPgMapLen.data(), nPgMapLen.size(), LZMA_CODER, coder_level,
+                            PGRC_DATAPERIODCODE_8_t);
+        }
     }
 
-    void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence) {
-        uint_pg_len_max hqPgSeqLen = 0;
-        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, hqPgSeqLen, false);
-        string comboPgSeq;
-        readCompressed(pgrcIn, comboPgSeq);
-        size_t lqPgSeqLen = comboPgSeq.length() - hqPgSeqLen;
-        string lqPgMapped(comboPgSeq, hqPgSeqLen);
-        comboPgSeq.resize(hqPgSeqLen);
-        string hqPgMapped = std::move(comboPgSeq);
+    void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence,
+            string &nPgSequence) {
+        uint_pg_len_max hqPgMappedLen, lqPgMappedLen, nPgMappedLen;
+        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, hqPgMappedLen, false);
+        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, lqPgMappedLen, false);
+        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, nPgMappedLen, false);
+        string comboPgMapped;
+        readCompressed(pgrcIn, comboPgMapped);
+        string nPgMapped(comboPgMapped, hqPgMappedLen + lqPgMappedLen);
+        comboPgMapped.resize(hqPgMappedLen + lqPgMappedLen);
+        string lqPgMapped(comboPgMapped, hqPgMappedLen);
+        comboPgMapped.resize(hqPgMappedLen);
+        string hqPgMapped = std::move(comboPgMapped);
         string pgMapOff, pgMapLen;
         readCompressed(pgrcIn, pgMapOff);
         readCompressed(pgrcIn, pgMapLen);
@@ -222,14 +251,22 @@ namespace PgTools {
         pgMapOffSrc.str(pgMapOff);
         pgMapLenSrc.str(pgMapLen);
         hqPgSequence.clear();
-        hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, hqPgSeqLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
+        hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, hqPgMappedLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                   true, false, true);
         readCompressed(pgrcIn, pgMapOff);
         readCompressed(pgrcIn, pgMapLen);
         pgMapOffSrc.str(pgMapOff);
         pgMapLenSrc.str(pgMapLen);
-        lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, lqPgSeqLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
+        lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, lqPgMappedLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                          true, false);
+        if (nPgMappedLen) {
+            readCompressed(pgrcIn, pgMapOff);
+            readCompressed(pgrcIn, pgMapLen);
+            pgMapOffSrc.str(pgMapOff);
+            pgMapLenSrc.str(pgMapLen);
+            nPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, nPgMappedLen, nPgMapped, pgMapOffSrc, pgMapLenSrc,
+                                                             true, false);
+        }
     }
 
     string

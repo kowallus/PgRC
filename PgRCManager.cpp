@@ -133,8 +133,7 @@ namespace PgTools {
             if (separateNReads) {
                 runNPgGeneration();
                 persistNPg();
-                delete(nPg);
-                nPg = 0;
+                nPg->disposeReadsList();
             }
             delete(divReadsSets);
             divReadsSets = 0;
@@ -143,10 +142,13 @@ namespace PgTools {
         bad_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
+            string emptySequence;
             //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
-            SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(), pgrcOut, compressionLevel,
+            SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(),
+                    separateNReads?nPg->getPgSequence():emptySequence, pgrcOut, compressionLevel,
                                           extraFilesForValidation?pgSeqFinalHqPrefix:"",
-                                          extraFilesForValidation?pgSeqFinalLqPrefix:"", targetPgMatchLength);
+                                          extraFilesForValidation?pgSeqFinalLqPrefix:"",
+                                          extraFilesForValidation?pgNPrefix:"", targetPgMatchLength);
 //            testCompressSequences();
         }
         gooder_t = clock();
@@ -302,7 +304,7 @@ namespace PgTools {
     }
 
     void PgRCManager::persistNPg() {
-        SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(nPg, &pgrcOut, compressionLevel, false);
+        SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(nPg, &pgrcOut, compressionLevel);
         if (extraFilesForValidation)
             SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(nPg, pgNPrefix);
     }
@@ -620,24 +622,23 @@ namespace PgTools {
         ConstantAccessExtendedReadsList* lqCaeRl =
                 ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
                         &lqPgh, &lqRsProp, srcFastqFile.empty()?"":pgSeqFinalLqPrefix);
+        ConstantAccessExtendedReadsList* nCaeRl = 0;
+        ReadsSetProperties nRsProp;
         if (separateNReads) {
             PseudoGenomeHeader nPgh(pgrcIn);
-            ReadsSetProperties nRsProp(pgrcIn);
+            nRsProp = ReadsSetProperties(pgrcIn);
             if (confirmTextReadMode(pgrcIn)) {
                 cout << "Reads list text mode unsupported during decompression." << endl;
                 exit(EXIT_FAILURE);
             }
-            ConstantAccessExtendedReadsList* nCaeRl =
-                    ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
+            nCaeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
                             &nPgh, &nRsProp, srcFastqFile.empty()?"":pgNPrefix);
-            string nPgSeq;
-            readCompressed(pgrcIn, nPgSeq);
-            nPg = new SeparatedPseudoGenome(move(nPgSeq), nCaeRl, &nRsProp);
         }
-        string hqPgSeq, lqPgSeq;
-        SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgSeq, lqPgSeq);
+        string hqPgSeq, lqPgSeq, nPgSeq;
+        SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgSeq, lqPgSeq, nPgSeq);
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), hqCaeRl, &hqRsProp);
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), lqCaeRl, &lqRsProp);
+        nPg = new SeparatedPseudoGenome(move(nPgSeq), nCaeRl, &nRsProp);
     }
 
     void PgRCManager::loadAllPgs() {

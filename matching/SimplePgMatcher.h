@@ -42,11 +42,12 @@ namespace PgTools {
         string pgMapOff;
         string pgMapLen;
 
-        static void matchPgsInPg(string &hqPgSequence, string &lqPgSequence, ostream &pgrcOut, uint8_t coder_level,
-                                 const string &hqPgPrefix, const string &lqPgPrefix, uint_pg_len_max targetMatchLength,
-                                 uint32_t minMatchLength = UINT32_MAX);
+        static void matchPgsInPg(string &hqPgSequence, string &lqPgSequence, string &nPgSequence,
+                                    ostream &pgrcOut, uint8_t coder_level,
+                                    const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
+                                    uint_pg_len_max targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
-        static void restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence);
+        static void restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence, string &nPgSequence);
 
         static string restoreMatchedPg(string &srcPg, size_t srcLen, const string& destPg,
                 istream &pgMapOffSrc, istream &pgMapLenSrc,
