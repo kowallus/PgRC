@@ -84,6 +84,10 @@ namespace PgTools {
         uint8_t mismatchesCountSrcsLimit = 0;
         PgSAHelpers::readValue<uint8_t>(pgrcIn, mismatchesCountSrcsLimit, false);
         vector<uint8_t> misCnt2SrcIdx(UINT8_MAX, mismatchesCountSrcsLimit);
+        if (mismatchesCountSrcsLimit == 1) {
+            decompressSrc(rlMisRevOffSrc, pgrcIn);
+            return;
+        }
         for(uint8_t m = 1; m < mismatchesCountSrcsLimit; m++)
             PgSAHelpers::readValue<uint8_t>(pgrcIn, misCnt2SrcIdx[m], false);
 

@@ -383,8 +383,12 @@ namespace PgTools {
 
     void SeparatedPseudoGenomeOutputBuilder::compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level,
             bool transposeMode) {
-        const uint8_t MISMATCHES_COUNT_DESTS_LIMIT = 12;
+        const uint8_t MISMATCHES_COUNT_DESTS_LIMIT = coder_level == PGRC_CODER_LEVEL_FAST?1:12;
         PgSAHelpers::writeValue<uint8_t>(pgrcOut, MISMATCHES_COUNT_DESTS_LIMIT);
+        if (MISMATCHES_COUNT_DESTS_LIMIT == 1) {
+            compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+            return;
+        }
         vector<uint8_t> misCnt2DestIdx; // NOT-TESTED => {0, 1, 2, 3, 4, 5, 6, 7, 7, 9, 9, 9 };
         misCnt2DestIdx.insert(misCnt2DestIdx.end(), UINT8_MAX, MISMATCHES_COUNT_DESTS_LIMIT);
         for(uint8_t m = 1; m < MISMATCHES_COUNT_DESTS_LIMIT; m++) {
