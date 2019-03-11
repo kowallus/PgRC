@@ -19,10 +19,12 @@ namespace PgSAReadsSet {
 
     // NOTE: (overlapping requires indexing from 1)
     typedef unsigned int uint_reads_cnt_std; // support up to 32 bits - 1
-    typedef unsigned long long int uint_reads_cnt_max; // support up to 64 bits - 1
+    typedef unsigned int uint_reads_cnt_max; // support up to 32 bits - 1
+    //typedef unsigned long long int uint_reads_cnt_max; // support up to 64 bits - 1
 
     inline bool isReadsCountStd(uint_max value) { return value <= UINT_MAX - 1; }
-    inline bool isReadsCountMax(uint_max value) { return !isReadsCountStd(value) && value <= ULLONG_MAX - 1; }
+    inline bool isReadsCountMax(uint_max value) { return value <= UINT_MAX - 1; }
+//    inline bool isReadsCountMax(uint_max value) { return !isReadsCountStd(value) && value <= ULLONG_MAX - 1; }
 
     typedef unsigned char uint_symbols_cnt;
     

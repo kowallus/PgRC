@@ -24,12 +24,15 @@ namespace PgTools {
     void PgRCManager::prepareChainData() {
         qualityDivision = error_limit_in_promils < 1000;
         readLength = probeReadsLength(srcFastqFile);
+        if (pairFastqFile.empty() && !preserveOrderMode)
+            singleReadsMode = true;
 
         if (std::ifstream(pgRCFileName))
             fprintf(stderr, "Warning: file %s already exists\n", pgRCFileName.data());
         pgrcOut = fstream(pgRCFileName + TEMPORARY_FILE_SUFFIX, ios::out | ios::binary | ios::trunc);
         pgrcOut.write(PGRC_HEADER, strlen(PGRC_HEADER));
-        pgrcOut.put(PGRC_SE_MODE);
+        pgrcOut.put(singleReadsMode?PGRC_SE_MODE:
+            (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):PGRC_PE_MODE));
         pgrcOut.put(separateNReads);
 
         string tmpDirectoryName = pgRCFileName;
@@ -116,6 +119,8 @@ namespace PgTools {
             } else {
                 //// Already done during runMappingLQReadsOnHQPg()
 //                compressMappedHQPgReadsList();
+                if (!singleReadsMode)
+                    orgIdxs = std::move(hqPg->getReadsList()->orgIdx);
                 hqPg->disposeReadsList();
             }
         }
@@ -130,14 +135,18 @@ namespace PgTools {
             } else {
                 compressLQPgReadsList();
             }
+            if (!singleReadsMode)
+                orgIdxs.insert(orgIdxs.end(), lqPg->getReadsList()->orgIdx.begin(), lqPg->getReadsList()->orgIdx.end());
+            lqPg->disposeReadsList();
             if (separateNReads) {
                 runNPgGeneration();
                 persistNPg();
+                if (!singleReadsMode)
+                    orgIdxs.insert(orgIdxs.end(), nPg->getReadsList()->orgIdx.begin(), nPg->getReadsList()->orgIdx.end());
                 nPg->disposeReadsList();
             }
             delete(divReadsSets);
             divReadsSets = 0;
-            lqPg->disposeReadsList();
         }
         bad_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -152,12 +161,16 @@ namespace PgTools {
 //            testCompressSequences();
         }
         gooder_t = clock();
-/*        if (pairFastqFile != "" && skipStages < ++stageCount && endAtStage >= stageCount) {
-            if (separateNReads)
-                SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
-            else
-                SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
-        }*/
+        if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
+            SeparatedPseudoGenomePersistence::compressReadsOrder(pgrcOut, orgIdxs, compressionLevel, preserveOrderMode,
+                    pairFastqFile.empty());
+            if (extraFilesForValidation) {
+                if (separateNReads)
+                    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
+                else
+                    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
+            }
+        }
         finalizeCompression();
         disposeChainData();
         reportTimes();
@@ -333,18 +346,6 @@ namespace PgTools {
     void PgRCManager::compressMEMMappedPgSequences() {
         cout << "Error: unimplemented standalone compressMEMMappedPgSequences!" << endl;
         exit(EXIT_FAILURE);
-    }
-
-    void PgRCManager::testCompressSequences() {
-        string& hqPgSeq = hqPg->getPgSequence();
-        size_t compLen = 0;
-        char* compSeq = Compress(compLen, hqPgSeq.data(), hqPgSeq.size(),
-                LZMA_CODER, PGRC_CODER_LEVEL_MAX);
-        string destBuf;
-        destBuf.resize(hqPgSeq.size());
-        Uncompress((char*) destBuf.data(), hqPgSeq.size(), compSeq, compLen, LZMA_CODER);
-
-        cout << "Finally: " << (destBuf == hqPgSeq?"OK":"error") << endl;
     }
 
     void PgRCManager::reportTimes() {

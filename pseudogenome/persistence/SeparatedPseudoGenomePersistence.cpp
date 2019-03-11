@@ -243,6 +243,97 @@ namespace PgTools {
         cout << "... dumping pairs completed in " << clock_millis() << " msec. " << endl;
     }
 
+    void SeparatedPseudoGenomePersistence::compressReadsOrder(ostream &pgrcOut,
+            const vector<uint_reads_cnt_std>& orgIdxs, uint8_t coder_level,
+            bool completeOrderInfo, bool singleFileMode) {
+        clock_checkpoint();
+        cout << endl;
+        uint_reads_cnt_std readsCount = orgIdxs.size();
+        int lzma_coder_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
+        if (completeOrderInfo && singleFileMode) {
+            cout << "Original indexes... ";
+            writeCompressed(pgrcOut, (char *) orgIdxs.data(), orgIdxs.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
+                    coder_level, lzma_coder_param);
+        } else {
+            // absolute original index of a processed pair base
+            vector<uint_reads_cnt_std> pair1indexes;
+            if (completeOrderInfo)
+                pair1indexes.reserve(readsCount / 2);
+            // coding reads list index offset of paired read
+            vector<uint8_t> offsetInUint8Flag;
+            offsetInUint8Flag.reserve(readsCount / 2);
+            vector<uint8_t> offsetInUint8Value;
+            offsetInUint8Value.reserve(readsCount / 2); // estimated
+            vector<uint8_t> deltaInInt8Flag;
+            deltaInInt8Flag.reserve(readsCount / 4); // estimated
+            vector<int8_t> deltaInInt8Value;
+            deltaInInt8Value.reserve(readsCount / 16); // estimated
+            vector<uint_reads_cnt_std> fullOffset;
+            deltaInInt8Value.reserve(readsCount / 8); // estimated
+
+            vector<uint_reads_cnt_std> rev(readsCount);
+            for (uint_reads_cnt_std i = 0; i < readsCount; i++)
+                rev[orgIdxs[i]] = i;
+            vector<bool> isReadDone(readsCount, false);
+            int64_t refPrev = 0;
+            int64_t prev = 0;
+            bool match = false;
+            for (uint32_t i1 = 0; i1 < readsCount; i1++) {
+                if (isReadDone[i1])
+                    continue;
+                uint_reads_cnt_std orgIdx = orgIdxs[i1];
+                uint_reads_cnt_std pairOrgIdx = orgIdx % 2 ? (orgIdx - 1) : (orgIdx + 1);
+                uint_reads_cnt_std i2 = rev[pairOrgIdx]; // i2 > i1
+                isReadDone[i2] = true;
+                if (completeOrderInfo)
+                    pair1indexes.push_back(orgIdx);
+                int64_t i2Offset = i2 - i1;
+                offsetInUint8Flag.push_back((uint8_t) (i2Offset <= UINT8_MAX));
+                if (i2Offset < UINT8_MAX) {
+                    offsetInUint8Value.push_back((uint8_t) i2Offset);
+                    continue;
+                }
+                const int64_t delta = i2Offset - refPrev;
+                const bool isDeltaInInt8 = delta <= INT8_MAX && delta >= INT8_MIN;
+                deltaInInt8Flag.push_back((uint8_t) isDeltaInInt8);
+                if (isDeltaInInt8) {
+                    match = true;
+                    deltaInInt8Value.push_back((int8_t) delta);
+                    refPrev = i2Offset;
+                } else {
+                    if (!match || refPrev != prev)
+                        refPrev = i2Offset;
+                    fullOffset.push_back(i2Offset);
+                    match = false;
+                }
+                prev = i2Offset;
+            }
+
+            cout << "Uint8 reads list offsets of pair reads (flag)... ";
+            writeCompressed(pgrcOut, (char *) offsetInUint8Flag.data(), offsetInUint8Flag.size() * sizeof(uint8_t),
+                            PPMD7_CODER, coder_level, 3);
+            cout << "Uint8 reads list offsets of pair reads (value)... ";
+//        writeCompressed(pgrcOut, (char*) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t), LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t);
+            writeCompressed(pgrcOut, (char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
+                            PPMD7_CODER, coder_level, 2);
+            cout << "Offsets deltas of pair reads (flag)... ";
+            writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(int8_t),
+                            PPMD7_CODER, coder_level, 3);
+            cout << "Offsets deltas of pair reads (value)... ";
+            writeCompressed(pgrcOut, (char *) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(int8_t),
+                            PPMD7_CODER, coder_level, 2);
+            cout << "Full reads list offsets of pair reads ... ";
+            writeCompressed(pgrcOut, (char *) fullOffset.data(), fullOffset.size() * sizeof(uint_reads_cnt_std),
+                            LZMA_CODER, coder_level, lzma_coder_param);
+            if (completeOrderInfo) {
+                cout << "Original indexes of pair bases... ";
+                writeCompressed(pgrcOut, (char *) pair1indexes.data(), pair1indexes.size() * sizeof(uint_reads_cnt_std),
+                                LZMA_CODER, coder_level, lzma_coder_param);
+            }
+        }
+        cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
+    }
+
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string pseudoGenomePrefix,
             bool disableRevComp, bool disableMismatches) : pseudoGenomePrefix(pseudoGenomePrefix),
             disableRevComp(disableRevComp), disableMismatches(disableMismatches) {
@@ -455,6 +546,16 @@ namespace PgTools {
 //        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
 //        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         compressRlMisRevOffDest(pgrcOut, coder_level);
+    }
+
+    void SeparatedPseudoGenomeOutputBuilder::buildInto(SeparatedPseudoGenome *sPg) {
+        prebuildAssert(false);
+        buildProps();
+        string tmp = ((ostringstream*) rlOrgIdxDest)->str();
+        uint_reads_cnt_std* orgIdxPtr = (uint_reads_cnt_std*) tmp.data();
+        sPg->getReadsList()->orgIdx.assign(orgIdxPtr, orgIdxPtr + readsCounter);
+
+        // only partially implemented
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {

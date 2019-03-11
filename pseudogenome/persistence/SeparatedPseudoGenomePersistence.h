@@ -66,6 +66,8 @@ namespace PgTools {
         static bool enableRevOffsetMismatchesRepresentation;
 
         static void dumpPgPairs(vector<string> pgFilePrefixes);
+        static void compressReadsOrder(ostream &pgrcOut, const vector<uint_reads_cnt_std>& orgIdxs, uint8_t coder_level,
+                bool completeOrderInfo = false, bool singleFileMode = true);
 
         static void writePseudoGenomeSequence(string &pgSequence, string pgPrefix);
     };
@@ -136,6 +138,8 @@ namespace PgTools {
                           SymbolsPackingFacility<uint8_t>* symPacker = 0);
         void compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level, bool transposeMode = false);
         void destToFile(ostream *dest, const string &fileName);
+
+        void buildInto(SeparatedPseudoGenome *sPg);
     };
 
 

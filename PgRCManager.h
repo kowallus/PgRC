@@ -18,6 +18,9 @@
 namespace PgTools {
 
     static const char PGRC_SE_MODE = 0;
+    static const char PGRC_PE_MODE = 1;
+    static const char PGRC_ORD_SE_MODE = 2;
+    static const char PGRC_ORD_PE_MODE = 3;
 
     class PgRCManager {
     private:
@@ -27,6 +30,8 @@ namespace PgTools {
 
         // INPUT PARAMETERS
         uint8_t compressionLevel = PGRC_CODER_LEVEL_NORMAL;
+        bool singleReadsMode = false;
+        bool preserveOrderMode = false;
         uint16_t error_limit_in_promils = 1000;
         string gen_quality_str = "50";
         double gen_quality_coef = 0.5;
@@ -58,6 +63,7 @@ namespace PgTools {
         clock_t match_t;
         clock_t bad_t;
         clock_t gooder_t;
+
         void reportTimes();
 
         // CHAIN VARIABLES
@@ -65,10 +71,12 @@ namespace PgTools {
         uint8_t stageCount;
         fstream pgrcOut;
 
-        DividedPCLReadsSets* divReadsSets = 0;
+        DividedPCLReadsSets *divReadsSets = 0;
         SeparatedPseudoGenome *hqPg = 0;
         SeparatedPseudoGenome *lqPg = 0;
         SeparatedPseudoGenome *nPg = 0;
+
+        vector<uint_reads_cnt_std> orgIdxs;
 
         bool qualityDivision;
         string lqDivisionFile;
@@ -101,6 +109,22 @@ namespace PgTools {
                 exit(EXIT_FAILURE);
             }
             PgRCManager::compressionLevel = compressionLevel;
+        }
+
+        void setPreserveOrderMode() {
+            if (singleReadsMode) {
+                fprintf(stderr, "Single reads and preserve order modes cannot be used together.");
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::preserveOrderMode = true;
+        }
+
+        void setSingleReadsMode() {
+            if (preserveOrderMode) {
+                fprintf(stderr, "Single reads and preserve order modes cannot be used together.");
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::singleReadsMode = true;
         }
 
         void setError_limit_in_promils(uint16_t error_limit_in_promils) {
@@ -142,7 +166,8 @@ namespace PgTools {
 
         void setReadsExactMatchingChars(uint16_t readsExactMatchingChars) {
             if (readsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
-                fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n", MIN_READS_EXACT_MATCHING_CHARS);
+                fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n",
+                        MIN_READS_EXACT_MATCHING_CHARS);
                 exit(EXIT_FAILURE);
             }
             PgRCManager::readsExactMatchingChars = readsExactMatchingChars;
@@ -150,7 +175,8 @@ namespace PgTools {
 
         void setPreReadsExactMatchingChars(uint16_t preReadsExactMatchingChars) {
             if (preReadsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
-                fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n", MIN_READS_EXACT_MATCHING_CHARS);
+                fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n",
+                        MIN_READS_EXACT_MATCHING_CHARS);
                 exit(EXIT_FAILURE);
             }
             PgRCManager::preReadsExactMatchingChars = preReadsExactMatchingChars;
@@ -198,7 +224,8 @@ namespace PgTools {
 
         void setSkipStages(uint8_t skipStages) {
             if (skipStages >= endAtStage) {
-                fprintf(stdout, "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",
+                fprintf(stdout,
+                        "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",
                         skipStages, endAtStage);
                 exit(EXIT_FAILURE);
             }
@@ -207,7 +234,8 @@ namespace PgTools {
 
         void setEndAtStage(uint8_t endAtStage) {
             if (skipStages >= endAtStage) {
-                fprintf(stdout, "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",
+                fprintf(stdout,
+                        "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",
                         skipStages, endAtStage);
                 exit(EXIT_FAILURE);
             }
@@ -258,8 +286,10 @@ namespace PgTools {
 
         void finalizeCompression();
 
-        void loadAllPgs(istream& pgrcIn);
+        void loadAllPgs(istream &pgrcIn);
+
         void loadAllPgs();
+
         void decompressPgRC();
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
@@ -269,16 +299,18 @@ namespace PgTools {
         std::mutex mut;
         std::queue<string> out_queue;
         std::condition_variable data_cond;
+
         void writeAllReadsInSEModeParallel(const string &tmpDirectoryPath);
+
         void pushOutToQueue(string &out);
+
         void finishWritingParallel();
+
         void writeFromQueue(const string &tmpDirectoryPath);
 
         void validateAllPgs();
 
         uint_reads_cnt_max dnaStreamSize() const;
-
-        void testCompressSequences();
     };
 }
 

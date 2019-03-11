@@ -523,6 +523,7 @@ namespace PgTools {
         builder->writeReadsFromIterator();
         builder->build(outPgPrefix);
         builder->compressedBuild(pgrcOut, compressionLevel);
+        builder->buildInto(sPg);
         delete(builder);
         closeEntryUpdating();
         cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
