@@ -21,6 +21,7 @@ namespace PgTools {
         ConstantAccessExtendedReadsList *getReadsList();
 
         const string getRead(uint_reads_cnt_max idx);
+        void getRead(uint_reads_cnt_max idx, char* ptr);
 
         virtual ~SeparatedPseudoGenome();
 

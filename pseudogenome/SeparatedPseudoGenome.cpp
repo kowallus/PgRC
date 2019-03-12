@@ -73,6 +73,17 @@ namespace PgTools {
         return res;
     }
 
+    void SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx, char *ptr) {
+        memcpy((void*) ptr, (void*) (pgSequence.data() + this->readsList->pos[idx]), this->readsList->readLength);
+        for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
+            const uint8_t misPos = this->readsList->getMisOff(idx, i);
+            ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
+                                               this->readsList->getMisSymCode(idx, i));
+        }
+        if (this->readsList->revComp[idx])
+            PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+    }
+
     GeneratedSeparatedPseudoGenome::GeneratedSeparatedPseudoGenome(uint_pg_len_max sequenceLength,
                                                                    ReadsSetProperties *properties)
             : SeparatedPseudoGenome(sequenceLength, properties) {

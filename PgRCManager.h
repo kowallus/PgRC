@@ -286,7 +286,8 @@ namespace PgTools {
 
         void finalizeCompression();
 
-        void loadAllPgs(istream &pgrcIn);
+        void loadAllPgs(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
+                bool completeOrderInfo, bool singleFileMode);
 
         void loadAllPgs();
 
@@ -295,6 +296,7 @@ namespace PgTools {
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
 
         void writeAllReadsInSEMode(const string &tmpDirectoryPath) const;
+        void writeAllReads(const string &tmpDirectoryPath, vector<uint_reads_cnt_std> &rlIdxOrder, bool singleFileMode) const;
 
         std::mutex mut;
         std::queue<string> out_queue;

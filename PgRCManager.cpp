@@ -405,6 +405,7 @@ namespace PgTools {
         start_t = clock();
         string tmpDirectoryPath = pgRCFileName + "/";
         ifstream pgrcIn(pgRCFileName);
+        char pgrc_mode;
         if (pgrcIn) {
             for(int i = 0; i < strlen(PGRC_HEADER); i++) {
                 if (PGRC_HEADER[i] != pgrcIn.get()) {
@@ -412,8 +413,8 @@ namespace PgTools {
                     exit(EXIT_FAILURE);
                 }
             }
-            char pgrc_mode = pgrcIn.get();
-            if (pgrc_mode != PGRC_SE_MODE) {
+            pgrc_mode = pgrcIn.get();
+            if (pgrc_mode < PGRC_SE_MODE || pgrc_mode > PGRC_ORD_PE_MODE) {
                 fprintf(stderr, "Unsupported decompression mode: %d.\n", pgrc_mode);
                 exit(EXIT_FAILURE);
             }
@@ -430,20 +431,31 @@ namespace PgTools {
         pgSeqFinalLqPrefix = tmpDirectoryPath + BAD_INFIX;
         pgNPrefix = tmpDirectoryPath + N_INFIX;
 
+        const bool completeOrderInfo = pgrc_mode == PGRC_ORD_SE_MODE || pgrc_mode == PGRC_ORD_PE_MODE;
+        const bool singleFileMode = pgrc_mode == PGRC_SE_MODE || pgrc_mode == PGRC_ORD_SE_MODE;
+        vector<uint_reads_cnt_std> rlIdxOrder;
         if (pgrcIn)
-            loadAllPgs(pgrcIn);
+            loadAllPgs(pgrcIn, rlIdxOrder, completeOrderInfo, singleFileMode);
         else
             loadAllPgs();
         cout << "... loaded Pgs (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
 
+        uint_reads_cnt_max nonNPgReadsCount = hqPg->getReadsSetProperties()->readsCount
+                                              + lqPg->getReadsSetProperties()->readsCount;
+        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
+        uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
         if (srcFastqFile.empty()) {
-            if (ENABLE_PARALLEL_DECOMPRESSION && dnaStreamSize() < CHUNK_SIZE_IN_BYTES)
-                writeAllReadsInSEModeParallel(tmpDirectoryPath);
-            else
-                writeAllReadsInSEMode(tmpDirectoryPath);
+            if (singleFileMode && !completeOrderInfo) {
+                if (ENABLE_PARALLEL_DECOMPRESSION && dnaStreamSize() > CHUNK_SIZE_IN_BYTES)
+                    writeAllReadsInSEModeParallel(tmpDirectoryPath);
+                else
+                    writeAllReadsInSEMode(tmpDirectoryPath);
+            } else
+                writeAllReads(tmpDirectoryPath, rlIdxOrder, singleFileMode);
             cout << "Decompressed ";
         } else {
             validateAllPgs();
+            //validatePgsOrder(rlIdxOrder, completeOrderInfo, singleFileMode);
             cout << "Validated ";
         }
 
@@ -471,21 +483,24 @@ namespace PgTools {
     void PgRCManager::writeAllReadsInSEModeParallel(const string &tmpDirectoryPath) {
         cout << "... parallel mode" << endl;
         std::thread writing(&PgRCManager::writeFromQueue, this, tmpDirectoryPath);
-        string res;
+        string res, read;
+        read.resize(readLength);
         uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
         res.reserve(CHUNK_SIZE_IN_BYTES);
         for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++) {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
             }
-            res.append(hqPg->getRead(i));
+            hqPg->getRead(i, (char*) read.data());
+            res.append(read);
             res.push_back('\n');
         }
         for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
             }
-            res.append(lqPg->getRead(i));
+            lqPg->getRead(i, (char*) read.data());
+            res.append(read);
             res.push_back('\n');
         }
         uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
@@ -493,7 +508,8 @@ namespace PgTools {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
             }
-            res.append(nPg->getRead(i));
+            nPg->getRead(i, (char*) read.data());
+            res.append(read);
             res.push_back('\n');
         }
         pushOutToQueue(res);
@@ -519,7 +535,8 @@ namespace PgTools {
 
     void PgRCManager::writeAllReadsInSEMode(const string &tmpDirectoryPath) const {
         fstream fout(tmpDirectoryPath + "out", ios_base::out | ios_base::binary | std::ios::trunc);
-        string res;
+        string res, read;
+        read.resize(readLength);
         uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
         uint64_t totalSize = dnaStreamSize();
         res.reserve(totalSize < res_size_guard?totalSize:res_size_guard + (hqPg->getReadsSetProperties()->maxReadLength + 1));
@@ -528,7 +545,8 @@ namespace PgTools {
                 fout << res;
                 res.resize(0);
             }
-            res.append(hqPg->getRead(i));
+            hqPg->getRead(i, (char*) read.data());
+            res.append(read);
             res.push_back('\n');
         }
         for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
@@ -536,7 +554,8 @@ namespace PgTools {
                 fout << res;
                 res.resize(0);
             }
-            res.append(lqPg->getRead(i));
+            lqPg->getRead(i, (char*) read.data());
+            res.append(read);
             res.push_back('\n');
         }
         uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
@@ -545,11 +564,55 @@ namespace PgTools {
                 fout << res;
                 res.resize(0);
             }
-            res.append(nPg->getRead(i));
+            nPg->getRead(i, (char*) read.data());
+            res.append(read);
             res.push_back('\n');
         }
         fout << res;
         fout.close();
+    }
+
+    void PgRCManager::writeAllReads(const string &tmpDirectoryPath, vector<uint_reads_cnt_std> &rlIdxOrder,
+            bool singleFileMode) const {
+        uint8_t parts = singleFileMode?1:2;
+        int inc = singleFileMode?1:2;
+        uint_reads_cnt_max nonNPgReadsCount = hqPg->getReadsSetProperties()->readsCount
+                                              + lqPg->getReadsSetProperties()->readsCount;
+        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
+        uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
+        for(uint8_t p = 0; p < parts; p++) {
+            fstream fout(tmpDirectoryPath + "out" + (singleFileMode?"":("_" + toString(p + 1))),
+                    ios_base::out | ios_base::binary | std::ios::trunc);
+            string res, read;
+            read.resize(readLength);
+            uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
+            uint64_t totalSize = dnaStreamSize();
+            res.reserve(totalSize < res_size_guard ? totalSize : res_size_guard +
+                                                                 (hqPg->getReadsSetProperties()->maxReadLength + 1));
+            uint_reads_cnt_max i = 0;
+            for (i = p; i < readsTotalCount; i += inc) {
+                if (res.size() > res_size_guard) {
+                    fout << res;
+                    res.resize(0);
+                }
+                uint_reads_cnt_std idx = rlIdxOrder[i];
+                SeparatedPseudoGenome* pg;
+                if (idx < hqPg->getReadsSetProperties()->readsCount)
+                    pg = hqPg;
+                else if (idx < nonNPgReadsCount) {
+                    pg = lqPg;
+                    idx -= hqPg->getReadsSetProperties()->readsCount;
+                } else {
+                    pg = nPg;
+                    idx -= nonNPgReadsCount;
+                }
+                pg->getRead(idx, (char*) read.data());
+                res.append(read);
+                res.push_back('\n');
+            }
+            fout << res;
+            fout.close();
+        }
     }
 
     uint_reads_cnt_max PgRCManager::dnaStreamSize() const {
@@ -614,7 +677,8 @@ namespace PgTools {
 
     }
 
-    void PgRCManager::loadAllPgs(istream& pgrcIn) {
+    void PgRCManager::loadAllPgs(istream& pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
+            bool completeOrderInfo, bool singleFileMode) {
         PseudoGenomeHeader hqPgh(pgrcIn);
         ReadsSetProperties hqRsProp(pgrcIn);
         if (confirmTextReadMode(pgrcIn)) {
@@ -650,11 +714,11 @@ namespace PgTools {
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), hqCaeRl, &hqRsProp);
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), lqCaeRl, &lqRsProp);
         nPg = new SeparatedPseudoGenome(move(nPgSeq), nCaeRl, &nRsProp);
+        readLength = hqPg->getReadsSetProperties()->maxReadLength;
     }
 
     void PgRCManager::loadAllPgs() {
         string hqPgSeq = SimplePgMatcher::restoreAutoMatchedPg(pgSeqFinalHqPrefix, true);
-
         PseudoGenomeHeader* pgh = 0;
         ReadsSetProperties* prop = 0;
         bool plainTextReadMode = false;
@@ -666,12 +730,20 @@ namespace PgTools {
         delete(prop);
 
         SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalLqPrefix, pgh, prop, plainTextReadMode);
-
         string lqPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgSeqFinalLqPrefix, true, plainTextReadMode);
         caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
+
+        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgNPrefix, pgh, prop, plainTextReadMode);
+        string nPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgNPrefix, true, plainTextReadMode);
+        caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgNPrefix, pgh->getPseudoGenomeLength());
+        nPg = new SeparatedPseudoGenome(move(nPgSeq), caeRl, prop);
+        delete(pgh);
+        delete(prop);
+
+        readLength = hqPg->getReadsSetProperties()->maxReadLength;
     }
 
     uint_read_len_max probeReadsLength(const string &srcFastqFile) {
