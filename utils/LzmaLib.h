@@ -6,6 +6,9 @@
 
 #include "../lzma/7zTypes.h"
 #include "helper.h"
+#include <vector>
+
+using namespace std;
 
 #define MY_STDAPI int MY_STD_CALL
 
@@ -34,5 +37,25 @@ void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uin
 
 void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type);
 void readCompressed(istream &src, string& dest);
+
+template<typename T>
+void readCompressed(istream &src, vector<T>& dest) {
+    size_t destLen = 0;
+    size_t srcLen = 0;
+    uint8_t coder_type = 0;
+    PgSAHelpers::readValue<uint64_t>(src, destLen, false);
+    if (destLen % sizeof(T)) {
+        fprintf(stderr, "Invalid output size %ulld for decompressing to the vector of %d-byte elements",
+                destLen, sizeof(T));
+    }
+    dest.resize(destLen / sizeof(T));
+    if (destLen == 0)
+        return;
+    PgSAHelpers::readValue<uint64_t>(src, srcLen, false);
+    PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
+    const char* srcArray = (const char*) PgSAHelpers::readArray(src, srcLen);
+    Uncompress((char*) dest.data(), destLen, srcArray, srcLen, coder_type);
+    delete(srcArray);
+}
 
 #endif

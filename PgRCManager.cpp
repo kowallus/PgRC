@@ -455,13 +455,11 @@ namespace PgTools {
             cout << "Decompressed ";
         } else {
             validateAllPgs();
-            //validatePgsOrder(rlIdxOrder, completeOrderInfo, singleFileMode);
+            validatePgsOrder(rlIdxOrder, completeOrderInfo, singleFileMode);
             cout << "Validated ";
         }
 
-        cout << (hqPg->getReadsSetProperties()->readsCount + lqPg->getReadsSetProperties()->readsCount +
-                (nPg?nPg->getReadsSetProperties()->readsCount:0)) <<
-                " reads in " << clock_millis(start_t) << " msec." << endl;
+        cout << readsTotalCount << " reads in " << clock_millis(start_t) << " msec." << endl;
 
         disposeChainData();
     }
@@ -487,7 +485,7 @@ namespace PgTools {
         read.resize(readLength);
         uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
         res.reserve(CHUNK_SIZE_IN_BYTES);
-        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++) {
+        for(uint_reads_cnt_max i = 0; i < hqReadsCount; i++) {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
             }
@@ -495,7 +493,7 @@ namespace PgTools {
             res.append(read);
             res.push_back('\n');
         }
-        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
+        for(uint_reads_cnt_max i = 0; i < lqReadsCount; i++) {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
             }
@@ -503,7 +501,6 @@ namespace PgTools {
             res.append(read);
             res.push_back('\n');
         }
-        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++) {
             if (res.size() > res_size_guard) {
                 pushOutToQueue(res);
@@ -539,8 +536,8 @@ namespace PgTools {
         read.resize(readLength);
         uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
         uint64_t totalSize = dnaStreamSize();
-        res.reserve(totalSize < res_size_guard?totalSize:res_size_guard + (hqPg->getReadsSetProperties()->maxReadLength + 1));
-        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++) {
+        res.reserve(totalSize < res_size_guard?totalSize:res_size_guard + (readLength + 1));
+        for(uint_reads_cnt_max i = 0; i < hqReadsCount; i++) {
             if (res.size() > res_size_guard) {
                 fout << res;
                 res.resize(0);
@@ -549,7 +546,7 @@ namespace PgTools {
             res.append(read);
             res.push_back('\n');
         }
-        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++) {
+        for(uint_reads_cnt_max i = 0; i < lqReadsCount; i++) {
             if (res.size() > res_size_guard) {
                 fout << res;
                 res.resize(0);
@@ -558,7 +555,6 @@ namespace PgTools {
             res.append(read);
             res.push_back('\n');
         }
-        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++) {
             if (res.size() > res_size_guard) {
                 fout << res;
@@ -576,10 +572,7 @@ namespace PgTools {
             bool singleFileMode) const {
         uint8_t parts = singleFileMode?1:2;
         int inc = singleFileMode?1:2;
-        uint_reads_cnt_max nonNPgReadsCount = hqPg->getReadsSetProperties()->readsCount
-                                              + lqPg->getReadsSetProperties()->readsCount;
-        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
-        uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
+
         for(uint8_t p = 0; p < parts; p++) {
             fstream fout(tmpDirectoryPath + "out" + (singleFileMode?"":("_" + toString(p + 1))),
                     ios_base::out | ios_base::binary | std::ios::trunc);
@@ -587,8 +580,7 @@ namespace PgTools {
             read.resize(readLength);
             uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
             uint64_t totalSize = dnaStreamSize();
-            res.reserve(totalSize < res_size_guard ? totalSize : res_size_guard +
-                                                                 (hqPg->getReadsSetProperties()->maxReadLength + 1));
+            res.reserve(totalSize < res_size_guard ? totalSize : res_size_guard + (readLength + 1));
             uint_reads_cnt_max i = 0;
             for (i = p; i < readsTotalCount; i += inc) {
                 if (res.size() > res_size_guard) {
@@ -597,11 +589,11 @@ namespace PgTools {
                 }
                 uint_reads_cnt_std idx = rlIdxOrder[i];
                 SeparatedPseudoGenome* pg;
-                if (idx < hqPg->getReadsSetProperties()->readsCount)
+                if (idx < hqReadsCount)
                     pg = hqPg;
                 else if (idx < nonNPgReadsCount) {
                     pg = lqPg;
-                    idx -= hqPg->getReadsSetProperties()->readsCount;
+                    idx -= hqReadsCount;
                 } else {
                     pg = nPg;
                     idx -= nonNPgReadsCount;
@@ -621,19 +613,7 @@ namespace PgTools {
     }
 
     void PgRCManager::validateAllPgs() {
-        uint_reads_cnt_max nonNPgReadsCount = hqPg->getReadsSetProperties()->readsCount
-                                              + lqPg->getReadsSetProperties()->readsCount;
-        uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
-        uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
-        vector<uint_reads_cnt_max> orgIdx2rlIdx;
-        orgIdx2rlIdx.resize(readsTotalCount);
-        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
-            orgIdx2rlIdx[hqPg->getReadsList()->orgIdx[i]] = i;
-        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
-            orgIdx2rlIdx[lqPg->getReadsList()->orgIdx[i]] = hqPg->getReadsSetProperties()->readsCount + i;
-        for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++)
-            orgIdx2rlIdx[nPg->getReadsList()->orgIdx[i]] = nonNPgReadsCount + i;
-
+        vector<uint_reads_cnt_max> orgIdx2rlIdx = getAllPgsOrgIdxs2RlIdx();
         ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
                 srcFastqFile, pairFastqFile, revComplPairFile);
 
@@ -652,10 +632,10 @@ namespace PgTools {
                 continue;
             }
             validated[idx] = true;
-            if (idx < hqPg->getReadsSetProperties()->readsCount)
+            if (idx < hqReadsCount)
                 read = hqPg->getRead(idx);
             else if (idx < nonNPgReadsCount)
-                read = lqPg->getRead(idx - hqPg->getReadsSetProperties()->readsCount);
+                read = lqPg->getRead(idx - hqReadsCount);
             else
                 read = nPg->getRead(idx - nonNPgReadsCount);
             if (read != allReadsIterator->getRead())
@@ -675,6 +655,51 @@ namespace PgTools {
 
         delete (allReadsIterator);
 
+    }
+
+    const vector<uint_reads_cnt_max> PgRCManager::getAllPgsOrgIdxs2RlIdx() const {
+        vector<uint_reads_cnt_max> orgIdx2rlIdx;
+        orgIdx2rlIdx.resize(readsTotalCount);
+        for(uint_reads_cnt_max i = 0; i < hqPg->getReadsSetProperties()->readsCount; i++)
+            orgIdx2rlIdx[hqPg->getReadsList()->orgIdx[i]] = i;
+        for(uint_reads_cnt_max i = 0; i < lqPg->getReadsSetProperties()->readsCount; i++)
+            orgIdx2rlIdx[lqPg->getReadsList()->orgIdx[i]] = hqPg->getReadsSetProperties()->readsCount + i;
+        for(uint_reads_cnt_max i = 0; i < nPgReadsCount; i++)
+            orgIdx2rlIdx[nPg->getReadsList()->orgIdx[i]] = nonNPgReadsCount + i;
+        return orgIdx2rlIdx;
+    }
+
+    const uint_reads_cnt_max PgRCManager::getAllPgsOrgIdx(uint_reads_cnt_max idx) const {
+        if (idx < hqReadsCount)
+            return hqPg->getReadsList()->orgIdx[idx];
+        else if (idx < nonNPgReadsCount)
+            return lqPg->getReadsList()->orgIdx[idx - hqReadsCount];
+        else
+            return nPg->getReadsList()->orgIdx[idx - nonNPgReadsCount];
+    }
+
+    void PgRCManager::validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder,
+            bool completeOrderInfo, bool singleFileMode) {
+        vector<bool> validated(readsTotalCount, false);
+        uint_reads_cnt_max notValidatedCount = 0;
+        uint_reads_cnt_max errorsCount = 0;
+        if (completeOrderInfo && singleFileMode) {
+            for(uint_reads_cnt_std i = 0; i < readsTotalCount; i++) {
+                uint_reads_cnt_std rlIdx = rlIdxOrder[i];
+                if (validated[rlIdx]) {
+                    notValidatedCount++;
+                    continue;
+                }
+                if (i != getAllPgsOrgIdx(rlIdx))
+                    errorsCount++;
+            }
+        }
+        if (notValidatedCount)
+            cout << "Order of " << notValidatedCount << " compressed reads could not been properly validated." << endl;
+        if (errorsCount)
+            cout << "Found " << errorsCount << " errors in compressed reads order." << endl;
+        if (!notValidatedCount && !errorsCount)
+            cout << "Order validation successful!" << endl;
     }
 
     void PgRCManager::loadAllPgs(istream& pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
@@ -715,6 +740,13 @@ namespace PgTools {
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), lqCaeRl, &lqRsProp);
         nPg = new SeparatedPseudoGenome(move(nPgSeq), nCaeRl, &nRsProp);
         readLength = hqPg->getReadsSetProperties()->maxReadLength;
+        hqReadsCount = hqPg->getReadsSetProperties()->readsCount;
+        lqReadsCount = lqPg->getReadsSetProperties()->readsCount;
+        nonNPgReadsCount = hqReadsCount + lqReadsCount;
+        nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
+        readsTotalCount = nonNPgReadsCount + nPgReadsCount;
+        if (completeOrderInfo && singleFileMode)
+            readCompressed<uint_reads_cnt_std>(pgrcIn, rlIdxOrder);
     }
 
     void PgRCManager::loadAllPgs() {

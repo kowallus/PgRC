@@ -250,9 +250,12 @@ namespace PgTools {
         cout << endl;
         uint_reads_cnt_std readsCount = orgIdxs.size();
         int lzma_coder_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
+        vector<uint_reads_cnt_std> rev(readsCount);
+        for (uint_reads_cnt_std i = 0; i < readsCount; i++)
+            rev[orgIdxs[i]] = i;
         if (completeOrderInfo && singleFileMode) {
-            cout << "Original indexes... ";
-            writeCompressed(pgrcOut, (char *) orgIdxs.data(), orgIdxs.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
+            cout << "Reverse index of original indexes... ";
+            writeCompressed(pgrcOut, (char *) rev.data(), rev.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
                     coder_level, lzma_coder_param);
         } else {
             // absolute original index of a processed pair base
@@ -271,9 +274,6 @@ namespace PgTools {
             vector<uint_reads_cnt_std> fullOffset;
             deltaInInt8Value.reserve(readsCount / 8); // estimated
 
-            vector<uint_reads_cnt_std> rev(readsCount);
-            for (uint_reads_cnt_std i = 0; i < readsCount; i++)
-                rev[orgIdxs[i]] = i;
             vector<bool> isReadDone(readsCount, false);
             int64_t refPrev = 0;
             int64_t prev = 0;

@@ -90,6 +90,13 @@ namespace PgTools {
         string pgNPrefix;
         string mappedLqDivisionFile;
 
+        // Decompression chain variables
+        uint_reads_cnt_max hqReadsCount;
+        uint_reads_cnt_max lqReadsCount;
+        uint_reads_cnt_max nonNPgReadsCount;
+        uint_reads_cnt_max nPgReadsCount;
+        uint_reads_cnt_max readsTotalCount;
+
         // CHAIN METHODS
         void prepareChainData();
 
@@ -311,8 +318,12 @@ namespace PgTools {
         void writeFromQueue(const string &tmpDirectoryPath);
 
         void validateAllPgs();
+        void validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder, bool completeOrderInfo, bool singleFileMode);
 
         uint_reads_cnt_max dnaStreamSize() const;
+
+        const vector<uint_reads_cnt_max> getAllPgsOrgIdxs2RlIdx() const;
+        const uint_reads_cnt_max getAllPgsOrgIdx(uint_reads_cnt_max idx) const;
     };
 }
 
