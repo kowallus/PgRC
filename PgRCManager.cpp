@@ -7,6 +7,7 @@
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
+#include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
 namespace PgTools {
 
@@ -680,10 +681,13 @@ namespace PgTools {
 
     void PgRCManager::validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder,
             bool completeOrderInfo, bool singleFileMode) {
+        if (!completeOrderInfo && singleFileMode)
+            return;
+
         vector<bool> validated(readsTotalCount, false);
         uint_reads_cnt_max notValidatedCount = 0;
         uint_reads_cnt_max errorsCount = 0;
-        if (completeOrderInfo && singleFileMode) {
+        if (completeOrderInfo) {
             for(uint_reads_cnt_std i = 0; i < readsTotalCount; i++) {
                 uint_reads_cnt_std rlIdx = rlIdxOrder[i];
                 if (validated[rlIdx]) {
@@ -692,6 +696,23 @@ namespace PgTools {
                 }
                 if (i != getAllPgsOrgIdx(rlIdx))
                     errorsCount++;
+            }
+        } else {
+            for(uint_reads_cnt_std p = 0; p < readsTotalCount / 2; p++) {
+                uint_reads_cnt_std rlIdx = rlIdxOrder[p * 2];
+                uint_reads_cnt_std rlPairIdx = rlIdxOrder[p * 2 + 1];
+                if (validated[rlIdx]) notValidatedCount++;
+                if (validated[rlPairIdx]) notValidatedCount++;
+                if (!validated[rlIdx] && !validated[rlPairIdx]) {
+                    validated[rlIdx] = true;
+                    validated[rlPairIdx] = true;
+                    uint_reads_cnt_std orgIdx = getAllPgsOrgIdx(rlIdx);
+                    uint_reads_cnt_std orgPairIdx = getAllPgsOrgIdx(rlPairIdx);
+                    uint_reads_cnt_std smallerIdx = orgIdx < orgPairIdx ? orgIdx : orgPairIdx;
+                    uint_reads_cnt_std largerIdx = orgIdx >= orgPairIdx ? orgIdx : orgPairIdx;
+                    if (largerIdx - smallerIdx != 1 || smallerIdx % 2)
+                        errorsCount++;
+                }
             }
         }
         if (notValidatedCount)
@@ -745,8 +766,8 @@ namespace PgTools {
         nonNPgReadsCount = hqReadsCount + lqReadsCount;
         nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         readsTotalCount = nonNPgReadsCount + nPgReadsCount;
-        if (completeOrderInfo && singleFileMode)
-            readCompressed<uint_reads_cnt_std>(pgrcIn, rlIdxOrder);
+
+        SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder, completeOrderInfo, singleFileMode);
     }
 
     void PgRCManager::loadAllPgs() {

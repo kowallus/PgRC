@@ -259,9 +259,9 @@ namespace PgTools {
                     coder_level, lzma_coder_param);
         } else {
             // absolute original index of a processed pair base
-            vector<uint_reads_cnt_std> pair1indexes;
+            vector<uint_reads_cnt_std> pairBaseOrgIdx;
             if (completeOrderInfo)
-                pair1indexes.reserve(readsCount / 2);
+                pairBaseOrgIdx.reserve(readsCount / 2);
             // coding reads list index offset of paired read
             vector<uint8_t> offsetInUint8Flag;
             offsetInUint8Flag.reserve(readsCount / 2);
@@ -286,27 +286,27 @@ namespace PgTools {
                 uint_reads_cnt_std i2 = rev[pairOrgIdx]; // i2 > i1
                 isReadDone[i2] = true;
                 if (completeOrderInfo)
-                    pair1indexes.push_back(orgIdx);
-                int64_t i2Offset = i2 - i1;
-                offsetInUint8Flag.push_back((uint8_t) (i2Offset <= UINT8_MAX));
-                if (i2Offset < UINT8_MAX) {
-                    offsetInUint8Value.push_back((uint8_t) i2Offset);
+                    pairBaseOrgIdx.push_back(orgIdx);
+                int64_t pairOffset = i2 - i1;
+                offsetInUint8Flag.push_back((uint8_t) (pairOffset <= UINT8_MAX));
+                if (pairOffset <= UINT8_MAX) {
+                    offsetInUint8Value.push_back((uint8_t) pairOffset);
                     continue;
                 }
-                const int64_t delta = i2Offset - refPrev;
+                const int64_t delta = pairOffset - refPrev;
                 const bool isDeltaInInt8 = delta <= INT8_MAX && delta >= INT8_MIN;
                 deltaInInt8Flag.push_back((uint8_t) isDeltaInInt8);
                 if (isDeltaInInt8) {
                     match = true;
                     deltaInInt8Value.push_back((int8_t) delta);
-                    refPrev = i2Offset;
+                    refPrev = pairOffset;
                 } else {
                     if (!match || refPrev != prev)
-                        refPrev = i2Offset;
-                    fullOffset.push_back(i2Offset);
+                        refPrev = pairOffset;
+                    fullOffset.push_back(pairOffset);
                     match = false;
                 }
-                prev = i2Offset;
+                prev = pairOffset;
             }
 
             cout << "Uint8 reads list offsets of pair reads (flag)... ";
@@ -317,7 +317,7 @@ namespace PgTools {
             writeCompressed(pgrcOut, (char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 2);
             cout << "Offsets deltas of pair reads (flag)... ";
-            writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(int8_t),
+            writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3);
             cout << "Offsets deltas of pair reads (value)... ";
             writeCompressed(pgrcOut, (char *) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(int8_t),
@@ -327,11 +327,79 @@ namespace PgTools {
                             LZMA_CODER, coder_level, lzma_coder_param);
             if (completeOrderInfo) {
                 cout << "Original indexes of pair bases... ";
-                writeCompressed(pgrcOut, (char *) pair1indexes.data(), pair1indexes.size() * sizeof(uint_reads_cnt_std),
+                writeCompressed(pgrcOut, (char *) pairBaseOrgIdx.data(), pairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
                                 LZMA_CODER, coder_level, lzma_coder_param);
             }
         }
         cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
+    }
+
+    void SeparatedPseudoGenomePersistence::decompressReadsOrder(istream &pgrcIn,
+                                                                vector<uint_reads_cnt_std> &rlIdxOrder,
+                                                                bool completeOrderInfo, bool singleFileMode) {
+        if (!completeOrderInfo && singleFileMode)
+            return;
+
+        if (completeOrderInfo && singleFileMode)
+            readCompressed<uint_reads_cnt_std>(pgrcIn, rlIdxOrder);
+        else {
+            vector<uint8_t> offsetInUint8Flag;
+            vector<uint8_t> offsetInUint8Value;
+            vector<uint8_t> deltaInInt8Flag;
+            vector<int8_t> deltaInInt8Value;
+            vector<uint_reads_cnt_std> fullOffset;
+            readCompressed<uint8_t>(pgrcIn, offsetInUint8Flag);
+            readCompressed<uint8_t>(pgrcIn, offsetInUint8Value);
+            readCompressed<uint8_t>(pgrcIn, deltaInInt8Flag);
+            readCompressed<int8_t>(pgrcIn, deltaInInt8Value);
+            readCompressed<uint_reads_cnt_std>(pgrcIn, fullOffset);
+
+            uint_reads_cnt_std readsCount = offsetInUint8Flag.size() * 2;
+            rlIdxOrder.resize(readsCount);
+            vector<bool> isReadDone(readsCount, false);
+            int64_t pairOffset = 0;
+            int64_t pairCounter = -1;
+            int64_t offIdx = -1;
+            int64_t delFlagIdx = -1;
+            int64_t delIdx = -1;
+            int64_t fulIdx = -1;
+            int64_t refPrev = 0;
+            int64_t prev = 0;
+            bool match = false;
+
+            for(uint_reads_cnt_std i = 0; i < readsCount; i++) {
+                if (isReadDone[i])
+                    continue;
+                if (offsetInUint8Flag[++pairCounter])
+                    pairOffset = offsetInUint8Value[++offIdx];
+                else if (deltaInInt8Flag[++delFlagIdx]) {
+                    pairOffset = refPrev + deltaInInt8Value[++delIdx];
+                    refPrev = pairOffset;
+                    match = true;
+                    prev = pairOffset;
+                } else {
+                    pairOffset = fullOffset[++fulIdx];
+                    if (!match || refPrev != prev)
+                        refPrev = pairOffset;
+                    match = false;
+                    prev = pairOffset;
+                }
+                rlIdxOrder[pairCounter * 2] = i;
+                rlIdxOrder[pairCounter * 2 + 1] = i + pairOffset;
+                isReadDone[i + pairOffset] = true;
+            }
+            if (completeOrderInfo) {
+                vector<uint_reads_cnt_std> pairBaseOrgIdx;
+                readCompressed<uint_reads_cnt_std>(pgrcIn, pairBaseOrgIdx);
+                vector<uint_reads_cnt_std> peRlIdxOrder = std::move(rlIdxOrder);
+                rlIdxOrder.resize(readsCount);
+                for(uint_reads_cnt_std p = 0; p < readsCount / 2; p++) {
+                    uint_reads_cnt_std orgIdx = pairBaseOrgIdx[p];
+                    rlIdxOrder[orgIdx] = peRlIdxOrder[p * 2];
+                    rlIdxOrder[orgIdx % 2?orgIdx - 1:orgIdx + 1] = peRlIdxOrder[p * 2 + 1];
+                }
+            }
+        }
     }
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string pseudoGenomePrefix,
