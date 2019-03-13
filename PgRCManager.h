@@ -28,27 +28,33 @@ namespace PgTools {
         static const int MIN_CHARS_PER_MISMATCH = 4;
         static const int MIN_READS_EXACT_MATCHING_CHARS = 20;
 
+        static const char DEFAULT_CHAR_PARAM = CHAR_MAX;
+        static const uint16_t DEFAULT_UINT16_PARAM = UINT16_MAX;
+        static constexpr double DEFAULT_DOUBLE_PARAM = -1;
+
         // INPUT PARAMETERS
-        uint8_t compressionLevel = PGRC_CODER_LEVEL_NORMAL;
         bool singleReadsMode = false;
         bool preserveOrderMode = false;
-        uint16_t error_limit_in_promils = 1000;
-        string gen_quality_str = "50";
-        double gen_quality_coef = 0.5;
         bool nReadsLQ = false;
-        bool separateNReads = false;
+        bool separateNReads = true;
         bool extraFilesForValidation = false;
-        uint16_t preReadsExactMatchingChars = 0;
-        uint16_t readsExactMatchingChars = UINT16_MAX;
-        uint16_t minCharsPerMismatch = UINT16_MAX;
-        char preMatchingMode = 'd';
-        char matchingMode = 'd';
-        uint32_t targetPgMatchLength = 50;
         string pgRCFileName = "";
         bool revComplPairFile = false;
 
         string srcFastqFile = "";
         string pairFastqFile = "";
+
+        // COMPRESSION PARAMETERS
+        uint8_t compressionLevel = PGRC_CODER_LEVEL_NORMAL;
+        uint16_t error_limit_in_promils = DEFAULT_UINT16_PARAM;
+        string gen_quality_str;
+        double gen_quality_coef = DEFAULT_DOUBLE_PARAM;
+        uint16_t preReadsExactMatchingChars = DEFAULT_UINT16_PARAM;
+        uint16_t readsExactMatchingChars = DEFAULT_UINT16_PARAM;
+        uint16_t minCharsPerMismatch = DEFAULT_UINT16_PARAM;
+        char preMatchingMode = CHAR_MAX;
+        char matchingMode = CHAR_MAX;
+        uint16_t targetPgMatchLength = DEFAULT_UINT16_PARAM;
 
         // CHAIN MANAGEMENT
         uint8_t skipStages = 0;
@@ -100,12 +106,11 @@ namespace PgTools {
         // CHAIN METHODS
         void prepareChainData();
 
+        void initCompressionParameters();
+
     public:
 
-        PgRCManager() {
-            setError_limit_in_promils(1000);
-            setGen_quality_str("50");
-        }
+        PgRCManager() { }
 
         void executePgRCChain();
 
@@ -135,6 +140,8 @@ namespace PgTools {
         }
 
         void setError_limit_in_promils(uint16_t error_limit_in_promils) {
+            if (PgRCManager::error_limit_in_promils != DEFAULT_UINT16_PARAM)
+                return;
             if (error_limit_in_promils > 1000) {
                 fprintf(stderr, "Error limit should not be greater than 1000.\n");
                 exit(EXIT_FAILURE);
@@ -143,6 +150,8 @@ namespace PgTools {
         }
 
         void setGen_quality_str(const string &gen_quality_str) {
+            if (PgRCManager::gen_quality_coef != DEFAULT_DOUBLE_PARAM)
+                return;
             gen_quality_coef = atoi(gen_quality_str.c_str()) / 100.0;
             if (gen_quality_coef > 1 || gen_quality_coef <= 0) {
                 fprintf(stderr, "Generate quality coefficient should be between 1 and 100.\n");
@@ -152,19 +161,12 @@ namespace PgTools {
         }
 
         void setNReadsLQ() {
-            if (separateNReads) {
-                fprintf(stderr, "Reads containing N should be processed either separately or consider low quality");
-                exit(EXIT_FAILURE);
-            }
+            PgRCManager::separateNReads = false;
             PgRCManager::nReadsLQ = true;
         }
 
-        void setSeparateNReads() {
-            if (nReadsLQ) {
-                fprintf(stderr, "Reads containing N should be processed either separately or considered low quality");
-                exit(EXIT_FAILURE);
-            }
-            PgRCManager::separateNReads = true;
+        void doNotSeparateNReads() {
+            PgRCManager::separateNReads = false;
         }
 
         void setValidationOutputMode() {
@@ -172,6 +174,8 @@ namespace PgTools {
         }
 
         void setReadsExactMatchingChars(uint16_t readsExactMatchingChars) {
+            if (PgRCManager::readsExactMatchingChars != DEFAULT_UINT16_PARAM)
+                return;
             if (readsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
                 fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n",
                         MIN_READS_EXACT_MATCHING_CHARS);
@@ -181,7 +185,10 @@ namespace PgTools {
         }
 
         void setPreReadsExactMatchingChars(uint16_t preReadsExactMatchingChars) {
-            if (preReadsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
+            if (PgRCManager::preReadsExactMatchingChars != DEFAULT_UINT16_PARAM)
+                return;
+            if (preReadsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS &&
+                preReadsExactMatchingChars > 0) {
                 fprintf(stderr, "Chars per reads exact matching cannot be lower than %d.\n",
                         MIN_READS_EXACT_MATCHING_CHARS);
                 exit(EXIT_FAILURE);
@@ -189,7 +196,9 @@ namespace PgTools {
             PgRCManager::preReadsExactMatchingChars = preReadsExactMatchingChars;
         }
 
-        void setMaxCharsPerMismatch(uint16_t minCharsPerMismatch) {
+        void setMinCharsPerMismatch(uint16_t minCharsPerMismatch) {
+            if (PgRCManager::minCharsPerMismatch != DEFAULT_UINT16_PARAM)
+                return;
             if (minCharsPerMismatch < MIN_CHARS_PER_MISMATCH) {
                 fprintf(stderr, "Chars per mismatch cannot be lower than %d.\n", MIN_CHARS_PER_MISMATCH);
                 exit(EXIT_FAILURE);
@@ -197,15 +206,21 @@ namespace PgTools {
             PgRCManager::minCharsPerMismatch = minCharsPerMismatch;
         }
 
-        void setPreMatchingMode(char matchingModde) {
-            PgRCManager::preMatchingMode = matchingModde;
+        void setPreMatchingMode(char matchingMode) {
+            if (PgRCManager::preMatchingMode != DEFAULT_CHAR_PARAM)
+                return;
+            PgRCManager::preMatchingMode = matchingMode;
         }
 
         void setMatchingMode(char matchingMode) {
+            if (PgRCManager::matchingMode != DEFAULT_CHAR_PARAM)
+                return;
             PgRCManager::matchingMode = matchingMode;
         }
 
-        void setMinimalPgMatchLength(uint32_t targetPgMatchLength) {
+        void setMinimalPgMatchLength(uint16_t targetPgMatchLength) {
+            if (PgRCManager::targetPgMatchLength != DEFAULT_UINT16_PARAM)
+                return;
             if (targetPgMatchLength < MIN_CHARS_PER_PGMATCH) {
                 fprintf(stderr, "Target Pg match length cannot be lower than %d.\n", MIN_CHARS_PER_PGMATCH);
                 exit(EXIT_FAILURE);

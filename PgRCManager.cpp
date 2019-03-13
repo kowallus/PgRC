@@ -22,7 +22,40 @@ namespace PgTools {
     uint_read_len_max probeReadsLength(const string &srcFastqFile);
     clock_t getTimeInSec(clock_t end_t, clock_t begin_t) { return ((end_t - begin_t) / CLOCKS_PER_SEC); }
 
+    void PgRCManager::initCompressionParameters() {
+        setError_limit_in_promils(1000);
+        setPreMatchingMode('c');
+        setMinimalPgMatchLength(50);
+        switch (compressionLevel) {
+            case PGRC_CODER_LEVEL_FAST:
+                setGen_quality_str("50");
+                setMatchingMode('C');
+                setPreReadsExactMatchingChars(0);
+                setReadsExactMatchingChars(54);
+                setMinCharsPerMismatch(10);
+                break;
+            case PGRC_CODER_LEVEL_NORMAL:
+                setGen_quality_str("65");
+                setPreReadsExactMatchingChars(64);
+                setMatchingMode('C');
+                setReadsExactMatchingChars(39);
+                setMinCharsPerMismatch(6);
+                break;
+            case PGRC_CODER_LEVEL_MAX:
+                setGen_quality_str("70");
+                setPreReadsExactMatchingChars(64);
+                setMatchingMode('c');
+                setReadsExactMatchingChars(35);
+                setMinCharsPerMismatch(6);
+                break;
+            default:
+                fprintf(stderr, "Error: unknown compression level: %d.", compressionLevel);
+                exit(EXIT_FAILURE);
+        }
+    }
+
     void PgRCManager::prepareChainData() {
+        initCompressionParameters();
         qualityDivision = error_limit_in_promils < 1000;
         readLength = probeReadsLength(srcFastqFile);
         if (pairFastqFile.empty() && !preserveOrderMode)
@@ -153,13 +186,11 @@ namespace PgTools {
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
             string emptySequence;
-            //DefaultPgMatcher::matchPgInPgFile(pgMappedHqPrefix, pgMappedHqPrefix, readsLength, pgHqPrefix, true, false);
             SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(),
                     separateNReads?nPg->getPgSequence():emptySequence, pgrcOut, compressionLevel,
                                           extraFilesForValidation?pgSeqFinalHqPrefix:"",
                                           extraFilesForValidation?pgSeqFinalLqPrefix:"",
                                           extraFilesForValidation?pgNPrefix:"", targetPgMatchLength);
-//            testCompressSequences();
         }
         gooder_t = clock();
         if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
@@ -341,6 +372,8 @@ namespace PgTools {
             hqPg = SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(pgHqPrefix, true);
         if (!lqPg)
             lqPg = SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(pgMappedLqPrefix, true);
+        if (separateNReads && !nPg)
+            nPg = SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(pgNPrefix, true);
     }
 
 
@@ -373,6 +406,8 @@ namespace PgTools {
     }
 
     void PgRCManager::finalizeCompression() {
+        cout << endl << "Created PgRC of size " << pgrcOut.tellp() << " bytes in "
+            << toString((double) clock_millis(start_t ) / 1000, 2) << " s." << endl;
         pgrcOut.close();
         string pgRCTempFileName = pgRCFileName + TEMPORARY_FILE_SUFFIX;
         if (std::ifstream(pgRCFileName))

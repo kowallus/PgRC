@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
                 break;
             case 'N':
                 compressionParamPresent = true;
-                pgRC->setSeparateNReads();
+                pgRC->doNotSeparateNReads();
                 break;
             case 'n':
                 compressionParamPresent = true;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
                 break;
             case 'M':
                 compressionParamPresent = true;
-                pgRC->setMaxCharsPerMismatch(atoi(optarg));
+                pgRC->setMinCharsPerMismatch(atoi(optarg));
                 break;
             case 'q':
                 compressionParamPresent = true;
@@ -129,13 +129,13 @@ int main(int argc, char *argv[])
             case '?':
             default: /* '?' */
                 fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)]\n"
-                                "[-m [matchingMode]exactMatchingCharsCount] [-M maxCharsPerMismatch]\n"
+                                "[-m [matchingMode]exactMatchingCharsCount] [-M minCharsPerMismatch]\n"
                                 "[-d] [-N] [-s] [-o] [-r] [-a] [-A] [-t]\n"
                                 "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
                                 "[-g gen_quality_coef_in_%%] -i readssrcfile [pairsrcfile] pgRCFileName\n\n",
                         argv[0]);
                 fprintf(stderr, "-d for decompression mode (supports only -i parameter for validation)\n");
-                fprintf(stderr, "-N reads containing N are processed separately\n"); // -n reads containing N are low quality
+                fprintf(stderr, "-N reads containing N are not processed separately\n"); // -n reads containing N are low quality
                 fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
                 fprintf(stderr, "-o preserve original order information\n");
                 fprintf(stderr, "-l enables preliminary reads matching stage\n");
