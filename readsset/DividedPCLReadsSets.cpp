@@ -194,8 +194,8 @@ namespace PgTools {
 
     IndexesMapping* DividedPCLReadsSets::generateHqReadsIndexesMapping() {
         vector<uint_reads_cnt_max> hqReadIdx;
-        hqReadIdx.reserve(lqMapping->getReadsTotalCount() -
-            lqReadsSet->readsCount() - (separateNReadsSet?nReadsSet->readsCount():0));
+//        hqReadIdx.reserve(lqMapping->getReadsTotalCount() -
+//            lqReadsSet->readsCount() - (separateNReadsSet?nReadsSet->readsCount():0));
         int64_t allCounter = -1;
         uint_reads_cnt_max lqCounter = 0;
         uint_reads_cnt_max nCounter = 0;

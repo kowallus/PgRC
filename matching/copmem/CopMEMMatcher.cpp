@@ -45,7 +45,7 @@
 #include "Hashes.h"
 
 //////////////////// GLOBAL CONSTS //////////////////////////
-const std::uint32_t HASH_SIZE = 1U << 29;
+const std::uint32_t HASH_SIZE = 1U << 27;
 const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
@@ -234,7 +234,7 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
 	uint32_t hArray[MULTI];
 	MyUINT2 posArray[MULTI * 2];
 
-	std::uint32_t l1, l2, r1, r2;
+	std::uint32_t l1 = 0, l2 = 0, r1 = 0, r2 = 0;
 
 	size_t charExtensions = 0ULL;
 
@@ -249,6 +249,7 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
     *v1logger << "Multi-mode = " << (MULTI_MODE?"true":"false") << std::endl;
 
     size_t i1 = 0;
+    const char* end2 = start2 + N2;
     if (MULTI_MODE) {
         for (i1 = 0; i1 + K + k2MULTI < N2 + 1; i1 += k2MULTI) {
             const char *curr2 = start2 + i1;
@@ -268,8 +269,8 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
                     continue;
                 }
 
-                memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
-                memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+                if (curr2 - LK2 >= start2) memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
+                if (curr2 + K_PLUS_LK24 + sizeof(std::uint32_t) <= end2) memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
                 for (MyUINT1 j = posArray[i2 * 2]; j < posArray[i2 * 2 + 1]; ++j) {
                     ++charExtensions;
@@ -294,11 +295,11 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
                     if (r1 == r2 || l1 == l2) {
                         const char *p1 = curr1 + K - 1;
                         const char *p2 = curr2 + K - 1;
-                        while (*++p1 == *++p2);
+                        while (++p2 != end2 && *++p1 == *p2);
                         const char *right = p1;
                         p1 = curr1;
                         p2 = curr2;
-                        while (*--p1 == *--p2);
+                        while (p1 != start1 && p2 != start2 && *--p1 == *--p2);
 
                         if (right - p1 > minMatchLength && memcmp(curr1, curr2, K) == 0) {
                             resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
@@ -323,8 +324,8 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
             continue;
         }
 
-        memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
-        memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+        if (curr2 - LK2 >= start2) memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
+        if (curr2 + K_PLUS_LK24 + sizeof(std::uint32_t) <= end2) memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
         for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
             ++charExtensions;
@@ -349,11 +350,11 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
             if (r1 == r2 || l1 == l2) {
                 const char* p1 = curr1 + K - 1;
                 const char* p2 = curr2 + K - 1;
-                while (*++p1 == *++p2);
-                const char* right = p1;
+                while (++p2 != end2 && *++p1 == *p2);
+                const char *right = p1;
                 p1 = curr1;
                 p2 = curr2;
-                while (*--p1 == *--p2) ;
+                while (p1 != start1 && p2 != start2 && *--p1 == *--p2);
 
                 if (right - p1 > minMatchLength && memcmp(curr1, curr2, K) == 0) {
                     resMatches.push_back(TextMatch(p1 + 1 - start1, right - p1 - 1, (p2 + 1 - start2)));
@@ -382,11 +383,12 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
 
     MyUINT2 posArray[2];
 
-    std::uint32_t l1, l2, r1, r2;
+    std::uint32_t l1 = 0, l2 = 0, r1 = 0, r2 = 0;
 
     uint64_t matchPosition = NOT_MATCHED_POSITION;
     size_t i1 = 0;
     const char* curr2 = start2 + i1;
+    const char* end2 = start2 + N2;
     for (; i1 + K < N2 + 1; i1 += k2) {
         memcpy(posArray, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
 
@@ -394,8 +396,8 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             curr2 += k2;
             continue;
         }
-        memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
-        memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
+        if (curr2 - LK2 >= start2) memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
+        if (curr2 + K_PLUS_LK24 + sizeof(std::uint32_t) <= end2) memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
         for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
             const uint_read_len_max positionShift = curr2 - start2;
