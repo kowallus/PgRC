@@ -205,7 +205,7 @@ namespace PgTools {
         }
         finalizeCompression();
         disposeChainData();
-        reportTimes();
+        generateReport();
     }
 
     void PgRCManager::runQualityBasedDivision() {
@@ -384,12 +384,12 @@ namespace PgTools {
         exit(EXIT_FAILURE);
     }
 
-    void PgRCManager::reportTimes() {
+    void PgRCManager::generateReport() {
         string outputfile = "pgrc_res.txt";
         bool hasHeader = (bool) std::ifstream(outputfile);
         fstream fout(outputfile, ios::out | ios::binary | ios::app);
         if (!hasHeader)
-            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\tpgSeq-s[s]\torder[s]" << endl;
+            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\tpgSeq-s[s]\torder[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgRCFileName << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
@@ -397,6 +397,7 @@ namespace PgTools {
         if (preReadsExactMatchingChars > 0)
             fout << (char) tolower(preMatchingMode) << ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string("")) << (int) preReadsExactMatchingChars;
         fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
+        fout << pgRCSize << "\t";
         fout << getTimeInSec(clock(), start_t) << "\t";
         fout << getTimeInSec(div_t, start_t) << "\t";
         fout << getTimeInSec(pgDiv_t, div_t) << "\t";
@@ -408,8 +409,9 @@ namespace PgTools {
     }
 
     void PgRCManager::finalizeCompression() {
-        cout << endl << "Created PgRC of size " << pgrcOut.tellp() << " bytes in "
-            << toString((double) clock_millis(start_t ) / 1000, 2) << " s." << endl;
+        pgRCSize = pgrcOut.tellp();
+        cout << endl << "Created PgRC of size " << pgRCSize << " bytes in "
+             << toString((double) clock_millis(start_t ) / 1000, 2) << " s." << endl;
         pgrcOut.close();
         string pgRCTempFileName = pgRCFileName + TEMPORARY_FILE_SUFFIX;
         if (std::ifstream(pgRCFileName))

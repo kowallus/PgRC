@@ -61,7 +61,7 @@ namespace PgTools {
         uint8_t skipStages = 0;
         uint8_t endAtStage = UINT8_MAX;
 
-        // TESTING
+        // TESTING&REPORTING
         bool disableInMemoryMode = false;
         clock_t start_t;
         clock_t div_t;
@@ -70,8 +70,9 @@ namespace PgTools {
         clock_t match_t;
         clock_t bad_t;
         clock_t pgSeqs_t;
+        size_t pgRCSize = 0;
 
-        void reportTimes();
+        void generateReport();
 
         // CHAIN VARIABLES
         uint_read_len_max readLength;

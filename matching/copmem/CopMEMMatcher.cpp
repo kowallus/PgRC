@@ -249,6 +249,7 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
     *v1logger << "Multi-mode = " << (MULTI_MODE?"true":"false") << std::endl;
 
     size_t i1 = 0;
+    const char* end1 = start1 + N;
     const char* end2 = start2 + N2;
     if (MULTI_MODE) {
         for (i1 = 0; i1 + K + k2MULTI < N2 + 1; i1 += k2MULTI) {
@@ -295,7 +296,7 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
                     if (r1 == r2 || l1 == l2) {
                         const char *p1 = curr1 + K - 1;
                         const char *p2 = curr2 + K - 1;
-                        while (++p2 != end2 && *++p1 == *p2);
+                        while (++p1 != end1 && ++p2 != end2 && *p1 == *p2);
                         const char *right = p1;
                         p1 = curr1;
                         p2 = curr2;
@@ -350,7 +351,7 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
             if (r1 == r2 || l1 == l2) {
                 const char* p1 = curr1 + K - 1;
                 const char* p2 = curr2 + K - 1;
-                while (++p2 != end2 && *++p1 == *p2);
+                while (++p1 != end1 && ++p2 != end2 && *p1 == *p2);
                 const char *right = p1;
                 p1 = curr1;
                 p2 = curr2;
