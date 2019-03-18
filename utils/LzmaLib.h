@@ -45,7 +45,7 @@ void readCompressed(istream &src, vector<T>& dest) {
     uint8_t coder_type = 0;
     PgSAHelpers::readValue<uint64_t>(src, destLen, false);
     if (destLen % sizeof(T)) {
-        fprintf(stderr, "Invalid output size %ulld for decompressing to the vector of %d-byte elements",
+        fprintf(stderr, "Invalid output size %zu for decompressing to the vector of %zu-byte elements",
                 destLen, sizeof(T));
     }
     dest.resize(destLen / sizeof(T));

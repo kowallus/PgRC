@@ -240,6 +240,7 @@ MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned ch
 
     Ppmd7z_RangeEnc_FlushData(&rEnc);
     destLen = propsSize + _outStream.GetProcessed();
+    Ppmd7_Free(&ppmd, &g_Alloc);
     return SZ_OK;
 }
 
@@ -415,7 +416,7 @@ void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t code
     PgSAHelpers::writeValue<uint64_t>(dest, compLen, false);
     PgSAHelpers::writeValue<uint8_t>(dest, coder_type, false);
     PgSAHelpers::writeArray(dest, (void*) compSeq, compLen);
-    delete(compSeq);
+    delete[] compSeq;
 }
 
 void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uint8_t coder_level, int coder_param) {

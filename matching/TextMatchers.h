@@ -56,6 +56,8 @@ namespace PgTools {
         virtual void matchTexts(vector<TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                                 uint32_t minMatchLength) = 0;
 
+        virtual ~TextMatcher() {};
+
     };
 
     class DefaultTextMatcher : public TextMatcher {

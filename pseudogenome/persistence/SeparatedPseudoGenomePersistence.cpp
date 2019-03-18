@@ -707,7 +707,7 @@ namespace PgTools {
         if (rsProp == 0)
             rsProp = new ReadsSetProperties(*(pgb->getReadsSetProperties()));
         if (pgh->getReadsCount() != readsCounter) {
-            fprintf(stderr, "Incorrect reads count validation while building separated Pg (%llu instead of %llu).\n",
+            fprintf(stderr, "Incorrect reads count validation while building separated Pg (%u instead of %u).\n",
                     readsCounter, pgh->getReadsCount());
             exit(EXIT_FAILURE);
         }
@@ -766,7 +766,7 @@ namespace PgTools {
         if (rsProp == 0)
             rsProp = new ReadsSetProperties(*(sPg->getReadsSetProperties()));
         if (pgh->getReadsCount() != readsCounter) {
-            fprintf(stderr, "Incorrect reads count validation while building separated Pg (%llu instead of %llu).\n",
+            fprintf(stderr, "Incorrect reads count validation while building separated Pg (%u instead of %u).\n",
                     readsCounter, pgh->getReadsCount());
             exit(EXIT_FAILURE);
         }
@@ -777,6 +777,6 @@ namespace PgTools {
             delete(pgh);
         if (rsProp)
             delete(rsProp);
-
+        freeDests();
     }
 }
