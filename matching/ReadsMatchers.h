@@ -201,6 +201,8 @@ namespace PgTools {
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream& pgrcOut, uint8_t compressionLevel,
                         const string &pgDestFilePrefix, IndexesMapping* orgIndexesMapping);
+
+    uint8_t matchingCharsCorrection(size_t pgLength);
 }
 
 #endif //PGTOOLS_READSMATCHERS_H

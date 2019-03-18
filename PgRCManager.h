@@ -46,6 +46,7 @@ namespace PgTools {
 
         // COMPRESSION PARAMETERS
         uint8_t compressionLevel = PGRC_CODER_LEVEL_NORMAL;
+        bool forceConstantParamsMode = false;
         uint16_t error_limit_in_promils = DEFAULT_UINT16_PARAM;
         string gen_quality_str;
         double gen_quality_coef = DEFAULT_DOUBLE_PARAM;
@@ -68,7 +69,7 @@ namespace PgTools {
         clock_t good_t;
         clock_t match_t;
         clock_t bad_t;
-        clock_t gooder_t;
+        clock_t pgSeqs_t;
 
         void reportTimes();
 
@@ -137,6 +138,10 @@ namespace PgTools {
                 exit(EXIT_FAILURE);
             }
             PgRCManager::singleReadsMode = true;
+        }
+
+        void forceConstantParams() {
+            PgRCManager::forceConstantParamsMode = true;
         }
 
         void setError_limit_in_promils(uint16_t error_limit_in_promils) {

@@ -637,4 +637,9 @@ namespace PgTools {
         return res;
     }
 
+    uint8_t matchingCharsCorrection(size_t pgLength) {
+        int x = pgLength /= 10000000;
+        return x?32 - __builtin_clz(x):0;
+    }
+
 }

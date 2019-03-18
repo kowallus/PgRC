@@ -38,14 +38,14 @@ namespace PgTools {
                 setGen_quality_str("65");
                 setPreReadsExactMatchingChars(64);
                 setMatchingMode('C');
-                setReadsExactMatchingChars(39);
+                setReadsExactMatchingChars(38);
                 setMinCharsPerMismatch(6);
                 break;
             case PGRC_CODER_LEVEL_MAX:
                 setGen_quality_str("70");
                 setPreReadsExactMatchingChars(64);
                 setMatchingMode('c');
-                setReadsExactMatchingChars(35);
+                setReadsExactMatchingChars(34);
                 setMinCharsPerMismatch(6);
                 break;
             default:
@@ -192,7 +192,7 @@ namespace PgTools {
                                           extraFilesForValidation?pgSeqFinalLqPrefix:"",
                                           extraFilesForValidation?pgNPrefix:"", targetPgMatchLength);
         }
-        gooder_t = clock();
+        pgSeqs_t = clock();
         if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
             SeparatedPseudoGenomePersistence::compressReadsOrder(pgrcOut, orgIdxs, compressionLevel, preserveOrderMode,
                     pairFastqFile.empty());
@@ -292,6 +292,8 @@ namespace PgTools {
                         divReadsSets->getLqReadsSet(), divReadsSets->getNReadsSet())): divReadsSets->getLqReadsSet();
         IndexesMapping* mapping = separateNReads?((IndexesMapping*) new SumOfMappings(
                 divReadsSets->getLqReadsIndexesMapping(), divReadsSets->getNReadsIndexesMapping())):divReadsSets->getLqReadsIndexesMapping();
+        if (!forceConstantParamsMode)
+            readsExactMatchingChars += matchingCharsCorrection(hqPg->getPseudoGenomeLength());
         const vector<bool>& isReadMappedIntoHqPg = mapReadsIntoPg(
                 hqPg, true, readsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
@@ -387,7 +389,7 @@ namespace PgTools {
         bool hasHeader = (bool) std::ifstream(outputfile);
         fstream fout(outputfile, ios::out | ios::binary | ios::app);
         if (!hasHeader)
-            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad[s]\tpgMatch[s]\tpost[s]" << endl;
+            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\tpgSeq-s[s]\torder[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgRCFileName << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
@@ -401,8 +403,8 @@ namespace PgTools {
         fout << getTimeInSec(good_t, pgDiv_t) << "\t";
         fout << getTimeInSec(match_t, good_t) << "\t";
         fout << getTimeInSec(bad_t, match_t) << "\t";
-        fout << getTimeInSec(gooder_t, bad_t) << "\t";
-        fout << getTimeInSec(clock(), gooder_t) << endl;
+        fout << getTimeInSec(pgSeqs_t, bad_t) << "\t";
+        fout << getTimeInSec(clock(), pgSeqs_t) << endl;
     }
 
     void PgRCManager::finalizeCompression() {

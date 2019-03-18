@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     bool compressionParamPresent = false;
     bool decompressMode = false;
 
-    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsovrNtaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsovrNtaAF?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'c':
@@ -32,7 +32,11 @@ int main(int argc, char *argv[])
                 compressionParamPresent = true;
                 pgRC->setPreserveOrderMode();
                 break;
-            case 'd':
+            case 'F':
+                compressionParamPresent = true;
+                pgRC->forceConstantParams();
+            break;
+                case 'd':
                 decompressMode = true;
                 break;
             case 'r':
@@ -128,21 +132,24 @@ int main(int argc, char *argv[])
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)]\n"
-                                "[-m [matchingMode]exactMatchingCharsCount] [-M minCharsPerMismatch]\n"
-                                "[-d] [-N] [-s] [-o] [-r] [-a] [-A] [-t]\n"
-                                "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
-                                "[-g gen_quality_coef_in_%%] -i readssrcfile [pairsrcfile] pgRCFileName\n\n",
+                fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)] [-d] [-s] [-o]\n"
+                                "[-i readssrcfile [pairsrcfile]] pgRCFileName\n\n"
+                                ,
                         argv[0]);
-                fprintf(stderr, "-d for decompression mode (supports only -i parameter for validation)\n");
-                fprintf(stderr, "-N reads containing N are not processed separately\n"); // -n reads containing N are low quality
+                fprintf(stderr, "-d for decompression mode (supports only -i parameter for validation mode)\n");
                 fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
-                fprintf(stderr, "-o preserve original order information\n");
+                fprintf(stderr, "-o preserve original order information\n\n");
+                fprintf(stderr, "------------------ EXPERT(/DEVELOPER) OPTIONS ----------------\n");
+                fprintf(stderr, "[-m [matchingMode]exactMatchingCharsCount] [-M minCharsPerMismatch]\n"
+                                "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
+                                "[-g gen_quality_coef_in_%%]\n"
+                                "[-N] [-F] [-r] [-a] [-A] [-t]\n\n");
+                fprintf(stderr, "-N reads containing N are not processed separately\n"); // -n reads containing N are low quality
                 fprintf(stderr, "-l enables preliminary reads matching stage\n");
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
-                fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad); 6:PgMatching; 7:pairDump\n");
+                fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad&N); 6:PgSeqsCompression; 7:orderInfo\n");
                 fprintf(stderr, "-r reverse compliment reads in a pair file\n");
-                fprintf(stderr, "-v dump extra files for validation purposes\n-t write numbers in text mode\n");
+                fprintf(stderr, "-v dump extra files for validation mode purposes\n-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
                 fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
                 fprintf(stderr, "\n\n");
