@@ -21,6 +21,8 @@ namespace PgTools {
 
     uint_read_len_max probeReadsLength(const string &srcFastqFile);
     clock_t getTimeInSec(clock_t end_t, clock_t begin_t) { return ((end_t - begin_t) / CLOCKS_PER_SEC); }
+    string getTimeInSec(clock_t end_t, clock_t begin_t, int decimalPlaces) {
+        return toString(((double) (end_t - begin_t)) / CLOCKS_PER_SEC, decimalPlaces); }
 
     void PgRCManager::initCompressionParameters() {
         setError_limit_in_promils(1000);
@@ -398,14 +400,14 @@ namespace PgTools {
             fout << (char) tolower(preMatchingMode) << ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string("")) << (int) preReadsExactMatchingChars;
         fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
         fout << pgRCSize << "\t";
-        fout << getTimeInSec(clock(), start_t) << "\t";
-        fout << getTimeInSec(div_t, start_t) << "\t";
-        fout << getTimeInSec(pgDiv_t, div_t) << "\t";
-        fout << getTimeInSec(good_t, pgDiv_t) << "\t";
-        fout << getTimeInSec(match_t, good_t) << "\t";
-        fout << getTimeInSec(bad_t, match_t) << "\t";
-        fout << getTimeInSec(pgSeqs_t, bad_t) << "\t";
-        fout << getTimeInSec(clock(), pgSeqs_t) << endl;
+        fout << getTimeInSec(clock(), start_t, 2) << "\t";
+        fout << getTimeInSec(div_t, start_t, 2) << "\t";
+        fout << getTimeInSec(pgDiv_t, div_t, 2) << "\t";
+        fout << getTimeInSec(good_t, pgDiv_t, 2) << "\t";
+        fout << getTimeInSec(match_t, good_t, 2) << "\t";
+        fout << getTimeInSec(bad_t, match_t, 2) << "\t";
+        fout << getTimeInSec(pgSeqs_t, bad_t, 2) << "\t";
+        fout << getTimeInSec(clock(), pgSeqs_t, 2) << endl;
     }
 
     void PgRCManager::finalizeCompression() {

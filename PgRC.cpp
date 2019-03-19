@@ -140,9 +140,9 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
                 fprintf(stderr, "-o preserve original order information\n\n");
                 fprintf(stderr, "------------------ EXPERT(/DEVELOPER) OPTIONS ----------------\n");
-                fprintf(stderr, "[-m [matchingMode]exactMatchingCharsCount] [-M minCharsPerMismatch]\n"
-                                "[-l [matchingMode]exactMatchingCharsCount] [-q error_probability*1000]\n"
-                                "[-g gen_quality_coef_in_%%]\n"
+                fprintf(stderr, "[-m [matchingMode]lengthOfExactMatchedReadPart] [-M minCharsPerMismatch]\n"
+                                "[-l [matchingMode]lengthOfExactMatchedReadPart]\n[-p minimalExactMatchingLength]\n"
+                                "[-q error_probability*1000]\n[-g gen_quality_coef_in_%%]\n"
                                 "[-N] [-F] [-r] [-a] [-A] [-t]\n\n");
                 fprintf(stderr, "-N reads containing N are not processed separately\n"); // -n reads containing N are low quality
                 fprintf(stderr, "-l enables preliminary reads matching stage\n");
