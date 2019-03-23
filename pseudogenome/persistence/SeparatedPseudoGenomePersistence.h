@@ -32,35 +32,12 @@ namespace PgTools {
         static std::ifstream getPseudoGenomeSrc(const string &pseudoGenomePrefix);
         static string loadPseudoGenomeSequence(const string &pseudoGenomePrefix);
 
-        static void getPseudoGenomeProperties(const string &pseudoGenomePrefix, PseudoGenomeHeader *&pgh,
-                ReadsSetProperties *&rsProp, bool &plainTextReadMode);
-
         static std::ifstream getPseudoGenomeElementSrc(const string &pseudoGenomePrefix, const string& fileSuffix);
         static std::ofstream getPseudoGenomeElementDest(const string &pseudoGenomePrefix, const string &fileSuffix,
                                                         bool temporary = false);
         static void acceptTemporaryPseudoGenomeElements(const string &pseudoGenomePrefix, bool clearReadsListDescriptionIfOverride);
 
-        const static string PSEUDOGENOME_FILE_SUFFIX;
-        const static string READSLIST_POSITIONS_FILE_SUFFIX;
-        const static string READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX;
-        const static string PSEUDOGENOME_PROPERTIES_SUFFIX;
-        const static string READSLIST_REVERSECOMPL_FILE_SUFFIX;
-        const static string READSLIST_MISMATCHES_COUNT_FILE_SUFFIX;
-        const static string READSLIST_MISMATCHED_SYMBOLS_FILE_SUFFIX;
-        const static string READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX;
-
-        const static string READSLIST_OFFSETS_FILE_SUFFIX;
-        const static string READSLIST_MISMATCHES_REVOFFSETS_FILE_SUFFIX;
-
-        const static string READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX;
-        const static string READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX;
-        const static string READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX;
-
-        const static string PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX;
-        const static string PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX;
-
         const static string TEMPORARY_FILE_SUFFIX;
-        const static string PG_FILES_EXTENSION;
 
         static bool enableReadPositionRepresentation;
         static bool enableRevOffsetMismatchesRepresentation;

@@ -3,11 +3,13 @@
 
 #include "readslist/SeparatedExtendedReadsList.h"
 
+#include "SeparatedPseudoGenomeBase.h"
+
 namespace PgTools {
 
     const string PGTYPE_SEPARATED = "SEPARATED_PGEN";
 
-    class SeparatedPseudoGenome: public PseudoGenomeBase {
+    class SeparatedPseudoGenome: public SeparatedPseudoGenomeBase {
     protected:
         string pgSequence;
         ConstantAccessExtendedReadsList* readsList;

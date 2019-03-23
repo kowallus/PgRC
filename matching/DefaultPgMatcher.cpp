@@ -16,7 +16,7 @@ namespace PgTools {
             cout << "Reading pseudogenome..." << endl;
         else
             cout << "Reading source pseudogenome..." << endl;
-        PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(srcPgPrefix, srcPgh, srcRsProp, plainTextReadMode);
+        SeparatedPseudoGenomeBase::getPseudoGenomeProperties(srcPgPrefix, srcPgh, srcRsProp, plainTextReadMode);
         srcPg = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(srcPgPrefix);
         cout << "Pseudogenome length: " << srcPgh->getPseudoGenomeLength() << endl;
         readLength = srcPgh->getMaxReadLength();
@@ -26,7 +26,7 @@ namespace PgTools {
             PseudoGenomeHeader *pgh = 0;
             ReadsSetProperties* rsProp = 0;
             bool plainTextReadMode = false;
-            PgTools::SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(targetPgPrefix, pgh, rsProp,
+            SeparatedPseudoGenomeBase::getPseudoGenomeProperties(targetPgPrefix, pgh, rsProp,
                                                                                  plainTextReadMode);
             destPg = PgTools::SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(targetPgPrefix);
             cout << "Pseudogenome length: " << pgh->getPseudoGenomeLength() << endl;
@@ -63,7 +63,7 @@ namespace PgTools {
 
     void DefaultPgMatcher::transferMatchedReads(const string &destPgFilePrefix) {
         srcRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(srcPgPrefix,
-                                                                                       srcPgh->getPseudoGenomeLength());
+                                                                                        srcPgh->getPseudoGenomeLength());
 
         fillPgMatches();
         mapPgMatches2SrcReadsList();

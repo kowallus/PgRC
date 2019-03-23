@@ -11,14 +11,14 @@ namespace PgTools {
     }
 
     SeparatedPseudoGenome::SeparatedPseudoGenome(uint_pg_len_max sequenceLength, ReadsSetProperties* properties):
-              PseudoGenomeBase(sequenceLength, properties),
+              SeparatedPseudoGenomeBase(sequenceLength, properties),
               readsList(new ConstantAccessExtendedReadsList(properties->maxReadLength)){
         readsList->readsCount = properties->readsCount;
     }
 
     SeparatedPseudoGenome::SeparatedPseudoGenome(string &&pgSequence, ConstantAccessExtendedReadsList *readsList,
             ReadsSetProperties* properties)
-            : PseudoGenomeBase(pgSequence.length(), properties),
+            : SeparatedPseudoGenomeBase(pgSequence.length(), properties),
             pgSequence(std::move(pgSequence)), readsList(readsList) {
         if (readsList)
             readsList->readsCount = properties->readsCount;

@@ -766,6 +766,7 @@ namespace PgTools {
 
     void PgRCManager::loadAllPgs(istream& pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
             bool completeOrderInfo, bool singleFileMode) {
+        clock_t start_t = clock();
         PseudoGenomeHeader hqPgh(pgrcIn);
         ReadsSetProperties hqRsProp(pgrcIn);
         if (confirmTextReadMode(pgrcIn)) {
@@ -774,7 +775,7 @@ namespace PgTools {
         }
         ConstantAccessExtendedReadsList* hqCaeRl =
                 ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
-                        &hqPgh, &hqRsProp, srcFastqFile.empty()?"":pgSeqFinalHqPrefix);
+                                                                                        &hqPgh, &hqRsProp, srcFastqFile.empty()?"":pgSeqFinalHqPrefix);
         PseudoGenomeHeader lqPgh(pgrcIn);
         ReadsSetProperties lqRsProp(pgrcIn);
         if (confirmTextReadMode(pgrcIn)) {
@@ -783,7 +784,7 @@ namespace PgTools {
         }
         ConstantAccessExtendedReadsList* lqCaeRl =
                 ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
-                        &lqPgh, &lqRsProp, srcFastqFile.empty()?"":pgSeqFinalLqPrefix);
+                                                                                        &lqPgh, &lqRsProp, srcFastqFile.empty()?"":pgSeqFinalLqPrefix);
         ConstantAccessExtendedReadsList* nCaeRl = 0;
         ReadsSetProperties nRsProp;
         if (separateNReads) {
@@ -794,8 +795,9 @@ namespace PgTools {
                 exit(EXIT_FAILURE);
             }
             nCaeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
-                            &nPgh, &nRsProp, srcFastqFile.empty()?"":pgNPrefix);
+                                                                                             &nPgh, &nRsProp, srcFastqFile.empty()?"":pgNPrefix);
         }
+        cout << "... loaded Pgs Reads Lists (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
         string hqPgSeq, lqPgSeq, nPgSeq;
         SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgSeq, lqPgSeq, nPgSeq);
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), hqCaeRl, &hqRsProp);
@@ -816,21 +818,21 @@ namespace PgTools {
         PseudoGenomeHeader* pgh = 0;
         ReadsSetProperties* prop = 0;
         bool plainTextReadMode = false;
-        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalHqPrefix, pgh, prop, plainTextReadMode);
+        SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgSeqFinalHqPrefix, pgh, prop, plainTextReadMode);
         ConstantAccessExtendedReadsList* caeRl =
                 ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalHqPrefix, pgh->getPseudoGenomeLength());
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
 
-        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgSeqFinalLqPrefix, pgh, prop, plainTextReadMode);
+        SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgSeqFinalLqPrefix, pgh, prop, plainTextReadMode);
         string lqPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgSeqFinalLqPrefix, true, plainTextReadMode);
         caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
 
-        SeparatedPseudoGenomePersistence::getPseudoGenomeProperties(pgNPrefix, pgh, prop, plainTextReadMode);
+        SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgNPrefix, pgh, prop, plainTextReadMode);
         string nPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgNPrefix, true, plainTextReadMode);
         caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgNPrefix, pgh->getPseudoGenomeLength());
         nPg = new SeparatedPseudoGenome(move(nPgSeq), caeRl, prop);
