@@ -245,12 +245,8 @@ namespace PgTools {
         } else
             res->orgIdx.resize(readsCount, 0);
         if (rl.rlRevCompSrc) {
-            res->revComp.resize(readsCount, false);
-            uint8_t revComp = 0;
-            for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
-                PgSAHelpers::readValue<uint8_t>(*(rl.rlRevCompSrc), revComp, rl.plainTextReadMode);
-                res->revComp[i] = revComp != 0;
-            }
+            res->revComp.resize(readsCount);
+            PgSAHelpers::readArray(*(rl.rlRevCompSrc), res->revComp.data(), sizeof(uint8_t) * readsCount);
         }
         res->pos.reserve(readsCount + 1);
         if (rl.rlOffSrc) {
@@ -296,8 +292,60 @@ namespace PgTools {
 
     ConstantAccessExtendedReadsList* ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(
             istream& pgrcIn, PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp, const string pseudoGenomePrefix) {
-        DefaultSeparatedExtendedReadsListIterator rl(pgrcIn, pgh, rsProp, pseudoGenomePrefix);
-        return loadConstantAccessExtendedReadsList(rl, pgh->getPseudoGenomeLength(), false);
+        ConstantAccessExtendedReadsList *res = new ConstantAccessExtendedReadsList(pgh->getMaxReadLength());
+        const uint_reads_cnt_max readsCount = pgh->getReadsCount();
+
+        vector<uint8_t> tmp;
+        readCompressed(pgrcIn, tmp); // offsets
+        res->pos.reserve(readsCount);
+        uint_pg_len_max pos = 0;
+        for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            pos = pos + tmp[i];
+            res->pos.push_back(pos);
+        }
+        if (pgh->getPseudoGenomeLength())
+            res->pos.push_back(pgh->getPseudoGenomeLength());
+        readCompressed(pgrcIn, res->revComp);
+        readCompressed(pgrcIn, tmp); //misCnt;
+        readCompressed(pgrcIn, res->misSymCode);
+        uint8_t mismatchesCountSrcsLimit = 0;
+        PgSAHelpers::readValue<uint8_t>(pgrcIn, mismatchesCountSrcsLimit, false);
+        vector<uint8_t> misCnt2SrcIdx(UINT8_MAX, mismatchesCountSrcsLimit);
+        for (uint8_t m = 1; m < mismatchesCountSrcsLimit; m++)
+            PgSAHelpers::readValue<uint8_t>(pgrcIn, misCnt2SrcIdx[m], false);
+        vector<uint8_t> srcs[UINT8_MAX];
+        vector<uint_reads_cnt_std> srcCounter(UINT8_MAX, 0);
+        for (uint8_t m = 1; m <= mismatchesCountSrcsLimit; m++) {
+            cout << (int) m << ": ";
+            readCompressed(pgrcIn, srcs[m]);
+        }
+        uint_reads_cnt_max cumCount = 0;
+        res->misCumCount.reserve(readsCount + 1);
+        res->misCumCount.push_back(0);
+        res->misOff.reserve(readsCount); //estimated;
+        uint8_t misCnt = 0;
+        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            misCnt = tmp[i];
+            cumCount += misCnt;
+            res->misCumCount.push_back(cumCount);
+            uint8_t srcIdx = misCnt2SrcIdx[misCnt];
+            for (uint8_t m = 0; m < misCnt; m++)
+                res->misOff.push_back(srcs[srcIdx][srcCounter[srcIdx]++]);
+        }
+        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + res->misCumCount[i],
+                                                               res->getMisCount(i), res->readLength);
+        }
+        if (pseudoGenomePrefix.empty())
+            res->orgIdx.resize(readsCount, 0);
+        else {
+            std::ifstream in((pseudoGenomePrefix + SeparatedPseudoGenomeBase::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX).c_str(), std::ifstream::binary);
+            res->orgIdx.resize(readsCount);
+            readArray(in, res->orgIdx.data(), readsCount * sizeof(uint_reads_cnt_std));
+        }
+
+        cout << "Loaded Pg reads list containing " << readsCount << " reads." << endl;
+        return res;
     }
 
     bool ConstantAccessExtendedReadsList::moveNext() {

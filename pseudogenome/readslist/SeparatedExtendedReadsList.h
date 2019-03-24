@@ -22,7 +22,7 @@ namespace PgTools {
 
         vector<uint_pg_len_max> pos;
         vector<uint_reads_cnt_std> orgIdx;
-        vector<bool> revComp;
+        vector<uint8_t> revComp;
         vector<uint_reads_cnt_max> misCumCount;
         vector<uint8_t> misSymCode;
         vector<uint8_t> misOff;
