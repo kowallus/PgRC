@@ -489,11 +489,11 @@ namespace PgTools {
         if (srcFastqFile.empty()) {
             if (singleFileMode && !completeOrderInfo) {
                 if (ENABLE_PARALLEL_DECOMPRESSION && dnaStreamSize() > CHUNK_SIZE_IN_BYTES)
-                    writeAllReadsInSEModeParallel(tmpDirectoryPath);
+                    writeAllReadsInSEModeParallel(pgRCFileName);
                 else
-                    writeAllReadsInSEMode(tmpDirectoryPath);
+                    writeAllReadsInSEMode(pgRCFileName);
             } else
-                writeAllReads(tmpDirectoryPath, rlIdxOrder, singleFileMode);
+                writeAllReads(pgRCFileName, rlIdxOrder, singleFileMode);
             cout << "Decompressed ";
         } else {
             validateAllPgs();
@@ -520,9 +520,9 @@ namespace PgTools {
         data_cond.notify_one();
     }
 
-    void PgRCManager::writeAllReadsInSEModeParallel(const string &tmpDirectoryPath) {
+    void PgRCManager::writeAllReadsInSEModeParallel(const string &outPrefix) {
         cout << "... parallel mode" << endl;
-        std::thread writing(&PgRCManager::writeFromQueue, this, tmpDirectoryPath);
+        std::thread writing(&PgRCManager::writeFromQueue, this, outPrefix);
         string res, read;
         read.resize(readLength);
         uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
@@ -557,8 +557,8 @@ namespace PgTools {
         writing.join();
     }
 
-    void PgRCManager::writeFromQueue(const string &tmpDirectoryPath) {
-        fstream fout(tmpDirectoryPath + "out", ios_base::out | ios_base::binary | std::ios::trunc);
+    void PgRCManager::writeFromQueue(const string &outPrefix) {
+        fstream fout(outPrefix + "_out", ios_base::out | ios_base::binary | std::ios::trunc);
         string out;
         do {
             std::unique_lock<std::mutex> lk(mut);
@@ -572,8 +572,8 @@ namespace PgTools {
         fout.close();
     }
 
-    void PgRCManager::writeAllReadsInSEMode(const string &tmpDirectoryPath) const {
-        fstream fout(tmpDirectoryPath + "out", ios_base::out | ios_base::binary | std::ios::trunc);
+    void PgRCManager::writeAllReadsInSEMode(const string &outPrefix) const {
+        fstream fout(outPrefix + "_out", ios_base::out | ios_base::binary | std::ios::trunc);
         string res, read;
         read.resize(readLength);
         uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
@@ -610,13 +610,13 @@ namespace PgTools {
         fout.close();
     }
 
-    void PgRCManager::writeAllReads(const string &tmpDirectoryPath, vector<uint_reads_cnt_std> &rlIdxOrder,
+    void PgRCManager::writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder,
             bool singleFileMode) const {
         uint8_t parts = singleFileMode?1:2;
         int inc = singleFileMode?1:2;
 
         for(uint8_t p = 0; p < parts; p++) {
-            fstream fout(tmpDirectoryPath + "out" + (singleFileMode?"":("_" + toString(p + 1))),
+            fstream fout(outPrefix + "_out" + (singleFileMode?"":("_" + toString(p + 1))),
                     ios_base::out | ios_base::binary | std::ios::trunc);
             string res, read;
             read.resize(readLength);

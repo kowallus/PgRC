@@ -323,20 +323,20 @@ namespace PgTools {
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
 
-        void writeAllReadsInSEMode(const string &tmpDirectoryPath) const;
-        void writeAllReads(const string &tmpDirectoryPath, vector<uint_reads_cnt_std> &rlIdxOrder, bool singleFileMode) const;
+        void writeAllReadsInSEMode(const string &outPrefix) const;
+        void writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder, bool singleFileMode) const;
 
         std::mutex mut;
         std::queue<string> out_queue;
         std::condition_variable data_cond;
 
-        void writeAllReadsInSEModeParallel(const string &tmpDirectoryPath);
+        void writeAllReadsInSEModeParallel(const string &outPrefix);
 
         void pushOutToQueue(string &out);
 
         void finishWritingParallel();
 
-        void writeFromQueue(const string &tmpDirectoryPath);
+        void writeFromQueue(const string &outPrefix);
 
         void validateAllPgs();
         void validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder, bool completeOrderInfo, bool singleFileMode);
