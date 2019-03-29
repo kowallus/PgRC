@@ -49,7 +49,7 @@ namespace PgSAIndex {
     
     inline uint_max oldestSetBit(uint_max value) {
         for(uint_max i = 64; i > 0; i--)
-            if (((uint_max) 1 << (i-1)) & value)
+            if (((uint_max) 1L << (i-1)) & value)
                 return i;
         return 0;
     }
