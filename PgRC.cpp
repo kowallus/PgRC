@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     bool compressionParamPresent = false;
     bool decompressMode = false;
 
-    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsovrNtaAF?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsovrNtaAV?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'c':
@@ -32,9 +32,9 @@ int main(int argc, char *argv[])
                 compressionParamPresent = true;
                 pgRC->setPreserveOrderMode();
                 break;
-            case 'F':
+            case 'V':
                 compressionParamPresent = true;
-                pgRC->forceConstantParams();
+                pgRC->allowVariableParams();
             break;
                 case 'd':
                 decompressMode = true;
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "[-m [matchingMode]lengthOfExactMatchedReadPart] [-M minCharsPerMismatch]\n"
                                 "[-l [matchingMode]lengthOfExactMatchedReadPart]\n[-p minimalExactMatchingLength]\n"
                                 "[-q error_probability*1000]\n[-g gen_quality_coef_in_%%]\n"
-                                "[-N] [-F] [-r] [-a] [-A] [-t]\n\n");
+                                "[-N] [-V] [-r] [-a] [-A] [-t]\n\n");
                 fprintf(stderr, "-N reads containing N are not processed separately\n"); // -n reads containing N are low quality
                 fprintf(stderr, "-l enables preliminary reads matching stage\n");
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");

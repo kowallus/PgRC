@@ -38,8 +38,8 @@ namespace PgTools {
                 break;
             case PGRC_CODER_LEVEL_NORMAL:
                 setGen_quality_str("65");
-                setPreReadsExactMatchingChars(64);
-                setMatchingMode('C');
+                setPreReadsExactMatchingChars(0);
+                setMatchingMode('c');
                 setReadsExactMatchingChars(38);
                 setMinCharsPerMismatch(6);
                 break;

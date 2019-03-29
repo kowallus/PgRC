@@ -45,7 +45,7 @@
 #include "Hashes.h"
 
 //////////////////// GLOBAL CONSTS //////////////////////////
-const std::uint32_t HASH_SIZE = 1U << 27;
+const std::uint32_t HASH_SIZE = 1U << 28;
 const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
@@ -384,12 +384,9 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
 
     MyUINT2 posArray[2];
 
-    std::uint32_t l1 = 0, l2 = 0, r1 = 0, r2 = 0;
-
     uint64_t matchPosition = NOT_MATCHED_POSITION;
     size_t i1 = 0;
     const char* curr2 = start2 + i1;
-    const char* end2 = start2 + N2;
     for (; i1 + K < N2 + 1; i1 += k2) {
         memcpy(posArray, cumm + hashFunc(curr2), sizeof(MyUINT2) * 2);
 
@@ -397,10 +394,11 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             curr2 += k2;
             continue;
         }
-        if (curr2 - LK2 >= start2) memcpy(&l2, curr2 - LK2, sizeof(std::uint32_t));
-        if (curr2 + K_PLUS_LK24 + sizeof(std::uint32_t) <= end2) memcpy(&r2, curr2 + K_PLUS_LK24, sizeof(std::uint32_t));
 
+        uint64_t falseMatchCountInit = falseMatchCount;
         for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
+            if (falseMatchCount - falseMatchCountInit > 16)
+                break;
             const uint_read_len_max positionShift = curr2 - start2;
             if (positionShift > sampledPositions[j])
                 continue;
@@ -408,10 +406,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
                 continue;
             const char* curr1 = start1 + sampledPositions[j];
 
-            memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
-            memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
-
-            if ((r1 != r2 && l1 != l2) || memcmp(curr1, curr2, K) != 0) {
+            if (memcmp(curr1, curr2, K) != 0) {
                 falseMatchCount++;
                 continue;
             }

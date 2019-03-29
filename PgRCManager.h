@@ -46,7 +46,7 @@ namespace PgTools {
 
         // COMPRESSION PARAMETERS
         uint8_t compressionLevel = PGRC_CODER_LEVEL_NORMAL;
-        bool forceConstantParamsMode = false;
+        bool forceConstantParamsMode = true;
         uint16_t error_limit_in_promils = DEFAULT_UINT16_PARAM;
         string gen_quality_str;
         double gen_quality_coef = DEFAULT_DOUBLE_PARAM;
@@ -141,8 +141,8 @@ namespace PgTools {
             PgRCManager::singleReadsMode = true;
         }
 
-        void forceConstantParams() {
-            PgRCManager::forceConstantParamsMode = true;
+        void allowVariableParams() {
+            PgRCManager::forceConstantParamsMode = false;
         }
 
         void setError_limit_in_promils(uint16_t error_limit_in_promils) {
