@@ -40,20 +40,20 @@ namespace PgSAReadsSet {
         }
         packedReads.resize((size_t) packedLength * ++properties->readsCount);
         properties->allReadsLength += properties->minReadLength;
-        uint_ps_element_min *packedReadsPtr = packedReads.data() + packedLength * (properties->readsCount - 1);
+        uint_ps_element_min *packedReadsPtr = packedReads.data() + (size_t) packedLength * (properties->readsCount - 1);
         sPacker->packSequence(read, readLength, packedReadsPtr);
     }
 
     void PackedConstantLengthReadsSet::copyRead(uint_reads_cnt_max srcIdx, uint_reads_cnt_max destIdx,
             uint_reads_cnt_max n) {
-        std::copy(packedReads.begin() + packedLength * srcIdx, packedReads.begin() + packedLength * (srcIdx + n),
-                  packedReads.begin() + packedLength * destIdx);
+        std::copy(packedReads.begin() + (size_t) packedLength * srcIdx, packedReads.begin() + (size_t) packedLength * (srcIdx + n),
+                  packedReads.begin() + (size_t) packedLength * destIdx);
     }
 
     void PackedConstantLengthReadsSet::copyPackedRead(const uint_ps_element_min *packedSequence,
                                                       uint_reads_cnt_max destIdx, uint_reads_cnt_max n) {
-        std::copy(packedSequence, packedSequence + packedLength * n,
-                  packedReads.begin() + packedLength * destIdx);
+        std::copy(packedSequence, packedSequence + (size_t) packedLength * n,
+                  packedReads.begin() + (size_t) packedLength * destIdx);
     }
 
     template<class ReadsSourceIterator>
