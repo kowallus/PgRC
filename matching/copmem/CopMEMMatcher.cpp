@@ -139,8 +139,8 @@ void CopMEMMatcher::calcCoprimes()
     }
 }
 
-template <class MyUINT>
-void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT* cumm) {
+template<typename MyUINT1, typename MyUINT2>
+void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList) {
 	const size_t MULTI1 = 128;
 	const size_t k1MULTI1 = k1 * MULTI1;
 
@@ -156,39 +156,47 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT* cumm) {
 		}
 
 		for (size_t temp = 0; temp < MULTI1; ++temp) {
-			++cumm[hashPositions[temp]];
+			if (cumm[hashPositions[temp]] < HASH_COLLISIONS_LIMIT_MINUS_ONE)
+			    ++cumm[hashPositions[temp]];
+			else
+			    skippedList.push_back(i + k1 * temp);
 		}
 	}
 
 	//////////////////// processing the end part of R  //////////////////////
 	for (; i < N - K + 1; i += k1) {
 		uint32_t h = hashFunc(gen + i) + 2;
-		++cumm[h];
+		if (cumm[h] < HASH_COLLISIONS_LIMIT_MINUS_ONE)
+		    ++cumm[h];
+        else
+            skippedList.push_back(i);
 	}
 	//////////////////// processing the end part of R //////////////////////
-	std::partial_sum(cumm, cumm + HASH_SIZE + 2, cumm); 
+	std::partial_sum(cumm, cumm + HASH_SIZE + 2, cumm);
+	skippedList.push_back(N);
 }
 
 template<typename MyUINT1, typename MyUINT2>
 HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
-	const size_t hashCount = (N - K + 1) / k1;
 	const unsigned int MULTI2 = 128;
 	const unsigned int k1MULTI2 = k1 * MULTI2;
 
-	*v1logger << "Hash count = " << hashCount << std::endl;
-
-	MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
 	MyUINT2* cumm = new MyUINT2[HASH_SIZE + 2]();
-	genCumm(N, start1, cumm);
+	vector<MyUINT1> skippedList;
+	genCumm(N, start1, cumm, skippedList);
+    const size_t hashCount = cumm[HASH_SIZE + 1];
+    MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
+    *v1logger << "Hash count = " << hashCount << std::endl;
 
 	uint32_t hashPositions[MULTI2];
 	MyUINT1 i1;
 
+	size_t s = 0;
 	for (i1 = 0; i1 + K + k1MULTI2 < N ; i1 += k1MULTI2) {
 		const char* tempPointer = start1 + i1;
 		for (unsigned int temp = 0; temp < MULTI2; ++temp) {
-			hashPositions[temp] = hashFunc(tempPointer) + 1;
+		    hashPositions[temp] = hashFunc(tempPointer) + 1;
 			tempPointer += k1;
 			_prefetch((char*)(cumm + hashPositions[temp]), 1);
 		}
@@ -199,6 +207,10 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
 		MyUINT1 i2 = i1;
 		for (unsigned int temp = 0; temp < MULTI2; ++temp) {
+            if (skippedList[s] == i1 + k1 * temp) {
+                s++;
+                continue;
+            }
 			sampledPositions[cumm[hashPositions[temp]]] = i2;
 			++cumm[hashPositions[temp]];
 			i2 += k1;
@@ -207,7 +219,11 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
 	//////////////////// processing the end part of R
 	for (; i1 < N - K + 1; i1 += k1) {
-		uint32_t h = hashFunc(start1 + i1) + 1;
+        if (skippedList[s] == i1) {
+            s++;
+            continue;
+        }
+	    uint32_t h = hashFunc(start1 + i1) + 1;
 		sampledPositions[cumm[h]] = i1;
 		++cumm[h];
 	}
@@ -395,10 +411,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             continue;
         }
 
-        uint64_t falseMatchCountInit = falseMatchCount;
         for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
-            if (falseMatchCount - falseMatchCountInit > 16)
-                break;
             const uint_read_len_max positionShift = curr2 - start2;
             if (positionShift > sampledPositions[j])
                 continue;

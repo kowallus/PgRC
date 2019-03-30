@@ -8,13 +8,12 @@ using namespace PgTools;
 enum verbosity { v0, v1, v2 };
 enum reverseMode { no, yes, both };
 
+static const int HASH_COLLISIONS_LIMIT_MINUS_ONE = 16;
 typedef std::pair<std::string, size_t> SequenceItem;
 typedef std::vector<SequenceItem> SequenceVector;
 
 template<class MyUINT1, class MyUINT2>
 using HashBuffer =  std::pair<MyUINT1*, MyUINT2* >;
-
-class processApproxMatchQueryTight;
 
 class CopMEMMatcher: public TextMatcher {
 private:
@@ -37,8 +36,8 @@ private:
     void calcCoprimes();
     void displayParams();
 
-    template <class MyUINT>
-    void genCumm(size_t N, const char* gen, MyUINT* cumm);
+    template<typename MyUINT1, typename MyUINT2>
+    void genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList);
 
     void dumpMEM(SequenceItem& item1, SequenceItem& item2, size_t* match);
     void dumpMEMTight(SequenceItem& item1, size_t* match, size_t counter);
