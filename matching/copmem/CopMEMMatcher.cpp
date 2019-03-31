@@ -206,14 +206,13 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 		}
 
 		MyUINT1 i2 = i1;
-		for (unsigned int temp = 0; temp < MULTI2; ++temp) {
-            if (skippedList[s] == i1 + k1 * temp) {
+		for (size_t temp = 0; temp < MULTI2; ++temp, i2 += k1) {
+            if (skippedList[s] == i2) {
                 s++;
                 continue;
             }
 			sampledPositions[cumm[hashPositions[temp]]] = i2;
 			++cumm[hashPositions[temp]];
-			i2 += k1;
 		}
 	}
 
