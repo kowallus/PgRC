@@ -493,7 +493,7 @@ namespace PgTools {
     void AbstractReadsApproxMatcher::closeEntryUpdating() { }
 
     void DefaultReadsMatcher::writeIntoPseudoGenome(ostream& pgrcOut, uint8_t compressionLevel,
-            const string &outPgPrefix, IndexesMapping* orgIndexesMapping) {
+            const string &outPgPrefix, IndexesMapping* orgIndexesMapping, bool revComplPairFile) {
         clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
@@ -516,7 +516,11 @@ namespace PgTools {
             uint_reads_cnt_max matchIdx = idxs[i];
             uint64_t currPos = builder->writeReadsFromIterator(readMatchPos[matchIdx]);
             DefaultReadsListEntry entry(currPos);
-            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIndexesMapping->getReadOriginalIndex(matchIdx), readMatchRC[matchIdx]);
+            const uint_reads_cnt_max orgIdx = orgIndexesMapping->getReadOriginalIndex(matchIdx);
+            bool rcFlag = readMatchRC[matchIdx];
+            if (revComplPairFile && orgIdx % 2)
+                rcFlag = !rcFlag;
+            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIdx, rcFlag);
             this->updateEntry(entry, matchIdx);
             builder->writeExtraReadEntry(entry);
         }
@@ -545,7 +549,8 @@ namespace PgTools {
         return res;
     }
 
-    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg,
+                        ConstantLengthReadsSetInterface *readsSet, bool applyRevComplPairFile,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream &pgrcOut, uint8_t compressionLevel,
@@ -631,7 +636,8 @@ namespace PgTools {
         const vector<bool> res = matcher->getMatchedReadsBitmap();
 
         if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
-            matcher->writeIntoPseudoGenome(pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping);
+            matcher->writeIntoPseudoGenome(pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping,
+                    applyRevComplPairFile);
 
         delete(matcher);
         return res;

@@ -44,8 +44,11 @@ namespace PgTools {
 
     void SeparatedPseudoGenome::applyRevComplPairFile() {
         uint_reads_cnt_std readsCount = readsList->orgIdx.size();
+        if (!readsList->isRevCompEnabled())
+            readsList->revComp.resize(readsCount, false);
         for(uint_reads_cnt_std i = 0; i < readsCount; i++)
-            readsList->revComp[i] = readsList->orgIdx[i]%2?!readsList->revComp[i]:readsList->revComp[i];
+            if (readsList->orgIdx[i] % 2)
+                readsList->revComp[i] = !readsList->revComp[i];
     }
 
     string SeparatedPseudoGenome::getTypeID() {

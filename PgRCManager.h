@@ -136,7 +136,7 @@ namespace PgTools {
         }
 
         void setIgnorePairOrderInformation() {
-            if (singleReadsMode || preserveOrderMode) {
+            if (singleReadsMode || preserveOrderMode || revComplPairFile) {
                 fprintf(stderr, "Ignore pair order works only with default PE mode.");
                 exit(EXIT_FAILURE);
             }
@@ -249,6 +249,10 @@ namespace PgTools {
         }
 
         void setRevComplPairFile() {
+            if (ignorePairOrderInformation) {
+                fprintf(stderr, "Ignore pair order works only with default PE mode.");
+                exit(EXIT_FAILURE);
+            }
             PgRCManager::revComplPairFile = true;
         }
 
@@ -325,10 +329,11 @@ namespace PgTools {
         void finalizeCompression();
 
         void loadAllPgs(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder);
-
         void loadAllPgs();
 
         void decompressPgRC();
+
+        void applyRevComplPairFileToPgs(vector<uint_reads_cnt_std>& rlIdxOrder);
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
 

@@ -67,10 +67,13 @@ namespace PgTools {
             fprintf(stderr, "Warning: file %s already exists\n", pgRCFileName.data());
         pgrcOut = fstream(pgRCFileName + TEMPORARY_FILE_SUFFIX, ios::out | ios::binary | ios::trunc);
         pgrcOut.write(PGRC_HEADER, strlen(PGRC_HEADER));
-        pgrcOut.put(singleReadsMode?PGRC_SE_MODE:
-            (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):
-             (ignorePairOrderInformation?PGRC_MIN_PE_MODE:PGRC_PE_MODE)));
+        const char pgrc_mode = singleReadsMode ? PGRC_SE_MODE :
+                               (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):
+                     (ignorePairOrderInformation?PGRC_MIN_PE_MODE:PGRC_PE_MODE));
+        pgrcOut.put(pgrc_mode);
         pgrcOut.put(separateNReads);
+        if (pgrc_mode == PGRC_PE_MODE || pgrc_mode == PGRC_ORD_PE_MODE)
+            pgrcOut.put(revComplPairFile);
 
         string tmpDirectoryName = pgRCFileName;
         if (qualityDivision)
@@ -266,8 +269,6 @@ namespace PgTools {
         IndexesMapping* hq2IndexesMapping = divReadsSets->generateHqReadsIndexesMapping();
         hqPg->applyIndexesMapping(hq2IndexesMapping);
         delete(hq2IndexesMapping);
-        if (revComplPairFile)
-            hqPg->applyRevComplPairFile();
     }
 
     void PgRCManager::persistHQPg() {
@@ -298,7 +299,7 @@ namespace PgTools {
         if (!forceConstantParamsMode)
             readsExactMatchingChars += matchingCharsCorrection(hqPg->getPseudoGenomeLength());
         const vector<bool>& isReadMappedIntoHqPg = mapReadsIntoPg(
-                hqPg, true, readsSet, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
+                hqPg, true, readsSet, false, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
                 false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);
@@ -342,8 +343,6 @@ namespace PgTools {
                 divReadsSets->getLqReadsSet());
         lqPg->applyIndexesMapping(divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->disposeLqReadsSet();
-        if (revComplPairFile)
-            lqPg->applyRevComplPairFile();
     }
 
     void PgRCManager::persistLQPg() {
@@ -362,8 +361,6 @@ namespace PgTools {
                 divReadsSets->getNReadsSet());
         nPg->applyIndexesMapping(divReadsSets->getNReadsIndexesMapping());
         divReadsSets->disposeNReadsSet();
-        if (revComplPairFile)
-            nPg->applyRevComplPairFile();
     }
 
     void PgRCManager::persistNPg() {
@@ -462,6 +459,8 @@ namespace PgTools {
                 exit(EXIT_FAILURE);
             }
             separateNReads = (bool) pgrcIn.get();
+            if (pgrc_mode == PGRC_PE_MODE || pgrc_mode == PGRC_ORD_PE_MODE)
+                revComplPairFile = (bool) pgrcIn.get();
 
             pgrcIn >> tmpDirectoryPath;
             tmpDirectoryPath = tmpDirectoryPath + "/";
@@ -488,6 +487,9 @@ namespace PgTools {
                                               + lqPg->getReadsSetProperties()->readsCount;
         uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
+        if (revComplPairFile)
+            applyRevComplPairFileToPgs(rlIdxOrder);
+
         if (srcFastqFile.empty()) {
             if (singleReadsMode && !preserveOrderMode) {
                 if (ENABLE_PARALLEL_DECOMPRESSION && dnaStreamSize() > CHUNK_SIZE_IN_BYTES)
@@ -658,7 +660,7 @@ namespace PgTools {
     void PgRCManager::validateAllPgs() {
         vector<uint_reads_cnt_max> orgIdx2rlIdx = getAllPgsOrgIdxs2RlIdx();
         ReadsSourceIteratorTemplate<uint_read_len_max> *allReadsIterator = ReadsSetPersistence::createManagedReadsIterator(
-                srcFastqFile, pairFastqFile, revComplPairFile);
+                srcFastqFile, pairFastqFile);
 
         vector<bool> validated(readsTotalCount, false);
         uint_reads_cnt_max notValidatedCount = 0;
@@ -764,6 +766,23 @@ namespace PgTools {
             cout << "Found " << errorsCount << " errors in compressed reads order." << endl;
         if (!notValidatedCount && !errorsCount)
             cout << "Order validation successful!" << endl;
+    }
+
+    void PgRCManager::applyRevComplPairFileToPgs(vector<uint_reads_cnt_std>& rlIdxOrder) {
+        for (uint_reads_cnt_max i = 1; i < readsTotalCount; i += 2) {
+            uint_reads_cnt_std idx = rlIdxOrder[i];
+            SeparatedPseudoGenome* pg;
+            if (idx < hqReadsCount)
+                pg = hqPg;
+            else if (idx < nonNPgReadsCount) {
+                pg = lqPg;
+                idx -= hqReadsCount;
+            } else {
+                pg = nPg;
+                idx -= nonNPgReadsCount;
+            }
+            pg->getReadsList()->revComp[idx] = !pg->getReadsList()->revComp[idx];
+        }
     }
 
     void PgRCManager::loadAllPgs(istream& pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder) {

@@ -260,7 +260,7 @@ namespace PgSAReadsSet {
     string RevComplPairReadsSetIterator<uint_read_len>::getRead() {
         string read = coreIterator->getRead();
         if (counter % 2)
-            return PgSAHelpers::reverseComplement(read);
+            PgSAHelpers::reverseComplementInPlace(read);
         return read;
     }
 

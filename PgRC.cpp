@@ -34,13 +34,14 @@ int main(int argc, char *argv[])
                 break;
             case 'I':
                 compressionParamPresent = true;
+                expectedPairFile = true;
                 pgRC->setIgnorePairOrderInformation();
                 break;
             case 'V':
                 compressionParamPresent = true;
                 pgRC->allowVariableParams();
-            break;
-                case 'd':
+                break;
+            case 'd':
                 decompressMode = true;
                 break;
             case 'r':
@@ -177,7 +178,7 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
     if (expectedPairFile && !pairFilePresent) {
-        fprintf(stderr, "Cannot use -r option without specifying a pair file.\n");
+        fprintf(stderr, "Cannot use -r or -I option without specifying a pair file.\n");
         fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }

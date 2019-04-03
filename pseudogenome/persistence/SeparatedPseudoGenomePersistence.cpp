@@ -28,8 +28,7 @@ namespace PgTools {
                                                                       ostream* pgrcOut, uint8_t coder_level,
                                                                       bool skipPgSequence) {
         clock_checkpoint();
-        SeparatedPseudoGenomeOutputBuilder builder(sPg->getReadsList()->isRevCompEnabled(),
-                                                   sPg->getReadsList()->areMismatchesEnabled());
+        SeparatedPseudoGenomeOutputBuilder builder(false, false);
         builder.feedSeparatedPseudoGenome(sPg, true);
         builder.compressedBuild(*pgrcOut, coder_level);
         cout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
