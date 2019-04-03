@@ -205,7 +205,7 @@ namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::compressReadsOrder(ostream &pgrcOut,
             const vector<uint_reads_cnt_std>& orgIdxs, uint8_t coder_level,
-            bool completeOrderInfo, bool singleFileMode) {
+            bool completeOrderInfo, bool ignorePairOrderInformation, bool singleFileMode) {
         clock_checkpoint();
         cout << endl;
         uint_reads_cnt_std readsCount = orgIdxs.size();
@@ -222,6 +222,11 @@ namespace PgTools {
             vector<uint_reads_cnt_std> pairBaseOrgIdx;
             if (completeOrderInfo)
                 pairBaseOrgIdx.reserve(readsCount / 2);
+            // flag indicating a processed pair base file (0 - Second, 1 - First)
+            vector<uint8_t> pairBaseFileFlag;
+            if (!ignorePairOrderInformation)
+                pairBaseFileFlag.reserve(readsCount / 2);
+
             // coding reads list index offset of paired read
             vector<uint8_t> offsetInUint8Flag;
             offsetInUint8Flag.reserve(readsCount / 2);
@@ -247,6 +252,8 @@ namespace PgTools {
                 isReadDone[i2] = true;
                 if (completeOrderInfo)
                     pairBaseOrgIdx.push_back(orgIdx);
+                if (!ignorePairOrderInformation)
+                    pairBaseFileFlag.push_back(orgIdx % 2);
                 int64_t pairOffset = i2 - i1;
                 offsetInUint8Flag.push_back((uint8_t) (pairOffset <= UINT8_MAX));
                 if (pairOffset <= UINT8_MAX) {
@@ -290,13 +297,19 @@ namespace PgTools {
                 writeCompressed(pgrcOut, (char *) pairBaseOrgIdx.data(), pairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
                                 LZMA_CODER, coder_level, lzma_coder_param);
             }
+            if (!ignorePairOrderInformation) {
+                cout << "File flags of pair bases... ";
+                writeCompressed(pgrcOut, (char *) pairBaseFileFlag.data(), pairBaseFileFlag.size() * sizeof(uint8_t),
+                                PPMD7_CODER, coder_level, 2);
+            }
         }
         cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
     }
 
     void SeparatedPseudoGenomePersistence::decompressReadsOrder(istream &pgrcIn,
                                                                 vector<uint_reads_cnt_std> &rlIdxOrder,
-                                                                bool completeOrderInfo, bool singleFileMode) {
+                                                                bool completeOrderInfo, bool ignorePairOrderInformation,
+                                                                bool singleFileMode) {
         if (!completeOrderInfo && singleFileMode)
             return;
 
@@ -357,6 +370,17 @@ namespace PgTools {
                     uint_reads_cnt_std orgIdx = pairBaseOrgIdx[p];
                     rlIdxOrder[orgIdx] = peRlIdxOrder[p * 2];
                     rlIdxOrder[orgIdx % 2?orgIdx - 1:orgIdx + 1] = peRlIdxOrder[p * 2 + 1];
+                }
+            }
+            if (!ignorePairOrderInformation) {
+                vector<uint8_t> pairBaseFileFlag;
+                readCompressed<uint8_t>(pgrcIn, pairBaseFileFlag);
+                for(uint_reads_cnt_std p = 0; p < readsCount / 2; p++) {
+                    if (pairBaseFileFlag[p]) {
+                        uint_reads_cnt_std tmpIdx = rlIdxOrder[p * 2];
+                        rlIdxOrder[p * 2] = rlIdxOrder[p * 2 + 1];
+                        rlIdxOrder[p * 2 + 1] = tmpIdx;
+                    }
                 }
             }
         }

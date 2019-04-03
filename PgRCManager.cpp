@@ -68,7 +68,8 @@ namespace PgTools {
         pgrcOut = fstream(pgRCFileName + TEMPORARY_FILE_SUFFIX, ios::out | ios::binary | ios::trunc);
         pgrcOut.write(PGRC_HEADER, strlen(PGRC_HEADER));
         pgrcOut.put(singleReadsMode?PGRC_SE_MODE:
-            (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):PGRC_PE_MODE));
+            (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):
+             (ignorePairOrderInformation?PGRC_MIN_PE_MODE:PGRC_PE_MODE)));
         pgrcOut.put(separateNReads);
 
         string tmpDirectoryName = pgRCFileName;
@@ -197,7 +198,7 @@ namespace PgTools {
         pgSeqs_t = clock();
         if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
             SeparatedPseudoGenomePersistence::compressReadsOrder(pgrcOut, orgIdxs, compressionLevel, preserveOrderMode,
-                    pairFastqFile.empty());
+                    ignorePairOrderInformation, pairFastqFile.empty());
             if (extraFilesForValidation) {
                 if (separateNReads)
                     SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
@@ -456,7 +457,7 @@ namespace PgTools {
                 }
             }
             pgrc_mode = pgrcIn.get();
-            if (pgrc_mode < PGRC_SE_MODE || pgrc_mode > PGRC_ORD_PE_MODE) {
+            if (pgrc_mode < PGRC_SE_MODE || pgrc_mode > PGRC_MIN_PE_MODE) {
                 fprintf(stderr, "Unsupported decompression mode: %d.\n", pgrc_mode);
                 exit(EXIT_FAILURE);
             }
@@ -473,11 +474,12 @@ namespace PgTools {
         pgSeqFinalLqPrefix = tmpDirectoryPath + BAD_INFIX;
         pgNPrefix = tmpDirectoryPath + N_INFIX;
 
-        const bool completeOrderInfo = pgrc_mode == PGRC_ORD_SE_MODE || pgrc_mode == PGRC_ORD_PE_MODE;
-        const bool singleFileMode = pgrc_mode == PGRC_SE_MODE || pgrc_mode == PGRC_ORD_SE_MODE;
+        preserveOrderMode = pgrc_mode == PGRC_ORD_SE_MODE || pgrc_mode == PGRC_ORD_PE_MODE;
+        ignorePairOrderInformation = pgrc_mode == PGRC_MIN_PE_MODE;
+        singleReadsMode = pgrc_mode == PGRC_SE_MODE || pgrc_mode == PGRC_ORD_SE_MODE;
         vector<uint_reads_cnt_std> rlIdxOrder;
         if (pgrcIn)
-            loadAllPgs(pgrcIn, rlIdxOrder, completeOrderInfo, singleFileMode);
+            loadAllPgs(pgrcIn, rlIdxOrder);
         else
             loadAllPgs();
         cout << "... loaded Pgs (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
@@ -487,17 +489,17 @@ namespace PgTools {
         uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
         if (srcFastqFile.empty()) {
-            if (singleFileMode && !completeOrderInfo) {
+            if (singleReadsMode && !preserveOrderMode) {
                 if (ENABLE_PARALLEL_DECOMPRESSION && dnaStreamSize() > CHUNK_SIZE_IN_BYTES)
                     writeAllReadsInSEModeParallel(pgRCFileName);
                 else
                     writeAllReadsInSEMode(pgRCFileName);
             } else
-                writeAllReads(pgRCFileName, rlIdxOrder, singleFileMode);
+                writeAllReads(pgRCFileName, rlIdxOrder);
             cout << "Decompressed ";
         } else {
             validateAllPgs();
-            validatePgsOrder(rlIdxOrder, completeOrderInfo, singleFileMode);
+            validatePgsOrder(rlIdxOrder);
             cout << "Validated ";
         }
 
@@ -610,13 +612,12 @@ namespace PgTools {
         fout.close();
     }
 
-    void PgRCManager::writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder,
-            bool singleFileMode) const {
-        uint8_t parts = singleFileMode?1:2;
-        int inc = singleFileMode?1:2;
+    void PgRCManager::writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder) const {
+        uint8_t parts = singleReadsMode?1:2;
+        int inc = singleReadsMode?1:2;
 
         for(uint8_t p = 0; p < parts; p++) {
-            fstream fout(outPrefix + "_out" + (singleFileMode?"":("_" + toString(p + 1))),
+            fstream fout(outPrefix + "_out" + (singleReadsMode?"":("_" + toString(p + 1))),
                     ios_base::out | ios_base::binary | std::ios::trunc);
             string res, read;
             read.resize(readLength);
@@ -720,15 +721,14 @@ namespace PgTools {
             return nPg->getReadsList()->orgIdx[idx - nonNPgReadsCount];
     }
 
-    void PgRCManager::validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder,
-            bool completeOrderInfo, bool singleFileMode) {
-        if (!completeOrderInfo && singleFileMode)
+    void PgRCManager::validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder) {
+        if (!preserveOrderMode && singleReadsMode)
             return;
 
         vector<bool> validated(readsTotalCount, false);
         uint_reads_cnt_max notValidatedCount = 0;
         uint_reads_cnt_max errorsCount = 0;
-        if (completeOrderInfo) {
+        if (preserveOrderMode) {
             for(uint_reads_cnt_std i = 0; i < readsTotalCount; i++) {
                 uint_reads_cnt_std rlIdx = rlIdxOrder[i];
                 if (validated[rlIdx]) {
@@ -753,6 +753,8 @@ namespace PgTools {
                     uint_reads_cnt_std largerIdx = orgIdx >= orgPairIdx ? orgIdx : orgPairIdx;
                     if (largerIdx - smallerIdx != 1 || smallerIdx % 2)
                         errorsCount++;
+                    else if (!ignorePairOrderInformation && smallerIdx != orgIdx)
+                        errorsCount++;
                 }
             }
         }
@@ -764,8 +766,7 @@ namespace PgTools {
             cout << "Order validation successful!" << endl;
     }
 
-    void PgRCManager::loadAllPgs(istream& pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
-            bool completeOrderInfo, bool singleFileMode) {
+    void PgRCManager::loadAllPgs(istream& pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder) {
         clock_t start_t = clock();
         PseudoGenomeHeader hqPgh(pgrcIn);
         ReadsSetProperties hqRsProp(pgrcIn);
@@ -810,7 +811,8 @@ namespace PgTools {
         nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         readsTotalCount = nonNPgReadsCount + nPgReadsCount;
 
-        SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder, completeOrderInfo, singleFileMode);
+        SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder,
+                preserveOrderMode, ignorePairOrderInformation, singleReadsMode);
     }
 
     void PgRCManager::loadAllPgs() {

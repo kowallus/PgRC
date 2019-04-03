@@ -21,6 +21,7 @@ namespace PgTools {
     static const char PGRC_PE_MODE = 1;
     static const char PGRC_ORD_SE_MODE = 2;
     static const char PGRC_ORD_PE_MODE = 3;
+    static const char PGRC_MIN_PE_MODE = 4;
 
     class PgRCManager {
     private:
@@ -35,6 +36,7 @@ namespace PgTools {
         // INPUT PARAMETERS
         bool singleReadsMode = false;
         bool preserveOrderMode = false;
+        bool ignorePairOrderInformation = false;
         bool nReadsLQ = false;
         bool separateNReads = true;
         bool extraFilesForValidation = false;
@@ -133,9 +135,17 @@ namespace PgTools {
             PgRCManager::preserveOrderMode = true;
         }
 
+        void setIgnorePairOrderInformation() {
+            if (singleReadsMode || preserveOrderMode) {
+                fprintf(stderr, "Ignore pair order works only with default PE mode.");
+                exit(EXIT_FAILURE);
+            }
+            PgRCManager::ignorePairOrderInformation = true;
+        };
+
         void setSingleReadsMode() {
-            if (preserveOrderMode) {
-                fprintf(stderr, "Single reads and preserve order modes cannot be used together.");
+            if (preserveOrderMode || ignorePairOrderInformation) {
+                fprintf(stderr, "Single reads and ordering parameters cannot be used together.");
                 exit(EXIT_FAILURE);
             }
             PgRCManager::singleReadsMode = true;
@@ -314,8 +324,7 @@ namespace PgTools {
 
         void finalizeCompression();
 
-        void loadAllPgs(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
-                bool completeOrderInfo, bool singleFileMode);
+        void loadAllPgs(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder);
 
         void loadAllPgs();
 
@@ -324,7 +333,7 @@ namespace PgTools {
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
 
         void writeAllReadsInSEMode(const string &outPrefix) const;
-        void writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder, bool singleFileMode) const;
+        void writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder) const;
 
         std::mutex mut;
         std::queue<string> out_queue;
@@ -339,7 +348,7 @@ namespace PgTools {
         void writeFromQueue(const string &outPrefix);
 
         void validateAllPgs();
-        void validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder, bool completeOrderInfo, bool singleFileMode);
+        void validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder);
 
         uint_reads_cnt_max dnaStreamSize() const;
 

@@ -44,9 +44,9 @@ namespace PgTools {
 
         static void dumpPgPairs(vector<string> pgFilePrefixes);
         static void compressReadsOrder(ostream &pgrcOut, const vector<uint_reads_cnt_std>& orgIdxs, uint8_t coder_level,
-                bool completeOrderInfo = false, bool singleFileMode = true);
+                bool completeOrderInfo = false, bool ignorePairOrderInformation = false, bool singleFileMode = true);
         static void decompressReadsOrder(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
-                                       bool completeOrderInfo = false, bool singleFileMode = true);
+                                       bool completeOrderInfo = false, bool ignorePairOrderInformation = false, bool singleFileMode = true);
 
         static void writePseudoGenomeSequence(string &pgSequence, string pgPrefix);
     };

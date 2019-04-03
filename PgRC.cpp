@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     bool compressionParamPresent = false;
     bool decompressMode = false;
 
-    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsovrNtaAV?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsoIvrNtaAV?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'c':
@@ -31,6 +31,10 @@ int main(int argc, char *argv[])
             case 'o':
                 compressionParamPresent = true;
                 pgRC->setPreserveOrderMode();
+                break;
+            case 'I':
+                compressionParamPresent = true;
+                pgRC->setIgnorePairOrderInformation();
                 break;
             case 'V':
                 compressionParamPresent = true;
@@ -132,13 +136,14 @@ int main(int argc, char *argv[])
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)] [-d] [-s] [-o]\n"
+                fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)] [-d] [-s] [-o] [-I]\n"
                                 "[-i readssrcfile [pairsrcfile]] pgRCFileName\n\n"
                                 ,
                         argv[0]);
                 fprintf(stderr, "-d for decompression mode (supports only -i parameter for validation mode)\n");
                 fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
                 fprintf(stderr, "-o preserve original order information\n\n");
+                fprintf(stderr, "-I ignore order of reads in a pair (works when pairsrcfile is specified) \n\n");
                 fprintf(stderr, "------------------ EXPERT(/DEVELOPER) OPTIONS ----------------\n");
                 fprintf(stderr, "[-m [matchingMode]lengthOfExactMatchedReadPart] [-M minCharsPerMismatch]\n"
                                 "[-l [matchingMode]lengthOfExactMatchedReadPart]\n[-p minimalExactMatchingLength]\n"
