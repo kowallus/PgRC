@@ -251,7 +251,7 @@ namespace PgTools {
                 isReadDone[i2] = true;
                 if (completeOrderInfo)
                     pairBaseOrgIdx.push_back(orgIdx);
-                if (!ignorePairOrderInformation)
+                else if (!ignorePairOrderInformation)
                     pairBaseFileFlag.push_back(orgIdx % 2);
                 int64_t pairOffset = i2 - i1;
                 offsetInUint8Flag.push_back((uint8_t) (pairOffset <= UINT8_MAX));
@@ -295,8 +295,7 @@ namespace PgTools {
                 cout << "Original indexes of pair bases... ";
                 writeCompressed(pgrcOut, (char *) pairBaseOrgIdx.data(), pairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
                                 LZMA_CODER, coder_level, lzma_coder_param);
-            }
-            if (!ignorePairOrderInformation) {
+            } else if (!ignorePairOrderInformation) {
                 cout << "File flags of pair bases... ";
                 writeCompressed(pgrcOut, (char *) pairBaseFileFlag.data(), pairBaseFileFlag.size() * sizeof(uint8_t),
                                 PPMD7_CODER, coder_level, 2);
@@ -370,8 +369,7 @@ namespace PgTools {
                     rlIdxOrder[orgIdx] = peRlIdxOrder[p * 2];
                     rlIdxOrder[orgIdx % 2?orgIdx - 1:orgIdx + 1] = peRlIdxOrder[p * 2 + 1];
                 }
-            }
-            if (!ignorePairOrderInformation) {
+            } else if (!ignorePairOrderInformation) {
                 vector<uint8_t> pairBaseFileFlag;
                 readCompressed<uint8_t>(pgrcIn, pairBaseFileFlag);
                 for(uint_reads_cnt_std p = 0; p < readsCount / 2; p++) {

@@ -72,8 +72,12 @@ namespace PgTools {
                      (ignorePairOrderInformation?PGRC_MIN_PE_MODE:PGRC_PE_MODE));
         pgrcOut.put(pgrc_mode);
         pgrcOut.put(separateNReads);
-        if (pgrc_mode == PGRC_PE_MODE || pgrc_mode == PGRC_ORD_PE_MODE)
+        revComplPairFile = false;
+        if (pgrc_mode == PGRC_PE_MODE || pgrc_mode == PGRC_ORD_PE_MODE) {
+            if (!disableRevComplPairFileMode)
+                revComplPairFile = true;
             pgrcOut.put(revComplPairFile);
+        }
 
         string tmpDirectoryName = pgRCFileName;
         if (qualityDivision)

@@ -41,7 +41,7 @@ namespace PgTools {
         bool separateNReads = true;
         bool extraFilesForValidation = false;
         string pgRCFileName = "";
-        bool revComplPairFile = false;
+        bool disableRevComplPairFileMode = false;
 
         string srcFastqFile = "";
         string pairFastqFile = "";
@@ -88,6 +88,7 @@ namespace PgTools {
 
         vector<uint_reads_cnt_std> orgIdxs;
 
+        bool revComplPairFile;
         bool qualityDivision;
         string lqDivisionFile;
         string nDivisionFile;
@@ -136,7 +137,7 @@ namespace PgTools {
         }
 
         void setIgnorePairOrderInformation() {
-            if (singleReadsMode || preserveOrderMode || revComplPairFile) {
+            if (singleReadsMode || preserveOrderMode) {
                 fprintf(stderr, "Ignore pair order works only with default PE mode.");
                 exit(EXIT_FAILURE);
             }
@@ -248,12 +249,8 @@ namespace PgTools {
             PgRCManager::pgRCFileName = pgRCFileName;
         }
 
-        void setRevComplPairFile() {
-            if (ignorePairOrderInformation) {
-                fprintf(stderr, "Ignore pair order works only with default PE mode.");
-                exit(EXIT_FAILURE);
-            }
-            PgRCManager::revComplPairFile = true;
+        void disableRevComplPairFile() {
+            PgRCManager::disableRevComplPairFileMode = true;
         }
 
         void setSrcFastqFile(const string &srcFastqFile) {

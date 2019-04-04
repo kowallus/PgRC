@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
             case 'r':
                 compressionParamPresent = true;
                 expectedPairFile = true;
-                pgRC->setRevComplPairFile();
+                pgRC->disableRevComplPairFile();
                 break;
             case 'N':
                 compressionParamPresent = true;
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-l enables preliminary reads matching stage\n");
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
                 fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad&N); 6:PgSeqsCompression; 7:orderInfo\n");
-                fprintf(stderr, "-r reverse compliment reads in a pair file\n");
+                fprintf(stderr, "-r disable reverse compliment reads in a pair file for all PE modes\n");
                 fprintf(stderr, "-v dump extra files for validation mode purposes\n-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
                 fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
