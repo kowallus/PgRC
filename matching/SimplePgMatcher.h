@@ -47,9 +47,10 @@ namespace PgTools {
                                     const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
                                     uint_pg_len_max targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
-        static void restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence, string &nPgSequence);
+        static void restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen,
+                string &hqPgSequence, string &lqPgSequence, string &nPgSequence);
 
-        static string restoreMatchedPg(string &srcPg, size_t srcLen, const string& destPg,
+        static string restoreMatchedPg(string &srcPg, size_t orgSrcLen, const string& destPg,
                 istream &pgMapOffSrc, istream &pgMapLenSrc,
                 bool revComplMatching, bool plainTextReadMode, bool srcIsDest = false);
 

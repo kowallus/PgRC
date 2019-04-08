@@ -238,7 +238,7 @@ namespace PgTools {
         }
     }
 
-    void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, string &hqPgSequence, string &lqPgSequence,
+    void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen, string &hqPgSequence, string &lqPgSequence,
             string &nPgSequence) {
         uint_pg_len_max hqPgMappedLen, lqPgMappedLen, nPgMappedLen;
         PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, hqPgMappedLen, false);
@@ -258,28 +258,28 @@ namespace PgTools {
         pgMapOffSrc.str(pgMapOff);
         pgMapLenSrc.str(pgMapLen);
         hqPgSequence.clear();
-        hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, hqPgMappedLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
+        hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                   true, false, true);
         readCompressed(pgrcIn, pgMapOff);
         readCompressed(pgrcIn, pgMapLen);
         pgMapOffSrc.str(pgMapOff);
         pgMapLenSrc.str(pgMapLen);
-        lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, lqPgMappedLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
+        lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                          true, false);
         if (nPgMappedLen) {
             readCompressed(pgrcIn, pgMapOff);
             readCompressed(pgrcIn, pgMapLen);
             pgMapOffSrc.str(pgMapOff);
             pgMapLenSrc.str(pgMapLen);
-            nPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, nPgMappedLen, nPgMapped, pgMapOffSrc, pgMapLenSrc,
+            nPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, nPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                              true, false);
         }
     }
 
     string
-    SimplePgMatcher::restoreMatchedPg(string &srcPg, size_t srcLen, const string& destPg, istream &pgMapOffSrc, istream &pgMapLenSrc,
+    SimplePgMatcher::restoreMatchedPg(string &srcPg, size_t orgSrcLen, const string& destPg, istream &pgMapOffSrc, istream &pgMapLenSrc,
             bool revComplMatching, bool plainTextReadMode, bool srcIsDest) {
-        bool isPgLengthStd = srcLen <= UINT32_MAX;
+        bool isPgLengthStd = orgSrcLen <= UINT32_MAX;
         if (srcIsDest)
             srcPg.resize(0);
         string tmp;

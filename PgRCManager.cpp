@@ -823,7 +823,7 @@ namespace PgTools {
         }
         cout << "... loaded Pgs Reads Lists (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
         string hqPgSeq, lqPgSeq, nPgSeq;
-        SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgSeq, lqPgSeq, nPgSeq);
+        SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgh.getPseudoGenomeLength(), hqPgSeq, lqPgSeq, nPgSeq);
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), hqCaeRl, &hqRsProp);
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), lqCaeRl, &lqRsProp);
         nPg = new SeparatedPseudoGenome(move(nPgSeq), nCaeRl, &nRsProp);
