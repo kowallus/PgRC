@@ -51,7 +51,7 @@ namespace PgTools {
                 bool enableRevComp, bool enableMismatches) = 0;
 
         virtual void initEntryUpdating() = 0;
-        virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) = 0;
+        virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) = 0;
         virtual void closeEntryUpdating() = 0;
 
     public:
@@ -92,7 +92,7 @@ namespace PgTools {
                 bool enableRevComp, bool enableMismatches) override;
 
         void initEntryUpdating() override {};
-        void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override {};
+        void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) override {};
         void closeEntryUpdating() override {};
     public:
         DefaultReadsExactMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
@@ -119,7 +119,7 @@ namespace PgTools {
                                                                                      bool enableRevComp, bool enableMismatches) override;
         void initEntryUpdating() override;
         string currentRead;
-        void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) override;
+        void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) override;
         void closeEntryUpdating() override;
 
         virtual void initMatchingContinuation(DefaultReadsMatcher *pMatcher);
@@ -197,7 +197,7 @@ namespace PgTools {
     };
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg,
-                        ConstantLengthReadsSetInterface *readsSet, bool applyRevComplPairFile,
+                        ConstantLengthReadsSetInterface *readsSet, bool revComplPairFile,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream& pgrcOut, uint8_t compressionLevel,

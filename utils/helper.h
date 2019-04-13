@@ -19,6 +19,7 @@ namespace PgSAHelpers {
 
     // bioinformatical routines
 
+    char reverseComplement(char symbol);
     string reverseComplement(string kmer);
     void reverseComplementInPlace(char* start, const std::size_t N);
     void reverseComplementInPlace(string &kmer);

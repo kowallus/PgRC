@@ -273,6 +273,10 @@ struct ComplementLUT
 
 char* complLUT = instance.lut;
 
+char PgSAHelpers::reverseComplement(char symbol) {
+    return complLUT[symbol];
+}
+
 void PgSAHelpers::reverseComplementInPlace(char* start, const std::size_t N) {
     char* left = start - 1;
     char* right = start + N;

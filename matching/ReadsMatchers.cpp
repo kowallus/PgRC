@@ -40,6 +40,20 @@ namespace PgTools {
         };
     }
 
+    void fillEntryWithReversedMismatches(const char *read, const char *pgPart,
+                                 const uint8_t mismatchesCount, DefaultReadsListEntry &entry,
+                                 uint_read_len_max readLength) {
+        uint64_t pos = readLength;
+        uint8_t count = 0;
+        while (count < mismatchesCount) {
+            if (read[--pos] != pgPart[pos]) {
+                entry.addMismatch(mismatch2code(reverseComplement(pgPart[pos]), reverseComplement(read[pos])),
+                        readLength - pos - 1);
+                count++;
+            }
+        };
+    }
+
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
     const uint64_t DefaultReadsMatcher::NOT_MATCHED_POSITION = UINT64_MAX;
 
@@ -483,11 +497,17 @@ namespace PgTools {
 
     void AbstractReadsApproxMatcher::initEntryUpdating() { }
 
-    void AbstractReadsApproxMatcher::updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx) {
+    void AbstractReadsApproxMatcher::updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx,
+            bool reverseComplementFlag) {
         readsSet->getRead(matchIdx, (char_pg*) currentRead.data());
         if (readMatchRC[matchIdx])
             reverseComplementInPlace(currentRead);
-        fillEntryWithMismatches(currentRead.data(), pgPtr + entry.pos, readMismatchesCount[matchIdx], entry);
+        if (reverseComplementFlag?(readMatchRC[matchIdx] != (bool) (entry.idx % 2)):readMatchRC[matchIdx])
+            fillEntryWithReversedMismatches(currentRead.data(), pgPtr + entry.pos, readMismatchesCount[matchIdx], entry,
+                    readLength);
+        else
+            fillEntryWithMismatches(currentRead.data(), pgPtr + entry.pos, readMismatchesCount[matchIdx], entry);
+
     }
 
     void AbstractReadsApproxMatcher::closeEntryUpdating() { }
@@ -517,11 +537,8 @@ namespace PgTools {
             uint64_t currPos = builder->writeReadsFromIterator(readMatchPos[matchIdx]);
             DefaultReadsListEntry entry(currPos);
             const uint_reads_cnt_max orgIdx = orgIndexesMapping->getReadOriginalIndex(matchIdx);
-            bool rcFlag = readMatchRC[matchIdx];
-            if (revComplPairFile && orgIdx % 2)
-                rcFlag = !rcFlag;
-            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIdx, rcFlag);
-            this->updateEntry(entry, matchIdx);
+            entry.advanceEntryByPosition(readMatchPos[matchIdx], orgIdx, readMatchRC[matchIdx]);
+            this->updateEntry(entry, matchIdx, revComplPairFile);
             builder->writeExtraReadEntry(entry);
         }
         builder->writeReadsFromIterator();
@@ -550,7 +567,7 @@ namespace PgTools {
     }
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg,
-                        ConstantLengthReadsSetInterface *readsSet, bool applyRevComplPairFile,
+                        ConstantLengthReadsSetInterface *readsSet, bool revComplPairFile,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream &pgrcOut, uint8_t compressionLevel,
@@ -637,7 +654,7 @@ namespace PgTools {
 
         if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
             matcher->writeIntoPseudoGenome(pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping,
-                    applyRevComplPairFile);
+                    revComplPairFile);
 
         delete(matcher);
         return res;
