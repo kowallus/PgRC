@@ -135,6 +135,7 @@ namespace PgTools {
         destPg.resize(nPos);
         PgSAHelpers::writeArray(pgDest, (void*) (destPg.data()), destPg.length());
 
+        textMatches.clear();
         pgMapped = pgDest.str();
         pgMapOff = pgMapOffDest.str();
         pgMapLen = pgMapLenDest.str();
@@ -174,44 +175,45 @@ namespace PgTools {
                                         uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
         clock_t ref_start = clock();
         bool isPgLengthStd = hqPgSequence.length() <= UINT32_MAX;
-        PgTools::SimplePgMatcher matcher(hqPgSequence, targetMatchLength, minMatchLength);
+        PgTools::SimplePgMatcher* matcher = new PgTools::SimplePgMatcher(hqPgSequence, targetMatchLength, minMatchLength);
         cout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
         clock_t lq_start = clock();
-        matcher.markAndRemoveExactMatches(false, lqPgSequence, true, minMatchLength);
+        matcher->markAndRemoveExactMatches(false, lqPgSequence, true, minMatchLength);
         if (!lqPgPrefix.empty())
-            matcher.writeMatchingResult(lqPgPrefix);
-        string lqPgMapped = std::move(matcher.pgMapped);
-        string lqPgMapOff = std::move(matcher.pgMapOff);
-        string lqPgMapLen = std::move(matcher.pgMapLen);
+            matcher->writeMatchingResult(lqPgPrefix);
+        string lqPgMapped = std::move(matcher->pgMapped);
+        string lqPgMapOff = std::move(matcher->pgMapOff);
+        string lqPgMapLen = std::move(matcher->pgMapLen);
         cout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
 
         clock_t n_start = clock();
-        matcher.markAndRemoveExactMatches(false, nPgSequence, true, minMatchLength);
+        matcher->markAndRemoveExactMatches(false, nPgSequence, true, minMatchLength);
         if (!nPgPrefix.empty())
-            matcher.writeMatchingResult(nPgPrefix);
-        string nPgMapped = std::move(matcher.pgMapped);
-        string nPgMapOff = std::move(matcher.pgMapOff);
-        string nPgMapLen = std::move(matcher.pgMapLen);
+            matcher->writeMatchingResult(nPgPrefix);
+        string nPgMapped = std::move(matcher->pgMapped);
+        string nPgMapOff = std::move(matcher->pgMapOff);
+        string nPgMapLen = std::move(matcher->pgMapLen);
         if (!nPgMapped.empty())
             cout << "PgMatching nPg finished in " << clock_millis(n_start) << " msec. " << endl;
 
         clock_t hq_start = clock();
-        matcher.markAndRemoveExactMatches(true, hqPgSequence, true, minMatchLength);
+        matcher->markAndRemoveExactMatches(true, hqPgSequence, true, minMatchLength);
         if (!hqPgPrefix.empty())
-            matcher.writeMatchingResult(hqPgPrefix);
-        string pgSeq = std::move(matcher.pgMapped);
-        string hqPgMapOff = std::move(matcher.pgMapOff);
-        string hqPgMapLen = std::move(matcher.pgMapLen);
+            matcher->writeMatchingResult(hqPgPrefix);
+        string pgSeq = std::move(matcher->pgMapped);
+        string hqPgMapOff = std::move(matcher->pgMapOff);
+        string hqPgMapLen = std::move(matcher->pgMapLen);
         cout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
+        delete(matcher);
 
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, pgSeq.length(), false);
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, lqPgMapped.length(), false);
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, nPgMapped.length(), false);
-        pgSeq.append(std::move(lqPgMapped));
-        pgSeq.append(std::move(nPgMapped));
+        pgSeq.reserve(pgSeq.size() + lqPgMapped.size() + nPgMapped.size());
+        pgSeq.append(lqPgMapped);
         lqPgMapped.clear();
+        pgSeq.append(nPgMapped);
         nPgMapped.clear();
-
 
         cout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
         writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, coder_level,
@@ -260,12 +262,14 @@ namespace PgTools {
         hqPgSequence.clear();
         hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                   true, false, true);
+        hqPgMapped.clear();
         readCompressed(pgrcIn, pgMapOff);
         readCompressed(pgrcIn, pgMapLen);
         pgMapOffSrc.str(pgMapOff);
         pgMapLenSrc.str(pgMapLen);
         lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                          true, false);
+        lqPgMapped.clear();
         if (nPgMappedLen) {
             readCompressed(pgrcIn, pgMapOff);
             readCompressed(pgrcIn, pgMapLen);
@@ -273,6 +277,7 @@ namespace PgTools {
             pgMapLenSrc.str(pgMapLen);
             nPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, nPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                              true, false);
+            nPgMapped.clear();
         }
     }
 

@@ -297,7 +297,7 @@ namespace PgTools {
 
         vector<uint8_t> tmp;
         readCompressed(pgrcIn, tmp); // offsets
-        res->pos.reserve(readsCount);
+        res->pos.reserve(readsCount + 1);
         uint_pg_len_max pos = 0;
         for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
             pos = pos + tmp[i];
@@ -307,6 +307,14 @@ namespace PgTools {
             res->pos.push_back(pgh->getPseudoGenomeLength());
         readCompressed(pgrcIn, res->revComp);
         readCompressed(pgrcIn, tmp); //misCnt;
+        uint_reads_cnt_max cumCount = 0;
+        res->misCumCount.reserve(readsCount + 1);
+        res->misCumCount.push_back(0);
+        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            cumCount += tmp[i];
+            res->misCumCount.push_back(cumCount);
+        }
+        tmp.clear();
         readCompressed(pgrcIn, res->misSymCode);
         uint8_t mismatchesCountSrcsLimit = 0;
         PgSAHelpers::readValue<uint8_t>(pgrcIn, mismatchesCountSrcsLimit, false);
@@ -319,15 +327,9 @@ namespace PgTools {
             cout << (int) m << ": ";
             readCompressed(pgrcIn, srcs[m]);
         }
-        uint_reads_cnt_max cumCount = 0;
-        res->misCumCount.reserve(readsCount + 1);
-        res->misCumCount.push_back(0);
-        res->misOff.reserve(readsCount); //estimated;
-        uint8_t misCnt = 0;
+        res->misOff.reserve(res->misSymCode.size());
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            misCnt = tmp[i];
-            cumCount += misCnt;
-            res->misCumCount.push_back(cumCount);
+            uint8_t misCnt = res->getMisCount(i);
             uint8_t srcIdx = misCnt2SrcIdx[misCnt];
             for (uint8_t m = 0; m < misCnt; m++)
                 res->misOff.push_back(srcs[srcIdx][srcCounter[srcIdx]++]);
@@ -336,9 +338,7 @@ namespace PgTools {
             PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + res->misCumCount[i],
                                                                res->getMisCount(i), res->readLength);
         }
-        if (pseudoGenomePrefix.empty())
-            res->orgIdx.resize(readsCount, 0);
-        else {
+        if (!pseudoGenomePrefix.empty()) {
             std::ifstream in((pseudoGenomePrefix + SeparatedPseudoGenomeBase::READSLIST_ORIGINAL_INDEXES_FILE_SUFFIX).c_str(), std::ifstream::binary);
             res->orgIdx.resize(readsCount);
             readArray(in, res->orgIdx.data(), readsCount * sizeof(uint_reads_cnt_std));
