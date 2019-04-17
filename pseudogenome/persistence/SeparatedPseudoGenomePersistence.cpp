@@ -35,7 +35,7 @@ namespace PgTools {
         if (!skipPgSequence) {
             clock_checkpoint();
             writeCompressed(*pgrcOut, sPg->getPgSequence().data(), sPg->getPgSequence().size(), LZMA_CODER, coder_level,
-                            PGRC_DATAPERIODCODE_8_t);
+                            PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
             cout << "Compressed Pg sequence in " << clock_millis() << " msec." << endl << endl;
         }
     }
@@ -208,14 +208,14 @@ namespace PgTools {
         clock_checkpoint();
         cout << endl;
         uint_reads_cnt_std readsCount = orgIdxs.size();
-        int lzma_coder_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
+        int lzma_reads_dataperiod_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         vector<uint_reads_cnt_std> rev(readsCount);
         for (uint_reads_cnt_std i = 0; i < readsCount; i++)
             rev[orgIdxs[i]] = i;
         if (completeOrderInfo && singleFileMode) {
             cout << "Reverse index of original indexes... ";
             writeCompressed(pgrcOut, (char *) rev.data(), rev.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
-                    coder_level, lzma_coder_param);
+                    coder_level, lzma_reads_dataperiod_param);
         } else {
             // absolute original index of a processed pair base
             vector<uint_reads_cnt_std> pairBaseOrgIdx;
@@ -277,28 +277,29 @@ namespace PgTools {
 
             cout << "Uint8 reads list offsets of pair reads (flag)... ";
             writeCompressed(pgrcOut, (char *) offsetInUint8Flag.data(), offsetInUint8Flag.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 3);
+                            PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             cout << "Uint8 reads list offsets of pair reads (value)... ";
 //        writeCompressed(pgrcOut, (char*) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t), LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t);
             writeCompressed(pgrcOut, (char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 2);
             cout << "Offsets deltas of pair reads (flag)... ";
             writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 3);
+                            PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             cout << "Offsets deltas of pair reads (value)... ";
             writeCompressed(pgrcOut, (char *) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(int8_t),
                             PPMD7_CODER, coder_level, 2);
             cout << "Full reads list offsets of pair reads ... ";
+            double estimated_reads_ratio = simpleUintCompressionEstimate(readsCount, readsCount <= UINT32_MAX?UINT32_MAX:UINT64_MAX);
             writeCompressed(pgrcOut, (char *) fullOffset.data(), fullOffset.size() * sizeof(uint_reads_cnt_std),
-                            LZMA_CODER, coder_level, lzma_coder_param);
+                            LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             if (completeOrderInfo) {
                 cout << "Original indexes of pair bases... ";
                 writeCompressed(pgrcOut, (char *) pairBaseOrgIdx.data(), pairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
-                                LZMA_CODER, coder_level, lzma_coder_param);
+                                LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             } else if (!ignorePairOrderInformation) {
                 cout << "File flags of pair bases... ";
                 writeCompressed(pgrcOut, (char *) pairBaseFileFlag.data(), pairBaseFileFlag.size() * sizeof(uint8_t),
-                                PPMD7_CODER, coder_level, 2);
+                                PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             }
         }
         cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
@@ -508,7 +509,9 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type,
-                                                          uint8_t coder_level, int coder_param, SymbolsPackingFacility<uint8_t>* symPacker) {
+                                                          uint8_t coder_level, int coder_param,
+                                                          double estimated_compression,
+                                                          SymbolsPackingFacility<uint8_t>* symPacker) {
         if (onTheFlyMode() || !dest) {
             fprintf(stderr, "Error during compression: an input stream missing.\n");
             exit(EXIT_FAILURE);
@@ -518,7 +521,7 @@ namespace PgTools {
             PgSAHelpers::writeValue<uint64_t>(pgrcOut, tmp.length(), false);
             tmp = symPacker->packSequence(tmp.data(), tmp.length());
         }
-        writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param);
+        writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param, estimated_compression);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level,
@@ -582,14 +585,14 @@ namespace PgTools {
         compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Reverse complements info... ";
 //        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
-        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2);
+        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
 //                &SymbolsPackingFacility<uint8_t>::BinaryPacker);
         cout << "Mismatches counts... ";
 //        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2);
+        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_CNT);
         cout << "Mismatched symbols codes... ";
 //        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2);
+        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_SYM);
 //                &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
         cout << "Mismatches offsets (rev-coded)... " << endl;
 //        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);

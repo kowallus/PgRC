@@ -174,7 +174,9 @@ namespace PgTools {
                                         const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
                                         uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
         clock_t ref_start = clock();
-        bool isPgLengthStd = hqPgSequence.length() <= UINT32_MAX;
+        const unsigned long refSequenceLength = hqPgSequence.length();
+        bool isPgLengthStd = refSequenceLength <= UINT32_MAX;
+        
         PgTools::SimplePgMatcher* matcher = new PgTools::SimplePgMatcher(hqPgSequence, targetMatchLength, minMatchLength);
         cout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
         clock_t lq_start = clock();
@@ -217,23 +219,25 @@ namespace PgTools {
 
         cout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
         writeCompressed(pgrcOut, pgSeq.data(), pgSeq.size(), LZMA_CODER, coder_level,
-                PGRC_DATAPERIODCODE_8_t);
+                PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
         cout << "Good sequence mapping - offsets... ";
+        double estimated_pg_offset_ratio = simpleUintCompressionEstimate(refSequenceLength, isPgLengthStd?UINT32_MAX:UINT64_MAX);
+        const int pgrc_pg_offset_dataperiodcode = isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, coder_level,
-                isPgLengthStd?PGRC_DATAPERIODCODE_32_t:PGRC_DATAPERIODCODE_64_t);
+                        pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
         cout << "lengths... ";
         writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
         cout << "Bad sequence mapping - offsets... ";
         writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, coder_level,
-                        isPgLengthStd?PGRC_DATAPERIODCODE_32_t:PGRC_DATAPERIODCODE_64_t);
+                        pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
         cout << "lengths... ";
         writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
         if (!nPgSequence.empty()) {
             cout << "N sequence mapping - offsets... ";
             writeCompressed(pgrcOut, nPgMapOff.data(), nPgMapOff.size(), LZMA_CODER, coder_level,
-                            isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t);
+                            pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
             cout << "lengths... ";
             writeCompressed(pgrcOut, nPgMapLen.data(), nPgMapLen.size(), LZMA_CODER, coder_level,
                             PGRC_DATAPERIODCODE_8_t);

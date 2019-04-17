@@ -164,13 +164,20 @@ SZ_ERROR_THREAD     - errors in multithreading functions (only for Mt version)
 */
 
 MY_STDAPI LzmaCompress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,
-                       uint8_t coder_level, int numThreads, int coder_param) {
+                       uint8_t coder_level, int numThreads, int coder_param, double estimated_compression) {
     CLzmaEncProps props;
     LzmaEncProps_Init(&props);
     LzmaEncProps_Set(&props, coder_level, srcLen, numThreads, coder_param);
     size_t propsSize = LZMA_PROPS_SIZE;
-    destLen = srcLen + srcLen / 3 + 128;
-    dest = new unsigned char[propsSize + destLen];
+    size_t maxDestSize = propsSize + (srcLen + srcLen / 3) * estimated_compression + 128;
+    try {
+        dest = new unsigned char[maxDestSize];
+    } catch (const std::bad_alloc& e) {
+        cout << "WARNING: Allocation failed: " << e.what() << endl;
+        maxDestSize -= srcLen / 3 * estimated_compression;
+        dest = new unsigned char[maxDestSize];
+    }
+    destLen = maxDestSize - propsSize;
     int res = LzmaEncode(dest + LZMA_PROPS_SIZE, &destLen, src, srcLen, &props, dest, &propsSize, 0,
                       NULL, &g_Alloc, &g_Alloc);
     assert(propsSize == LZMA_PROPS_SIZE);
@@ -197,7 +204,7 @@ static void Wrap_WriteByte(const IByteOut *pp, Byte b) throw()
     CByteOutBufWrap *p = CONTAINER_FROM_VTBL_CLS(pp, CByteOutBufWrap, vt);
     Byte *dest = p->Cur;
     if (dest == p->Lim) {
-        p->Res == SZ_ERROR_OUTPUT_EOF;
+        p->Res = SZ_ERROR_OUTPUT_EOF;
         return;
     }
     *dest = b;
@@ -213,7 +220,7 @@ CByteOutBufWrap::CByteOutBufWrap(unsigned char *buf, size_t bufLen) throw(): Buf
 }
 
 MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,
-              uint8_t coder_level, int numThreads, int coder_param) {
+              uint8_t coder_level, int numThreads, int coder_param, double estimated_compression) {
     if (numThreads != 1) {
         cout << "Unsupported number of threads " << numThreads << " in ppmd compressor." << endl;
         exit(EXIT_FAILURE);
@@ -228,8 +235,14 @@ MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned ch
     CPpmd7z_RangeEnc rEnc;
     Ppmd7z_RangeEnc_Init(&rEnc);
     size_t propsSize = 5;
-    size_t maxDestSize = propsSize + srcLen + srcLen / 3 + 128; //TODO: better estimation of max size
-    dest = new unsigned char[maxDestSize];
+    size_t maxDestSize = propsSize + (srcLen + srcLen / 3) * estimated_compression + 128; //TODO: better estimation of max size
+    try {
+        dest = new unsigned char[maxDestSize];
+    } catch (const std::bad_alloc& e) {
+        cout << "Allocation failed: " << e.what() << endl;
+        maxDestSize -= srcLen / 3 * estimated_compression;
+        dest = new unsigned char[maxDestSize];
+    }
     *dest = (unsigned char) coder_param;
     SetUi32(dest + 1, memSize);
     CByteOutBufWrap _outStream(dest + propsSize, maxDestSize - propsSize);
@@ -241,6 +254,8 @@ MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned ch
     Ppmd7z_RangeEnc_FlushData(&rEnc);
     destLen = propsSize + _outStream.GetProcessed();
     Ppmd7_Free(&ppmd, &g_Alloc);
+    if (_outStream.Res == SZ_ERROR_OUTPUT_EOF)
+        return SZ_ERROR_OUTPUT_EOF;
     return SZ_OK;
 }
 
@@ -348,16 +363,18 @@ MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
 
 
 char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
-               int coder_param) {
+               int coder_param, double estimated_compression) {
     clock_t start_t = clock();
     unsigned char* dest = 0;
     int res = 0;
     switch (coder_type) {
         case LZMA_CODER:
-            res = LzmaCompress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param);
+            res = LzmaCompress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
+                               estimated_compression);
             break;
         case PPMD7_CODER:
-            res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param);
+            res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
+                    estimated_compression);
             break;
         case LZMA2_CODER:
         default:
@@ -369,9 +386,15 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
         fprintf(stderr, "Error during compression (code: %d).\n", res);
         exit(EXIT_FAILURE);
     }
+
+    const double ratio = ((double) destLen) / srcLen;
     cout << "compressed " << srcLen << " bytes to " << destLen << " bytes (ratio "
-        << PgSAHelpers::toString(((double) destLen)/srcLen, 3) << ") in "
-        << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
+         << PgSAHelpers::toString(ratio, 3) << " vs estimated "
+         << PgSAHelpers::toString(estimated_compression, 3) << ") in "
+         << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
+    if (ratio > estimated_compression)
+        cout << "WARNING: compression ratio " << PgSAHelpers::toString(ratio / estimated_compression, 5)
+        << " times greater than estimation." << endl;
 
     return (char*) dest;
 }
@@ -405,22 +428,23 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint
 }
 
 void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
-                     int coder_param) {
+                     int coder_param, double estimated_compression) {
     PgSAHelpers::writeValue<uint64_t>(dest, srcLen, false);
     if (srcLen == 0) {
         cout << "skipped compression (0 bytes)." << endl;
         return;
     }
     size_t compLen = 0;
-    char* compSeq = Compress(compLen, src, srcLen, coder_type, coder_level, coder_param);
+    char* compSeq = Compress(compLen, src, srcLen, coder_type, coder_level, coder_param, estimated_compression);
     PgSAHelpers::writeValue<uint64_t>(dest, compLen, false);
     PgSAHelpers::writeValue<uint8_t>(dest, coder_type, false);
     PgSAHelpers::writeArray(dest, (void*) compSeq, compLen);
     delete[] compSeq;
 }
 
-void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uint8_t coder_level, int coder_param) {
-    writeCompressed(dest, srcStr.data(), srcStr.length(), coder_type, coder_level, coder_param);
+void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uint8_t coder_level, int coder_param,
+        double estimated_compression) {
+    writeCompressed(dest, srcStr.data(), srcStr.length(), coder_type, coder_level, coder_param, estimated_compression);
 }
 void readCompressed(istream &src, string& dest) {
     size_t destLen = 0;
@@ -435,4 +459,10 @@ void readCompressed(istream &src, string& dest) {
     const char* srcArray = (const char*) PgSAHelpers::readArray(src, srcLen);
     Uncompress((char*) dest.data(), destLen, srcArray, srcLen, coder_type);
     delete(srcArray);
+}
+
+double simpleUintCompressionEstimate(uint64_t dataMaxValue, uint64_t typeMaxValue) {
+    const double dataBits = 64 - ((double) __builtin_clzl(dataMaxValue));
+    const double typeBits = 64 - __builtin_clzl(typeMaxValue);
+    return dataBits / typeBits;
 }

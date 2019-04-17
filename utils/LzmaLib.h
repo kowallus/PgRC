@@ -28,12 +28,19 @@ const static uint8_t PGRC_CODER_LEVEL_FAST = 1;
 const static uint8_t PGRC_CODER_LEVEL_NORMAL = 2;
 const static uint8_t PGRC_CODER_LEVEL_MAX = 3;
 
+const static double COMPRESSION_ESTIMATION_UINT8_BITMAP = 0.125;
+const static double COMPRESSION_ESTIMATION_BASIC_DNA = 0.250;
+const static double COMPRESSION_ESTIMATION_MIS_CNT = 0.5;
+const static double COMPRESSION_ESTIMATION_MIS_SYM = 0.250;
+
+double simpleUintCompressionEstimate(uint64_t dataMaxValue, uint64_t typeMaxValue);
+
 char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
-        int coder_param = -1);
+        int coder_param = -1, double estimated_compression = 1);
 void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
-                     int coder_param = -1);
+                     int coder_param = -1, double estimated_compression = 1);
 void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uint8_t coder_level,
-                     int coder_param = -1);
+                     int coder_param = -1, double estimated_compression = 1);
 
 void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type);
 void readCompressed(istream &src, string& dest);
