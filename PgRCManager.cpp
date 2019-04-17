@@ -197,7 +197,7 @@ namespace PgTools {
             prepareForPgMatching();
             string emptySequence;
             SimplePgMatcher::matchPgsInPg(hqPg->getPgSequence(), lqPg->getPgSequence(),
-                    separateNReads?nPg->getPgSequence():emptySequence, pgrcOut, compressionLevel,
+                    separateNReads?nPg->getPgSequence():emptySequence, separateNReads, pgrcOut, compressionLevel,
                                           extraFilesForValidation?pgSeqFinalHqPrefix:"",
                                           extraFilesForValidation?pgSeqFinalLqPrefix:"",
                                           extraFilesForValidation?pgNPrefix:"", targetPgMatchLength);

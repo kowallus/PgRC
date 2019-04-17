@@ -36,14 +36,11 @@ namespace PgTools {
         virtual ~SimplePgMatcher();
 
         void markAndRemoveExactMatches(bool destPgIsSrcPg,
-                string &destPg, bool revComplMatching, uint32_t minMatchLength = UINT32_MAX);
-
-        string pgMapped;
-        string pgMapOff;
-        string pgMapLen;
+                string &destPg, string &resPgMapOff, string& resPgMapLen,
+                bool revComplMatching, uint32_t minMatchLength = UINT32_MAX);
 
         static void matchPgsInPg(string &hqPgSequence, string &lqPgSequence, string &nPgSequence,
-                                    ostream &pgrcOut, uint8_t coder_level,
+                                    bool separateNReads, ostream &pgrcOut, uint8_t coder_level,
                                     const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
                                     uint_pg_len_max targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
@@ -59,7 +56,8 @@ namespace PgTools {
 
         static string restoreAutoMatchedPg(const string &pgPrefix, bool revComplMatching);
 
-        void writeMatchingResult(const string &pgPrefix);
+        static void writeMatchingResult(const string &pgPrefix,
+                const string &pgMapped, const string &pgMapOff, const string& pgMapLen);
     };
 }
 
