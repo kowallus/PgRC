@@ -112,7 +112,10 @@ void CopMEMMatcher::displayParams() {
 	std::cout << "HASH_SIZE = " << hash_size << "; ";
 	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
-	std::cout << "Hash function: maRushPrime1HashSimplified\n";
+	std::cout << "Hash function: maRushPrime1HashSimplified" << std::endl;
+    std::cout << "Hash collisions per position limit: " << HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
+    std::cout << "Average hash collisions per position limit (in approx mode): " << AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
+    std::cout << "Unlimited number of hash collisions per position (in approx mode): " << UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION << std::endl;
 }
 
 void CopMEMMatcher::calcCoprimes()
@@ -160,7 +163,7 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyU
 		}
 
 		for (size_t temp = 0; temp < MULTI1; ++temp) {
-			if (cumm[hashPositions[temp]] <= HASH_COLLISIONS_LIMIT)
+			if (cumm[hashPositions[temp]] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
 			    ++cumm[hashPositions[temp]];
 			else
 			    skippedList.push_back(i + k1 * temp);
@@ -170,7 +173,7 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyU
 	//////////////////// processing the end part of R  //////////////////////
 	for (; i < N - K + 1; i += k1) {
 		uint32_t h = hashFunc(gen + i) + 2;
-		if (cumm[h] <= HASH_COLLISIONS_LIMIT)
+		if (cumm[h] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
 		    ++cumm[h];
         else
             skippedList.push_back(i);
@@ -403,6 +406,9 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
 
     MyUINT2 posArray[2];
 
+    uint_read_len_max k2positionsCount = (N2 + 1 - K) / k2;
+    uint64_t falseMatchCountLimit = falseMatchCount + k2positionsCount * AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT;
+
     uint64_t matchPosition = NOT_MATCHED_POSITION;
     size_t i1 = 0;
     const char* curr2 = start2 + i1;
@@ -413,7 +419,11 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             curr2 += k2;
             continue;
         }
-
+        if (falseMatchCountLimit < falseMatchCount) {
+            MyUINT2 tmp = posArray[0] + UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION;
+            if (posArray[1] > tmp)
+                posArray[1] = tmp;
+        }
         for (MyUINT1 j = posArray[0]; j < posArray[1]; ++j) {
             const uint_read_len_max positionShift = curr2 - start2;
             if (positionShift > sampledPositions[j])
