@@ -45,7 +45,6 @@
 #include "Hashes.h"
 
 //////////////////// GLOBAL CONSTS //////////////////////////
-const std::uint32_t HASH_SIZE = 1U << 28;
 const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
@@ -92,20 +91,25 @@ void CopMEMMatcher::initParams(uint32 minMatchLength) {
     int KmmL = (minMatchLength / 4 - 1) * 4;
     if (KmmL < K) K = KmmL;
     calcCoprimes();
-    hashFunc = hashFuncMatrix[K][H];
+    hashFunc32 = hashFuncMatrix[K][H];
     v1logger = &std::cout;
 
     LK2 = (L - K) / 2;
     LK2_MINUS_4 = LK2 - 4;
     K_PLUS_LK24 = K + LK2_MINUS_4;
 
+    uint8_t i = HASH_SIZE_MIN_ORDER;
+    do {
+        hash_size = ((uint32_t) 1) << (i++);
+    } while (i <= HASH_SIZE_MAX_ORDER && hash_size < N / k1);
+    hash_size_minus_one = hash_size - 1;
 }
 
 void CopMEMMatcher::displayParams() {
 	std::cout << "PARAMETERS" << std::endl;
 	std::cout << "l = " << L << "; ";
 	std::cout << "K = " << K << "; ";
-	std::cout << "HASH_SIZE = " << HASH_SIZE << "; ";
+	std::cout << "HASH_SIZE = " << hash_size << "; ";
 	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
 	std::cout << "Hash function: maRushPrime1HashSimplified\n";
@@ -156,7 +160,7 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyU
 		}
 
 		for (size_t temp = 0; temp < MULTI1; ++temp) {
-			if (cumm[hashPositions[temp]] < HASH_COLLISIONS_LIMIT_MINUS_ONE)
+			if (cumm[hashPositions[temp]] <= HASH_COLLISIONS_LIMIT)
 			    ++cumm[hashPositions[temp]];
 			else
 			    skippedList.push_back(i + k1 * temp);
@@ -166,13 +170,13 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyU
 	//////////////////// processing the end part of R  //////////////////////
 	for (; i < N - K + 1; i += k1) {
 		uint32_t h = hashFunc(gen + i) + 2;
-		if (cumm[h] < HASH_COLLISIONS_LIMIT_MINUS_ONE)
+		if (cumm[h] <= HASH_COLLISIONS_LIMIT)
 		    ++cumm[h];
         else
             skippedList.push_back(i);
 	}
 	//////////////////// processing the end part of R //////////////////////
-	std::partial_sum(cumm, cumm + HASH_SIZE + 2, cumm);
+	std::partial_sum(cumm, cumm + hash_size + 2, cumm);
 	skippedList.push_back(N);
 }
 
@@ -182,10 +186,10 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 	const unsigned int MULTI2 = 128;
 	const unsigned int k1MULTI2 = k1 * MULTI2;
 
-	MyUINT2* cumm = new MyUINT2[HASH_SIZE + 2]();
+	MyUINT2* cumm = new MyUINT2[hash_size + 2]();
 	vector<MyUINT1> skippedList;
 	genCumm(N, start1, cumm, skippedList);
-    const size_t hashCount = cumm[HASH_SIZE + 1];
+    const size_t hashCount = cumm[hash_size + 1];
     MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
     *v1logger << "Hash count = " << hashCount << std::endl;
 

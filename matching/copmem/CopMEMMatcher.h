@@ -8,7 +8,9 @@ using namespace PgTools;
 enum verbosity { v0, v1, v2 };
 enum reverseMode { no, yes, both };
 
-static const int HASH_COLLISIONS_LIMIT_MINUS_ONE = 16;
+static const int HASH_COLLISIONS_LIMIT = 16;
+static const int HASH_SIZE_MIN_ORDER = 24;
+static const int HASH_SIZE_MAX_ORDER = 31;
 typedef std::pair<std::string, size_t> SequenceItem;
 typedef std::vector<SequenceItem> SequenceVector;
 
@@ -23,9 +25,11 @@ private:
     int bigRef;
     const int L;
     int K, k1, k2;
-    std::uint32_t(*hashFunc)(const char*);
+    std::uint32_t(*hashFunc32)(const char*);
     std::uint32_t(*hashFuncMatrix[64][6])(const char*);
     const int H = 1;
+    std::uint32_t hash_size;
+    std::uint32_t hash_size_minus_one;
 
     int LK2 = (L - K) / 2;
     int LK2_MINUS_4 = LK2 - 4;
@@ -35,6 +39,8 @@ private:
     void initParams(uint32_t minMatchLength);
     void calcCoprimes();
     void displayParams();
+
+    inline std::uint32_t hashFunc(const char* str) { return hashFunc32(str) & hash_size_minus_one; };
 
     template<typename MyUINT1, typename MyUINT2>
     void genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList);
