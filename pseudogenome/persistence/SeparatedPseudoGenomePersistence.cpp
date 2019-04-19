@@ -217,10 +217,10 @@ namespace PgTools {
             writeCompressed(pgrcOut, (char *) rev.data(), rev.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
                     coder_level, lzma_reads_dataperiod_param);
         } else {
-            // absolute original index of a processed pair base
-            vector<uint_reads_cnt_std> pairBaseOrgIdx;
+            // absolute pair base index of original pair
+            vector<uint_reads_cnt_std> revPairBaseOrgIdx;
             if (completeOrderInfo)
-                pairBaseOrgIdx.reserve(readsCount / 2);
+                revPairBaseOrgIdx.resize(readsCount / 2);
             // flag indicating a processed pair base file (0 - Second, 1 - First)
             vector<uint8_t> pairBaseFileFlag;
             if (!ignorePairOrderInformation)
@@ -250,7 +250,7 @@ namespace PgTools {
                 uint_reads_cnt_std i2 = rev[pairOrgIdx]; // i2 > i1
                 isReadDone[i2] = true;
                 if (completeOrderInfo)
-                    pairBaseOrgIdx.push_back(orgIdx);
+                    revPairBaseOrgIdx[orgIdx / 2] = offsetInUint8Flag.size() * 2 + orgIdx % 2;
                 else if (!ignorePairOrderInformation)
                     pairBaseFileFlag.push_back(orgIdx % 2);
                 int64_t pairOffset = i2 - i1;
@@ -294,7 +294,7 @@ namespace PgTools {
                             LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             if (completeOrderInfo) {
                 cout << "Original indexes of pair bases... ";
-                writeCompressed(pgrcOut, (char *) pairBaseOrgIdx.data(), pairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
+                writeCompressed(pgrcOut, (char *) revPairBaseOrgIdx.data(), revPairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
                                 LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             } else if (!ignorePairOrderInformation) {
                 cout << "File flags of pair bases... ";
@@ -309,12 +309,11 @@ namespace PgTools {
                                                                 vector<uint_reads_cnt_std> &rlIdxOrder,
                                                                 bool completeOrderInfo, bool ignorePairOrderInformation,
                                                                 bool singleFileMode) {
-        if (!completeOrderInfo && singleFileMode)
-            return;
-
-        if (completeOrderInfo && singleFileMode)
+        if (singleFileMode) {
+            if (!completeOrderInfo)
+                return;
             readCompressed<uint_reads_cnt_std>(pgrcIn, rlIdxOrder);
-        else {
+        } else {
             vector<uint8_t> offsetInUint8Flag;
             vector<uint8_t> offsetInUint8Value;
             vector<uint8_t> deltaInInt8Flag;
@@ -361,15 +360,17 @@ namespace PgTools {
                 isReadDone[i + pairOffset] = true;
             }
             if (completeOrderInfo) {
-                vector<uint_reads_cnt_std> pairBaseOrgIdx;
-                readCompressed<uint_reads_cnt_std>(pgrcIn, pairBaseOrgIdx);
+                vector<uint_reads_cnt_std> revPairBaseOrgIdx;
+                revPairBaseOrgIdx.reserve(readsCount);
+                readCompressed<uint_reads_cnt_std>(pgrcIn, revPairBaseOrgIdx);
+                revPairBaseOrgIdx.resize(readsCount);
                 vector<uint_reads_cnt_std> peRlIdxOrder = std::move(rlIdxOrder);
-                rlIdxOrder.resize(readsCount);
-                for(uint_reads_cnt_std p = 0; p < readsCount / 2; p++) {
-                    uint_reads_cnt_std orgIdx = pairBaseOrgIdx[p];
-                    rlIdxOrder[orgIdx] = peRlIdxOrder[p * 2];
-                    rlIdxOrder[orgIdx % 2?orgIdx - 1:orgIdx + 1] = peRlIdxOrder[p * 2 + 1];
+                for(uint_reads_cnt_std p = readsCount / 2; p-- > 0;) {
+                    uint_reads_cnt_std rlIdx = revPairBaseOrgIdx[p];
+                    revPairBaseOrgIdx[p * 2] = peRlIdxOrder[rlIdx];
+                    revPairBaseOrgIdx[p * 2 + 1] = peRlIdxOrder[rlIdx % 2?rlIdx - 1:rlIdx + 1];
                 }
+                rlIdxOrder = std::move(revPairBaseOrgIdx);
             } else if (!ignorePairOrderInformation) {
                 vector<uint8_t> pairBaseFileFlag;
                 readCompressed<uint8_t>(pgrcIn, pairBaseFileFlag);
