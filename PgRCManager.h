@@ -87,6 +87,7 @@ namespace PgTools {
         SeparatedPseudoGenome *nPg = 0;
 
         vector<uint_reads_cnt_std> orgIdxs;
+        vector<uint_pg_len_std> orgIdx2stdPgPos;
 
         bool revComplPairFile;
         bool qualityDivision;

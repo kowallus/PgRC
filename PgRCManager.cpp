@@ -163,8 +163,14 @@ namespace PgTools {
             } else {
                 //// Already done during runMappingLQReadsOnHQPg()
 //                compressMappedHQPgReadsList();
-                if (!singleReadsMode)
+                if (!singleReadsMode) {
+                    readsTotalCount = divReadsSets->getLqReadsIndexesMapping()->getReadsTotalCount();
+                    orgIdx2stdPgPos.resize(readsTotalCount, -1);
+                    ConstantAccessExtendedReadsList *const pgRl = hqPg->getReadsList();
+                    for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
+                        orgIdx2stdPgPos[pgRl->orgIdx[i]] = pgRl->pos[i];
                     orgIdxs = std::move(hqPg->getReadsList()->orgIdx);
+                }
                 hqPg->disposeReadsList();
             }
         }
@@ -179,19 +185,48 @@ namespace PgTools {
             } else {
                 compressLQPgReadsList();
             }
-            if (!singleReadsMode)
+            if (!singleReadsMode) {
+                ConstantAccessExtendedReadsList *const pgRl = lqPg->getReadsList();
+                uint_pg_len_std startPos = hqPg->getPseudoGenomeLength();
+                for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
+                    orgIdx2stdPgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
                 orgIdxs.insert(orgIdxs.end(), lqPg->getReadsList()->orgIdx.begin(), lqPg->getReadsList()->orgIdx.end());
+            }
             lqPg->disposeReadsList();
             if (separateNReads) {
                 runNPgGeneration();
                 persistNPg();
-                if (!singleReadsMode)
-                    orgIdxs.insert(orgIdxs.end(), nPg->getReadsList()->orgIdx.begin(), nPg->getReadsList()->orgIdx.end());
+                if (!singleReadsMode) {
+                    uint_pg_len_std startPos = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength();
+                    ConstantAccessExtendedReadsList *const pgRl = nPg->getReadsList();
+                    for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
+                        orgIdx2stdPgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
+                    orgIdxs.insert(orgIdxs.end(), nPg->getReadsList()->orgIdx.begin(),
+                                   nPg->getReadsList()->orgIdx.end());
+                }
                 nPg->disposeReadsList();
             }
             delete(divReadsSets);
             divReadsSets = 0;
         }
+/*        cout << "Original order positions XP: " << endl;
+        writeCompressed(pgrcOut, (char *) orgIdx2stdPgPos.data(), orgIdx2stdPgPos.size() * sizeof(uint_pg_len_std),
+                        LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
+        if (!pairFastqFile.empty()) {
+            vector<uint_pg_len_std> basePairPos, pairDelta, posPairDelta;
+            for(uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
+                basePairPos.push_back(orgIdx2stdPgPos[i]);
+                pairDelta.push_back(orgIdx2stdPgPos[i + 1] - orgIdx2stdPgPos[i]);
+                posPairDelta.push_back(orgIdx2stdPgPos[i + 1] > orgIdx2stdPgPos[i]?
+                    orgIdx2stdPgPos[i + 1] - orgIdx2stdPgPos[i]:orgIdx2stdPgPos[i] - orgIdx2stdPgPos[i + 1]);
+            }
+            writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len_std),
+                            LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
+            writeCompressed(pgrcOut, (char *) pairDelta.data(), pairDelta.size() * sizeof(uint_pg_len_std),
+                            LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
+            writeCompressed(pgrcOut, (char *) posPairDelta.data(), posPairDelta.size() * sizeof(uint_pg_len_std),
+                            LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
+        }*/
         bad_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
