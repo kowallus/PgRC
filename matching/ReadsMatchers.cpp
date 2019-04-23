@@ -57,10 +57,10 @@ namespace PgTools {
     const uint_read_len_max DefaultReadsMatcher::DISABLED_PREFIX_MODE = (uint_read_len_max) -1;
     const uint64_t DefaultReadsMatcher::NOT_MATCHED_POSITION = UINT64_MAX;
 
-    DefaultReadsMatcher::DefaultReadsMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+    DefaultReadsMatcher::DefaultReadsMatcher(char* pgPtr, const uint_pg_len_max pgLength,
+                                             bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                              uint32_t matchPrefixLength) :
-                                             sPg(sPg), pgPtr(sPg->getPgSequence().data()),
-                                             pgLength(sPg->getPgSequence().length()), revComplPg(revComplPg),
+                                             pgPtr(pgPtr), pgLength(pgLength), revComplPg(revComplPg),
                                              readsSet(readsSet), matchPrefixLength(matchPrefixLength),
                                              readLength(readsSet->maxReadLength()),
                                              matchingLength(readLength > matchPrefixLength ? matchPrefixLength : readLength),
@@ -157,9 +157,9 @@ namespace PgTools {
         this->executeMatching(false);
 
         if (revComplPg) {
-            PgSAHelpers::reverseComplementInPlace(sPg->getPgSequence());
+            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
             this->executeMatching(true);
-            PgSAHelpers::reverseComplementInPlace(sPg->getPgSequence());
+            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
         }
     }
 
@@ -170,15 +170,15 @@ namespace PgTools {
         this->executeMatching(false);
 
         if (revComplPg) {
-            PgSAHelpers::reverseComplementInPlace(sPg->getPgSequence());
+            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
             this->executeMatching(true);
-            PgSAHelpers::reverseComplementInPlace(sPg->getPgSequence());
+            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
         }
     }
 
-    DefaultReadsExactMatcher::DefaultReadsExactMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
+    DefaultReadsExactMatcher::DefaultReadsExactMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg,
                                                        ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength)
-            : DefaultReadsMatcher(sPg, revComplPg, readsSet, matchPrefixLength) {}
+            : DefaultReadsMatcher(pgPtr, pgLength, revComplPg, readsSet, matchPrefixLength) {}
 
     void DefaultReadsExactMatcher::initMatching() {
         cout << "Feeding patterns...\n" << endl;
@@ -222,27 +222,40 @@ namespace PgTools {
              << endl;
     }
 
-    AbstractReadsApproxMatcher::AbstractReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
+    AbstractReadsApproxMatcher::AbstractReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg,
                                                            ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength,
                                                            uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches)
-            : DefaultReadsMatcher(sPg, revComplPg, readsSet, matchPrefixLength),
+            : DefaultReadsMatcher(pgPtr, pgLength, revComplPg, readsSet, matchPrefixLength),
             targetMismatches(readsSet->maxReadLength() / readsExactMatchingChars - 1),
             maxMismatches(maxMismatches), minMismatches(minMismatches){
         currentRead.resize(readsSet->maxReadLength());
         matchedCountPerMismatches[NOT_MATCHED_COUNT] = readsCount;
     }
 
-    InterleavedReadsApproxMatcher::InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
+    InterleavedReadsApproxMatcher::InterleavedReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg,
                                                                  ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength,
                                                 uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches)
-            : AbstractReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
+            : AbstractReadsApproxMatcher(pgPtr, pgLength, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
                     maxMismatches, minMismatches), partLength(readsExactMatchingChars)  {}
 
-    DefaultReadsApproxMatcher::DefaultReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg,
+    DefaultReadsApproxMatcher::DefaultReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg,
                                                          ConstantLengthReadsSetInterface *readsSet, uint32_t matchPrefixLength,
                                                          uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches)
-             :AbstractReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
+             :AbstractReadsApproxMatcher(pgPtr, pgLength, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
                      maxMismatches, minMismatches), partLength(readsExactMatchingChars) {}
+
+    CopMEMReadsApproxMatcher::CopMEMReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg,
+                                                       ConstantLengthReadsSetInterface *readsSet,
+                                                       uint32_t matchPrefixLength, uint16_t readsExactMatchingChars,
+                                                       uint8_t maxMismatches, uint8_t minMismatches)
+            : AbstractReadsApproxMatcher(pgPtr, pgLength, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
+                                         maxMismatches, minMismatches), partLength(readsExactMatchingChars) {
+
+    }
+
+    CopMEMReadsApproxMatcher::~CopMEMReadsApproxMatcher() {
+    }
+
 
     void AbstractReadsApproxMatcher::printApproxMatchingStats() {
         cout << "... approximate matching procedure checkpoint " << clock_millis() << " msec. " << endl;
@@ -391,18 +404,6 @@ namespace PgTools {
         this->printApproxMatchingStats();
     }
 
-    CopMEMReadsApproxMatcher::CopMEMReadsApproxMatcher(SeparatedPseudoGenome *sPg, bool revComplPg,
-                                                       ConstantLengthReadsSetInterface *readsSet,
-                                                       uint32_t matchPrefixLength, uint16_t readsExactMatchingChars,
-                                                       uint8_t maxMismatches, uint8_t minMismatches)
-            : AbstractReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength, readsExactMatchingChars,
-                    maxMismatches, minMismatches), partLength(readsExactMatchingChars) {
-
-    }
-
-    CopMEMReadsApproxMatcher::~CopMEMReadsApproxMatcher() {
-    }
-
     void CopMEMReadsApproxMatcher::initMatching() {
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
@@ -415,7 +416,7 @@ namespace PgTools {
 
     void CopMEMReadsApproxMatcher::executeMatching(bool revCompMode) {
         cout << "Feeding " << (revCompMode?"rc of ":"") << "pseudogenome sequence... " << endl;
-        CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(sPg->getPgSequence(), partLength);
+        CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(pgPtr, pgLength, partLength);
         cout << "... checkpoint " << clock_millis() << " msec. " << endl;
         for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
@@ -464,7 +465,6 @@ namespace PgTools {
     void AbstractReadsApproxMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
         clock_checkpoint();
 
-        const string &text = sPg->getPgSequence();
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
             if (readMatchPos[i] == NOT_MATCHED_POSITION)
@@ -472,7 +472,7 @@ namespace PgTools {
             else {
                 offsetsDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"");
                 const string read = readMatchRC[i]?reverseComplement(readsSet->getRead(i)):readsSet->getRead(i);
-                reportMismatches(read.data(), text.data() + readMatchPos[i], matchingLength, offsetsDest);
+                reportMismatches(read.data(), pgPtr + readMatchPos[i], matchingLength, offsetsDest);
                 offsetsDest << "\n";
                 if (matchingLength < readLength)
                     suffixesDest << readsSet->getRead(i).substr(matchingLength);
@@ -484,15 +484,27 @@ namespace PgTools {
     }
 
     SeparatedPseudoGenomeOutputBuilder *AbstractReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            bool enableRevComp, bool enableMismatches) {
-        return new SeparatedPseudoGenomeOutputBuilder(
-                !enableRevComp && !this->revComplPg, !enableMismatches && this->maxMismatches == 0);
+            SeparatedPseudoGenome* sPg) {
+        DefaultReadsListIteratorInterface* rlIt = sPg->getReadsList();
+        bool isRevCompEnabled = sPg->getReadsList()->isRevCompEnabled();
+        bool areMismatchesEnabled = sPg->getReadsList()->areMismatchesEnabled();
+        SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(
+                !isRevCompEnabled && !this->revComplPg, !areMismatchesEnabled && this->maxMismatches == 0);
+        builder->setReadsSourceIterator(rlIt);
+        builder->copyPseudoGenomeProperties(sPg);
+        return builder;
     }
 
     SeparatedPseudoGenomeOutputBuilder *DefaultReadsExactMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            bool enableRevComp, bool enableMismatches){
-        return new SeparatedPseudoGenomeOutputBuilder(
-                !enableRevComp && !this->revComplPg, !enableMismatches);
+            SeparatedPseudoGenome *sPg){
+        DefaultReadsListIteratorInterface* rlIt = sPg->getReadsList();
+        bool isRevCompEnabled = sPg->getReadsList()->isRevCompEnabled();
+        bool areMismatchesEnabled = sPg->getReadsList()->areMismatchesEnabled();
+        SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(
+                !isRevCompEnabled && !this->revComplPg, !areMismatchesEnabled);
+        builder->setReadsSourceIterator(rlIt);
+        builder->copyPseudoGenomeProperties(sPg);
+        return builder;
     }
 
     void AbstractReadsApproxMatcher::initEntryUpdating() { }
@@ -512,8 +524,9 @@ namespace PgTools {
 
     void AbstractReadsApproxMatcher::closeEntryUpdating() { }
 
-    void DefaultReadsMatcher::writeIntoPseudoGenome(ostream& pgrcOut, uint8_t compressionLevel,
-            const string &outPgPrefix, IndexesMapping* orgIndexesMapping, bool revComplPairFile) {
+    void DefaultReadsMatcher::exportMatchesInPgOrder(SeparatedPseudoGenome* sPg, ostream &pgrcOut, uint8_t compressionLevel,
+                                                     const string &outPgPrefix, IndexesMapping *orgIndexesMapping,
+                                                     bool pairFileMode, bool revComplPairFile) {
         clock_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
@@ -525,13 +538,7 @@ namespace PgTools {
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
         initEntryUpdating();
-        DefaultReadsListIteratorInterface* rlIt = sPg->getReadsList();
-        bool isRevCompEnabled = sPg->getReadsList()->isRevCompEnabled();
-        bool areMismatchesEnabled = sPg->getReadsList()->areMismatchesEnabled();
-        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(
-                isRevCompEnabled, areMismatchesEnabled);
-        builder->setReadsSourceIterator(rlIt);
-        builder->copyPseudoGenomeProperties(sPg);
+        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(sPg);
         for(uint_reads_cnt_max i = 0; i < matchedReadsCount; i++) {
             uint_reads_cnt_max matchIdx = idxs[i];
             uint64_t currPos = builder->writeReadsFromIterator(readMatchPos[matchIdx]);
@@ -544,10 +551,41 @@ namespace PgTools {
         builder->writeReadsFromIterator();
         builder->build(outPgPrefix);
         builder->compressedBuild(pgrcOut, compressionLevel);
-        builder->buildInto(sPg);
+        if (pairFileMode)
+            builder->updateOriginalIndexesIn(sPg);
         delete(builder);
         closeEntryUpdating();
-        cout << "... writing (" << outPgPrefix << ") output files completed in " << clock_millis() << " msec. " << endl << endl;
+        cout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
+    }
+
+    void DefaultReadsMatcher::exportMatchesInOriginalOrder(SeparatedPseudoGenome *sPg, ostream &pgrcOut,
+                                                           uint8_t compressionLevel, const string &outPgPrefix,
+                                                           IndexesMapping *orgIndexesMapping, bool pairFileMode,
+                                                           bool revComplPairFile) {
+        clock_checkpoint();
+        initEntryUpdating();
+        SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(sPg);
+        uint_reads_cnt_max curIdx = 0;
+        for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            const uint_reads_cnt_max orgIdx = orgIndexesMapping->getReadOriginalIndex(i);
+            while (curIdx++ < orgIdx) {
+                DefaultReadsListEntry entry(0);
+                entry.advanceEntryByPosition(0, curIdx, false);
+                builder->writeExtraReadEntry(entry);
+            }
+            DefaultReadsListEntry entry(0);
+            entry.advanceEntryByPosition(0, orgIdx, readMatchRC[i]);
+            if (readMatchPos[i] != NOT_MATCHED_POSITION)
+                this->updateEntry(entry, i, revComplPairFile);
+            builder->writeExtraReadEntry(entry);
+        }
+        builder->build(outPgPrefix);
+        builder->compressedBuild(pgrcOut, compressionLevel);
+        builder->updateOriginalIndexesIn(sPg);
+        builder->updatePositionsIn(sPg);
+        delete(builder);
+        closeEntryUpdating();
+        cout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
     const vector<bool> DefaultReadsMatcher::getMatchedReadsBitmap(uint8_t maxMismatches) {
@@ -566,8 +604,8 @@ namespace PgTools {
         return res;
     }
 
-    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg,
-                        ConstantLengthReadsSetInterface *readsSet, bool revComplPairFile,
+    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, bool preserveOrderMode,
+                        ConstantLengthReadsSetInterface *readsSet, bool pairFileMode, bool revComplPairFile,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream &pgrcOut, uint8_t compressionLevel,
@@ -590,20 +628,25 @@ namespace PgTools {
         DefaultReadsMatcher* matcher;
         if (readLength == currentExactMatchingChars)
             switch (tolower(currentMatchingMode)) {
-                case 'c': matcher = new CopMEMReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                 currentExactMatchingChars, maxMismatches, currentMinMismatches);
+                case 'c': matcher = new CopMEMReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                        currentExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
-                default: matcher = new DefaultReadsExactMatcher(sPg, revComplPg, readsSet, matchPrefixLength);
+                default: matcher = new DefaultReadsExactMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength);
             }
         else switch (tolower(currentMatchingMode)) {
-                case 'd': matcher = new DefaultReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                  currentExactMatchingChars, maxMismatches, currentMinMismatches);
+                case 'd': matcher = new DefaultReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                        currentExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
-                case 'i': matcher = new InterleavedReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                      currentExactMatchingChars, maxMismatches, currentMinMismatches);
+                case 'i': matcher = new InterleavedReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                        currentExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
-                case 'c': matcher = new CopMEMReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                 currentExactMatchingChars, maxMismatches, currentMinMismatches);
+                case 'c': matcher = new CopMEMReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                        currentExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
                 default:
                     fprintf(stderr, "Unknown matching mode: %c.\n", currentMatchingMode);
@@ -621,17 +664,17 @@ namespace PgTools {
             bool shortcutMode = toupper(matchingMode) == matchingMode;
             uint8_t currentMinMismatches = shortcutMode?maxMismatches:targetMismatches + 1;
             switch (tolower(matchingMode)) {
-                case 'd': approxMatcher = new DefaultReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                  readsExactMatchingChars, maxMismatches,
-                                                                  currentMinMismatches);
+                case 'd': approxMatcher = new DefaultReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                    sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                    readsExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
-                case 'i': approxMatcher = new InterleavedReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                      readsExactMatchingChars, maxMismatches,
-                                                                            currentMinMismatches);
+                case 'i': approxMatcher = new InterleavedReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                        readsExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
-                case 'c': approxMatcher = new CopMEMReadsApproxMatcher(sPg, revComplPg, readsSet, matchPrefixLength,
-                                                                 readsExactMatchingChars, maxMismatches,
-                                                                       currentMinMismatches);
+                case 'c': approxMatcher = new CopMEMReadsApproxMatcher((char*) sPg->getPgSequence().data(),
+                        sPg->getPgSequence().length(), revComplPg, readsSet, matchPrefixLength,
+                        readsExactMatchingChars, maxMismatches, currentMinMismatches);
                     break;
                 default:
                     fprintf(stderr, "Unknown mismatches mode: %c.\n", matchingMode);
@@ -652,9 +695,14 @@ namespace PgTools {
 
         const vector<bool> res = matcher->getMatchedReadsBitmap();
 
-        if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE)
-            matcher->writeIntoPseudoGenome(pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping,
-                    revComplPairFile);
+        if (matchPrefixLength == DefaultReadsMatcher::DISABLED_PREFIX_MODE) {
+            if (preserveOrderMode)
+                matcher->exportMatchesInOriginalOrder(sPg, pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping,
+                                                      pairFileMode, revComplPairFile);
+            else
+                matcher->exportMatchesInPgOrder(sPg, pgrcOut, compressionLevel, pgDestFilePrefix, orgIndexesMapping,
+                                                pairFileMode, revComplPairFile);
+        }
 
         delete(matcher);
         return res;

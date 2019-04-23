@@ -338,7 +338,8 @@ namespace PgTools {
         if (!forceConstantParamsMode)
             readsExactMatchingChars += matchingCharsCorrection(hqPg->getPseudoGenomeLength());
         const vector<bool>& isReadMappedIntoHqPg = mapReadsIntoPg(
-                hqPg, true, readsSet, revComplPairFile, DefaultReadsMatcher::DISABLED_PREFIX_MODE,
+                hqPg, true, preserveOrderMode, readsSet, !pairFastqFile.empty() && !singleReadsMode, revComplPairFile,
+                DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
                 false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);

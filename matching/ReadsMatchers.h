@@ -23,8 +23,7 @@ namespace PgTools {
 
     class DefaultReadsMatcher {
     protected:
-        SeparatedPseudoGenome* sPg;
-        const char* pgPtr;
+        char* pgPtr;
         const uint_pg_len_max pgLength;
         bool revComplPg;
         ConstantLengthReadsSetInterface *readsSet;
@@ -48,7 +47,7 @@ namespace PgTools {
         virtual void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) = 0;
 
         virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
-                bool enableRevComp, bool enableMismatches) = 0;
+                SeparatedPseudoGenome *sPg) = 0;
 
         virtual void initEntryUpdating() = 0;
         virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) = 0;
@@ -58,7 +57,7 @@ namespace PgTools {
         static const uint_read_len_max DISABLED_PREFIX_MODE;
         static const uint64_t NOT_MATCHED_POSITION;
 
-        DefaultReadsMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+        DefaultReadsMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                             uint32_t matchPrefixLength);
 
         virtual ~DefaultReadsMatcher();
@@ -71,8 +70,12 @@ namespace PgTools {
 
         void writeMatchesInfo(const string &outPrefix);
 
-        void writeIntoPseudoGenome(ostream& pgrcOut, uint8_t compressionLevel,
-                const string &outPgPrefix, IndexesMapping* orgIndexesMapping, bool revComplPairFile);
+        void exportMatchesInPgOrder(SeparatedPseudoGenome* sPg, ostream &pgrcOut, uint8_t compressionLevel,
+                                    const string &outPgPrefix, IndexesMapping *orgIndexesMapping,
+                                    bool pairFileMode, bool revComplPairFile);
+        void exportMatchesInOriginalOrder(SeparatedPseudoGenome* sPg, ostream &pgrcOut, uint8_t compressionLevel,
+                                          const string &outPgPrefix, IndexesMapping *orgIndexesMapping,
+                                          bool pairFileMode, bool revComplPairFile);
 
         virtual const vector<bool> getMatchedReadsBitmap(uint8_t maxMismatches = NOT_MATCHED_COUNT - 1);
 
@@ -89,13 +92,13 @@ namespace PgTools {
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
-                bool enableRevComp, bool enableMismatches) override;
+                SeparatedPseudoGenome *sPg) override;
 
         void initEntryUpdating() override {};
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) override {};
         void closeEntryUpdating() override {};
     public:
-        DefaultReadsExactMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+        DefaultReadsExactMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                  uint32_t matchPrefixLength);
 
         virtual ~DefaultReadsExactMatcher();
@@ -116,7 +119,7 @@ namespace PgTools {
         void printApproxMatchingStats();
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
-                                                                                     bool enableRevComp, bool enableMismatches) override;
+                SeparatedPseudoGenome *sPg) override;
         void initEntryUpdating() override;
         string currentRead;
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) override;
@@ -125,7 +128,7 @@ namespace PgTools {
         virtual void initMatchingContinuation(DefaultReadsMatcher *pMatcher);
 
     public:
-        AbstractReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+        AbstractReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                    uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~AbstractReadsApproxMatcher();
@@ -153,7 +156,7 @@ namespace PgTools {
         void executeMatching(bool revCompMode = false);
 
     public:
-        DefaultReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+        DefaultReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~DefaultReadsApproxMatcher();
@@ -172,7 +175,7 @@ namespace PgTools {
         void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
 
     public:
-        InterleavedReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+        InterleavedReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~InterleavedReadsApproxMatcher();
@@ -190,14 +193,14 @@ namespace PgTools {
         void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
 
     public:
-        CopMEMReadsApproxMatcher(SeparatedPseudoGenome* sPg, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
+        CopMEMReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
         virtual ~CopMEMReadsApproxMatcher();
     };
 
-    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg,
-                        ConstantLengthReadsSetInterface *readsSet, bool revComplPairFile,
+    const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, bool preserveOrderMode,
+                        ConstantLengthReadsSetInterface *readsSet, bool pairFileMode, bool revComplPairFile,
                         uint_read_len_max matchPrefixLength, uint16_t preReadsExactMatchingChars,
                         uint16_t readsExactMatchingChars, uint16_t minCharsPerMismatch, char preMatchingMode,
                         char matchingMode, bool dumpInfo, ostream& pgrcOut, uint8_t compressionLevel,

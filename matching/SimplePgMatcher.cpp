@@ -12,7 +12,7 @@ namespace PgTools {
             :srcPg(srcPg), targetMatchLength(targetMatchLength) {
         cout << "Source pseudogenome length: " << srcPg.length() << endl;
         if (srcPg.size() >= targetMatchLength)
-            matcher = new CopMEMMatcher(srcPg, targetMatchLength, minMatchLength);
+            matcher = new CopMEMMatcher(srcPg.data(), srcPg.length(), targetMatchLength, minMatchLength);
         //matcher = new DefaultTextMatcher(srcPg, targetMatchLength);
     }
 

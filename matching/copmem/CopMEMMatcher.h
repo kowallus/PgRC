@@ -21,7 +21,6 @@ using HashBuffer =  std::pair<MyUINT1*, MyUINT2* >;
 
 class CopMEMMatcher: public TextMatcher {
 private:
-    const string &srcText;
     const char* start1;
     size_t N;
     int bigRef;
@@ -71,7 +70,7 @@ private:
                                  uint64_t& betterMatchCount, uint64_t& falseMatchCount);
 
 public:
-    CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
+    CopMEMMatcher(const char *srcText, const size_t srcLength, const uint32_t targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
     virtual ~CopMEMMatcher();
 

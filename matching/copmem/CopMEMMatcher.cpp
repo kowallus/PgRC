@@ -482,19 +482,19 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
 
 using namespace std;
 
-CopMEMMatcher::CopMEMMatcher(const string &srcText, const uint32_t targetMatchLength, uint32_t minMatchLength)
-    : srcText(srcText), start1(srcText.data()), N(srcText.length()), L(targetMatchLength) {
+CopMEMMatcher::CopMEMMatcher(const char *srcText, const size_t srcLength, const uint32_t targetMatchLength, uint32_t minMatchLength)
+    : start1(srcText), N(srcLength), L(targetMatchLength) {
     initHashFuncMatrix();
     if (minMatchLength > targetMatchLength)
         minMatchLength = targetMatchLength;
     initParams(minMatchLength);
     displayParams();
 
-    if ((srcText.length()) / k1 >= (1ULL << 32)) {
+    if ((N) / k1 >= (1ULL << 32)) {
         bigRef = 2;  // huge Reference
         *v1logger  << "WARNING - LARGE reference file (SIZE / k1 > 4GB), 64-bit arrays\n";
         buffer2 = processRef<std::uint64_t, std::uint64_t>();
-    } else if (srcText.length() >= (1ULL << 32)) {
+    } else if (N >= (1ULL << 32)) {
         bigRef = 1;  // large Reference
         *v1logger << "WARNING - BIG reference file (>4GB), 64-bit arrays\n";
         buffer1 = processRef<std::uint64_t, std::uint32_t>();

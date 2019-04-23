@@ -601,14 +601,24 @@ namespace PgTools {
         compressRlMisRevOffDest(pgrcOut, coder_level);
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::buildInto(SeparatedPseudoGenome *sPg) {
-        prebuildAssert(false);
-        buildProps();
-        string tmp = ((ostringstream*) rlOrgIdxDest)->str();
-        uint_reads_cnt_std* orgIdxPtr = (uint_reads_cnt_std*) tmp.data();
+    void SeparatedPseudoGenomeOutputBuilder::updateOriginalIndexesIn(SeparatedPseudoGenome *sPg) {
+        string tmp = ((ostringstream *) rlOrgIdxDest)->str();
+        uint_reads_cnt_std *orgIdxPtr = (uint_reads_cnt_std *) tmp.data();
         sPg->getReadsList()->orgIdx.assign(orgIdxPtr, orgIdxPtr + readsCounter);
+        sPg->getReadsList()->readsCount = readsCounter;
+    }
 
-        // only partially implemented
+    void SeparatedPseudoGenomeOutputBuilder::updatePositionsIn(SeparatedPseudoGenome *sPg) {
+        string tmp = ((ostringstream*) this->rlOffDest)->str();
+        uint_read_len_min* rlOffPtr = (uint_read_len_min*) tmp.data();
+
+        uint_pg_len_max pos = 0;
+        sPg->getReadsList()->pos.resize(readsCounter);
+        for(uint_reads_cnt_std i = 0; i < readsCounter; i++) {
+            pos += rlOffPtr[i];
+            sPg->getReadsList()->pos[i] = pos;
+        }
+        sPg->getReadsList()->readsCount = readsCounter;
     }
 
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
