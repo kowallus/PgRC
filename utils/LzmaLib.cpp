@@ -90,7 +90,7 @@ void LzmaEncProps_Set(CLzmaEncProps *p, int coder_level, size_t dataLength, int 
             p->lc = 3;
             p->lp = dataPeriodCode;
             p->pb = dataPeriodCode;
-            p->fb = 273;
+            p->fb = 128;
             break;
         case PGRC_CODER_LEVEL_MAX:
             p->level = 9;
