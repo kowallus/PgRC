@@ -14,22 +14,30 @@ namespace PgTools {
     typedef SeparatedExtendedReadsListIterator<UINT8_MAX> DefaultSeparatedExtendedReadsListIterator;
     typedef SeparatedExtendedReadsListIterator<0> SimpleSeparatedReadsListIterator;
 
-    class ConstantAccessExtendedReadsList : public DefaultReadsListIteratorInterface {
+    class ExtendedReadsListWithConstantAccessOption : public DefaultReadsListIteratorInterface {
     public:
 
         uint_read_len_max readLength;
         uint_reads_cnt_std readsCount;
 
-        vector<uint_pg_len_max> pos;
+        vector<uint_read_len_min> off;
         vector<uint_reads_cnt_std> orgIdx;
         vector<uint8_t> revComp;
-        vector<uint_reads_cnt_max> misCumCount;
+        vector<uint_read_len_min> misCnt;
         vector<uint8_t> misSymCode;
-        vector<uint8_t> misOff;
+        vector<uint_read_len_min> misOff;
 
-        ConstantAccessExtendedReadsList(uint_read_len_max readLength) : readLength(readLength) {}
+        // constant access features
+        vector<uint_pg_len_max> pos;
+        vector<uint_reads_cnt_max> misCumCount;
 
-        virtual ~ConstantAccessExtendedReadsList() {};
+        ExtendedReadsListWithConstantAccessOption(uint_read_len_max readLength) : readLength(readLength) {}
+
+        virtual ~ExtendedReadsListWithConstantAccessOption() {};
+
+        void enableConstantAccess(bool disableIterationMode = false);
+
+        bool isConstantAccessEnalbed();
 
         inline uint8_t getMisCount(uint_reads_cnt_max rlIdx) {
             return misCumCount[rlIdx + 1] - misCumCount[rlIdx];
@@ -55,6 +63,7 @@ namespace PgTools {
 
         DefaultReadsListEntry entry;
         int64_t current = -1;
+        uint64_t curMisCumCount = 0;
 
         bool moveNext() override;
 
@@ -62,15 +71,15 @@ namespace PgTools {
 
         DefaultReadsListEntry &peekReadEntry() { return entry; };
 
-        static ConstantAccessExtendedReadsList *loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
+        static ExtendedReadsListWithConstantAccessOption *loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
                                                                                     uint_pg_len_max pgLengthPosGuard = 0,
                                                                                     bool skipMismatches = false);
 
-        static ConstantAccessExtendedReadsList *loadConstantAccessExtendedReadsList(istream &pgrcIn,
+        static ExtendedReadsListWithConstantAccessOption *loadConstantAccessExtendedReadsList(istream &pgrcIn,
                 PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp, const string validationPgPrefix = "",
                 bool preserveOrderMode = false, bool disableRevCompl = false, bool disableMismatches = false);
 
-        static ConstantAccessExtendedReadsList *loadConstantAccessExtendedReadsList(
+        static ExtendedReadsListWithConstantAccessOption *loadConstantAccessExtendedReadsList(
                 DefaultSeparatedExtendedReadsListIterator &rl,
                 uint_pg_len_max pgLengthPosGuard = 0, bool skipMismatches = false);
 
@@ -144,15 +153,15 @@ namespace PgTools {
         static SeparatedExtendedReadsListIterator<maxMismatches> *getIterator(const string &pseudoGenomePrefix);
 
 
-        friend ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::
+        friend ExtendedReadsListWithConstantAccessOption *ExtendedReadsListWithConstantAccessOption::
         loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
                                             uint_pg_len_max pgLengthPosGuard, bool skipMismatches);
 
-        friend ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::
+        friend ExtendedReadsListWithConstantAccessOption *ExtendedReadsListWithConstantAccessOption::
         loadConstantAccessExtendedReadsList(DefaultSeparatedExtendedReadsListIterator &rl,
                                             uint_pg_len_max pgLengthPosGuard, bool skipMismatches);
 
-        friend ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::
+        friend ExtendedReadsListWithConstantAccessOption *ExtendedReadsListWithConstantAccessOption::
         loadConstantAccessExtendedReadsList(istream &pgrcIn,
                                             PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp,
                                             const string validationPgPrefix,

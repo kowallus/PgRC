@@ -62,7 +62,7 @@ namespace PgTools {
     using namespace PgTools;
 
     void DefaultPgMatcher::transferMatchedReads(const string &destPgFilePrefix) {
-        srcRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(srcPgPrefix,
+        srcRl = ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(srcPgPrefix,
                                                                                         srcPgh->getPseudoGenomeLength());
 
         fillPgMatches();

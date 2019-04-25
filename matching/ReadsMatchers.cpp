@@ -566,7 +566,7 @@ namespace PgTools {
 
         uint_reads_cnt_std readsTotalCount = orgIndexesMapping->getReadsTotalCount();
         vector<uint_pg_len_max> orgIdx2pgPos(readsTotalCount, -1);
-        ConstantAccessExtendedReadsList *const pgRl = sPg->getReadsList();
+        ExtendedReadsListWithConstantAccessOption *const pgRl = sPg->getReadsList();
         for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
             orgIdx2pgPos[pgRl->orgIdx[i]] = pgRl->pos[i];
         initEntryUpdating();

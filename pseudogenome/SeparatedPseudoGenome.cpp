@@ -6,17 +6,17 @@ namespace PgTools {
         return pgSequence;
     }
 
-    ConstantAccessExtendedReadsList *SeparatedPseudoGenome::getReadsList() {
+    ExtendedReadsListWithConstantAccessOption *SeparatedPseudoGenome::getReadsList() {
         return readsList;
     }
 
     SeparatedPseudoGenome::SeparatedPseudoGenome(uint_pg_len_max sequenceLength, ReadsSetProperties* properties):
               SeparatedPseudoGenomeBase(sequenceLength, properties),
-              readsList(new ConstantAccessExtendedReadsList(properties->maxReadLength)){
+              readsList(new ExtendedReadsListWithConstantAccessOption(properties->maxReadLength)){
         readsList->readsCount = properties->readsCount;
     }
 
-    SeparatedPseudoGenome::SeparatedPseudoGenome(string &&pgSequence, ConstantAccessExtendedReadsList *readsList,
+    SeparatedPseudoGenome::SeparatedPseudoGenome(string &&pgSequence, ExtendedReadsListWithConstantAccessOption *readsList,
             ReadsSetProperties* properties)
             : SeparatedPseudoGenomeBase(pgSequence.length(), properties),
             pgSequence(std::move(pgSequence)), readsList(readsList) {

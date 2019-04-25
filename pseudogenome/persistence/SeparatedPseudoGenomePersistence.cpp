@@ -48,8 +48,8 @@ namespace PgTools {
         bool plainTextReadMode = false;
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgPrefix, pgh, prop, plainTextReadMode);
         string pgSequence = SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(pgPrefix);
-        ConstantAccessExtendedReadsList* caeRl = skipReadsList?0:
-                ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgPrefix, pgh->getPseudoGenomeLength());
+        ExtendedReadsListWithConstantAccessOption* caeRl = skipReadsList?0:
+                ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgPrefix, pgh->getPseudoGenomeLength());
         SeparatedPseudoGenome* spg = new SeparatedPseudoGenome(std::move(pgSequence), caeRl, prop);
         delete(pgh);
         delete(prop);

@@ -31,7 +31,7 @@ namespace PgTools {
         vector<TextMatch> textMatches;
         vector<PgMatch> pgMatches;
 
-        ConstantAccessExtendedReadsList* srcRl = 0;
+        ExtendedReadsListWithConstantAccessOption* srcRl = 0;
         vector<uint_pg_len_max> newRlPos;
 
         void mapPgMatches2SrcReadsList();

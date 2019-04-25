@@ -185,7 +185,7 @@ namespace PgTools {
             }
             if (!singleReadsMode) {
                 if (preserveOrderMode) {
-                    ConstantAccessExtendedReadsList *const pgRl = lqPg->getReadsList();
+                    ExtendedReadsListWithConstantAccessOption *const pgRl = lqPg->getReadsList();
                     uint_pg_len_std startPos = hqPg->getPseudoGenomeLength();
                     for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
                         orgIdx2PgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
@@ -203,7 +203,7 @@ namespace PgTools {
                 if (!singleReadsMode) {
                     if (preserveOrderMode) {
                         uint_pg_len_std startPos = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength();
-                        ConstantAccessExtendedReadsList *const pgRl = nPg->getReadsList();
+                        ExtendedReadsListWithConstantAccessOption *const pgRl = nPg->getReadsList();
                         for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
                             orgIdx2PgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
                     } else
@@ -837,8 +837,8 @@ namespace PgTools {
             cout << "Reads list text mode unsupported during decompression." << endl;
             exit(EXIT_FAILURE);
         }
-        ConstantAccessExtendedReadsList* hqCaeRl =
-                ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
+        ExtendedReadsListWithConstantAccessOption* hqCaeRl =
+                ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgrcIn,
                         &hqPgh, &hqRsProp, srcFastqFile.empty()?"":pgSeqFinalHqPrefix, preserveOrderMode);
         PseudoGenomeHeader lqPgh(pgrcIn);
         ReadsSetProperties lqRsProp(pgrcIn);
@@ -846,9 +846,9 @@ namespace PgTools {
             cout << "Reads list text mode unsupported during decompression." << endl;
             exit(EXIT_FAILURE);
         }
-        ConstantAccessExtendedReadsList* lqCaeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
+        ExtendedReadsListWithConstantAccessOption* lqCaeRl = ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgrcIn,
                     &lqPgh, &lqRsProp, srcFastqFile.empty()?"":pgSeqFinalLqPrefix, preserveOrderMode, true, true);
-        ConstantAccessExtendedReadsList* nCaeRl = 0;
+        ExtendedReadsListWithConstantAccessOption* nCaeRl = 0;
         ReadsSetProperties nRsProp;
         if (separateNReads) {
             PseudoGenomeHeader nPgh(pgrcIn);
@@ -857,7 +857,7 @@ namespace PgTools {
                 cout << "Reads list text mode unsupported during decompression." << endl;
                 exit(EXIT_FAILURE);
             }
-            nCaeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgrcIn,
+            nCaeRl = ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgrcIn,
                     &nPgh, &nRsProp, srcFastqFile.empty()?"":pgNPrefix, preserveOrderMode, true, true);
         }
         cout << "... loaded Pgs Reads Lists (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
@@ -883,22 +883,22 @@ namespace PgTools {
         ReadsSetProperties* prop = 0;
         bool plainTextReadMode = false;
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgSeqFinalHqPrefix, pgh, prop, plainTextReadMode);
-        ConstantAccessExtendedReadsList* caeRl =
-                ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalHqPrefix, pgh->getPseudoGenomeLength());
+        ExtendedReadsListWithConstantAccessOption* caeRl =
+                ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgSeqFinalHqPrefix, pgh->getPseudoGenomeLength());
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
 
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgSeqFinalLqPrefix, pgh, prop, plainTextReadMode);
         string lqPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgSeqFinalLqPrefix, true, plainTextReadMode);
-        caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
+        caeRl = ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgSeqFinalLqPrefix, pgh->getPseudoGenomeLength());
         lqPg = new SeparatedPseudoGenome(move(lqPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);
 
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgNPrefix, pgh, prop, plainTextReadMode);
         string nPgSeq = SimplePgMatcher::restoreMatchedPg(hqPg->getPgSequence(), pgNPrefix, true, plainTextReadMode);
-        caeRl = ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(pgNPrefix, pgh->getPseudoGenomeLength());
+        caeRl = ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgNPrefix, pgh->getPseudoGenomeLength());
         nPg = new SeparatedPseudoGenome(move(nPgSeq), caeRl, prop);
         delete(pgh);
         delete(prop);

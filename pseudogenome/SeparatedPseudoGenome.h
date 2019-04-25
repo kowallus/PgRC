@@ -12,15 +12,15 @@ namespace PgTools {
     class SeparatedPseudoGenome: public SeparatedPseudoGenomeBase {
     protected:
         string pgSequence;
-        ConstantAccessExtendedReadsList* readsList;
+        ExtendedReadsListWithConstantAccessOption* readsList;
     public:
         SeparatedPseudoGenome(uint_pg_len_max sequenceLength, ReadsSetProperties* properties);
 
         SeparatedPseudoGenome(string &&pgSequence,
-                              ConstantAccessExtendedReadsList *readsList, ReadsSetProperties* properties);
+                              ExtendedReadsListWithConstantAccessOption *readsList, ReadsSetProperties* properties);
 
         string &getPgSequence();
-        ConstantAccessExtendedReadsList *getReadsList();
+        ExtendedReadsListWithConstantAccessOption *getReadsList();
 
         const string getRead(uint_reads_cnt_max idx);
         inline void getRawSequence(uint_reads_cnt_max idx, char* ptr) {

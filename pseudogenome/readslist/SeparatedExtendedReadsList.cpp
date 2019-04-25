@@ -223,17 +223,17 @@ namespace PgTools {
         return rlMisCntSrc;
     }
 
-    ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(
+    ExtendedReadsListWithConstantAccessOption *ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(
             const string &pseudoGenomePrefix, uint_pg_len_max pgLengthPosGuard, bool skipMismatches) {
         DefaultSeparatedExtendedReadsListIterator rl(pseudoGenomePrefix);
         return loadConstantAccessExtendedReadsList(rl, pgLengthPosGuard, skipMismatches);
     }
 
-    ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(
+    ExtendedReadsListWithConstantAccessOption *ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(
             DefaultSeparatedExtendedReadsListIterator &rl, uint_pg_len_max pgLengthPosGuard, bool skipMismatches) {
-        ConstantAccessExtendedReadsList *res = new ConstantAccessExtendedReadsList(rl.pgh->getMaxReadLength());
+        ExtendedReadsListWithConstantAccessOption *res = new ExtendedReadsListWithConstantAccessOption(rl.pgh->getMaxReadLength());
         if (rl.plainTextReadMode) {
-            fprintf(stderr, "Unsupported text plain read mode in creating ConstantAccessExtendedReadsList for %s\n\n",
+            fprintf(stderr, "Unsupported text plain read mode in creating ExtendedReadsListWithConstantAccessOption for %s\n\n",
                     rl.pseudoGenomePrefix.c_str());
             exit(EXIT_FAILURE);
         }
@@ -290,10 +290,10 @@ namespace PgTools {
         return res;
     }
 
-    ConstantAccessExtendedReadsList* ConstantAccessExtendedReadsList::loadConstantAccessExtendedReadsList(
+    ExtendedReadsListWithConstantAccessOption* ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(
             istream& pgrcIn, PseudoGenomeHeader* pgh, ReadsSetProperties* rsProp, const string validationPgPrefix,
             bool preserveOrderMode, bool disableRevCompl, bool disableMismatches) {
-        ConstantAccessExtendedReadsList *res = new ConstantAccessExtendedReadsList(pgh->getMaxReadLength());
+        ExtendedReadsListWithConstantAccessOption *res = new ExtendedReadsListWithConstantAccessOption(pgh->getMaxReadLength());
         const uint_reads_cnt_max readsCount = pgh->getReadsCount();
 
         vector<uint8_t> tmp;
@@ -353,29 +353,60 @@ namespace PgTools {
         return res;
     }
 
-    bool ConstantAccessExtendedReadsList::moveNext() {
+    bool ExtendedReadsListWithConstantAccessOption::moveNext() {
         if (++current < readsCount) {
             entry.advanceEntryByPosition(pos[current], orgIdx[current], this->getRevComp(current));
-            copyMismatchesToEntry(current, entry);
+            if (!misCnt.empty()) {
+                uint8_t mismatchesCount = misCnt[current];
+                for (uint8_t i = 0; i < mismatchesCount; i++)
+                    entry.addMismatch(misSymCode[curMisCumCount], misOff[curMisCumCount++]);
+            }
             return true;
         }
         return false;
     }
 
-    void ConstantAccessExtendedReadsList::rewind() {
+    void ExtendedReadsListWithConstantAccessOption::rewind() {
         current = -1;
+        curMisCumCount = 0;
     }
 
-    bool ConstantAccessExtendedReadsList::isRevCompEnabled() {
+    bool ExtendedReadsListWithConstantAccessOption::isRevCompEnabled() {
         return !this->revComp.empty();
     }
 
-    bool ConstantAccessExtendedReadsList::areMismatchesEnabled() {
-        return !this->misCumCount.empty();
+    bool ExtendedReadsListWithConstantAccessOption::areMismatchesEnabled() {
+        return !this->misCumCount.empty() || !this->misOff.empty();
     }
 
-    bool ConstantAccessExtendedReadsList::getRevComp(uint_reads_cnt_std idx) {
+    bool ExtendedReadsListWithConstantAccessOption::getRevComp(uint_reads_cnt_std idx) {
         return isRevCompEnabled()?revComp[idx]:false;
+    }
+
+    void ExtendedReadsListWithConstantAccessOption::enableConstantAccess(bool disableIterationMode) {
+        pos.reserve(readsCount + 1);
+        uint_pg_len_max currPos = 0;
+        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            currPos = currPos + off[i];
+            this->pos.push_back(currPos);
+        }
+        this->pos.push_back(this->pos.back() + this->readLength);
+
+        uint_reads_cnt_max cumCount = 0;
+        misCumCount.reserve(readsCount + 1);
+        misCumCount.push_back(0);
+        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+            cumCount += misCnt[i];
+            misCumCount.push_back(cumCount);
+        }
+        if (disableIterationMode) {
+            off.clear();
+            misCnt.clear();
+        }
+    }
+
+    bool ExtendedReadsListWithConstantAccessOption::isConstantAccessEnalbed() {
+        return !this->pos.empty();
     }
 
     template class SeparatedExtendedReadsListIterator<UINT8_MAX>;
