@@ -48,7 +48,10 @@ namespace PgTools {
         static void decompressReadsOrder(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder,
                                        bool completeOrderInfo = false, bool ignorePairOrderInformation = false, bool singleFileMode = true);
 
+        static void compressReadsPgPositions(ostream &pgrcOut, vector<uint_pg_len_max> orgIdx2PgPos, bool isJoinedPgLengthStd, uint8_t coder_level, bool singleFileMode);
+
         static void writePseudoGenomeSequence(string &pgSequence, string pgPrefix);
+
     };
 
     class SeparatedPseudoGenomeOutputBuilder {
@@ -117,10 +120,9 @@ namespace PgTools {
         void build();
         void build(const string &pgPrefix);
 
-        void compressedBuild(ostream &pgrcOut, uint8_t coder_level);
+        void compressedBuild(ostream &pgrcOut, uint8_t coder_level, bool ignoreOffDest = false);
 
         void updateOriginalIndexesIn(SeparatedPseudoGenome *sPg);
-        void updatePositionsIn(SeparatedPseudoGenome *sPg);
 
     };
 

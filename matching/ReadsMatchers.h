@@ -50,7 +50,7 @@ namespace PgTools {
                 SeparatedPseudoGenome *sPg) = 0;
 
         virtual void initEntryUpdating() = 0;
-        virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) = 0;
+        virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool revComplPairFile) = 0;
         virtual void closeEntryUpdating() = 0;
 
     public:

@@ -71,7 +71,7 @@ namespace PgTools {
         clock_t good_t;
         clock_t match_t;
         clock_t bad_t;
-        clock_t pgSeqs_t;
+        clock_t order_t;
         size_t pgRCSize = 0;
 
         void generateReport();
@@ -87,7 +87,7 @@ namespace PgTools {
         SeparatedPseudoGenome *nPg = 0;
 
         vector<uint_reads_cnt_std> orgIdxs;
-        vector<uint_pg_len_std> orgIdx2stdPgPos;
+        vector<uint_pg_len_max> orgIdx2PgPos;
 
         bool revComplPairFile;
         bool qualityDivision;

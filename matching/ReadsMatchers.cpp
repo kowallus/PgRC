@@ -510,11 +510,11 @@ namespace PgTools {
     void AbstractReadsApproxMatcher::initEntryUpdating() { }
 
     void AbstractReadsApproxMatcher::updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx,
-            bool reverseComplementFlag) {
+            bool revComplPairFile) {
         readsSet->getRead(matchIdx, (char_pg*) currentRead.data());
         if (readMatchRC[matchIdx])
             reverseComplementInPlace(currentRead);
-        if (reverseComplementFlag?(readMatchRC[matchIdx] != (bool) (entry.idx % 2)):readMatchRC[matchIdx])
+        if (revComplPairFile?(readMatchRC[matchIdx] != (bool) (entry.idx % 2)):readMatchRC[matchIdx])
             fillEntryWithReversedMismatches(currentRead.data(), pgPtr + entry.pos, readMismatchesCount[matchIdx], entry,
                     readLength);
         else
@@ -563,28 +563,36 @@ namespace PgTools {
                                                            IndexesMapping *orgIndexesMapping, bool pairFileMode,
                                                            bool revComplPairFile) {
         clock_checkpoint();
+
+        uint_reads_cnt_std readsTotalCount = orgIndexesMapping->getReadsTotalCount();
+        vector<uint_pg_len_max> orgIdx2pgPos(readsTotalCount, -1);
+        ConstantAccessExtendedReadsList *const pgRl = sPg->getReadsList();
+        for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
+            orgIdx2pgPos[pgRl->orgIdx[i]] = pgRl->pos[i];
         initEntryUpdating();
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(sPg);
-        uint_reads_cnt_max curIdx = 0;
+        int64_t curIdx = -1;
         for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            const uint_reads_cnt_max orgIdx = orgIndexesMapping->getReadOriginalIndex(i);
-            while (curIdx++ < orgIdx) {
+            const uint_reads_cnt_max oIdx = orgIndexesMapping->getReadOriginalIndex(i);
+            while (++curIdx < oIdx) {
                 DefaultReadsListEntry entry(0);
                 entry.advanceEntryByPosition(0, curIdx, false);
                 builder->writeExtraReadEntry(entry);
             }
-            DefaultReadsListEntry entry(0);
-            entry.advanceEntryByPosition(0, orgIdx, readMatchRC[i]);
-            if (readMatchPos[i] != NOT_MATCHED_POSITION)
+            if (readMatchPos[i] != NOT_MATCHED_POSITION) {
+                DefaultReadsListEntry entry(0);
+                entry.advanceEntryByPosition(readMatchPos[i], oIdx, readMatchRC[i]);
                 this->updateEntry(entry, i, revComplPairFile);
-            builder->writeExtraReadEntry(entry);
+                builder->writeExtraReadEntry(entry);
+                orgIdx2pgPos[oIdx] = readMatchPos[i];
+            }
         }
         builder->build(outPgPrefix);
-        builder->compressedBuild(pgrcOut, compressionLevel);
-        builder->updateOriginalIndexesIn(sPg);
-        builder->updatePositionsIn(sPg);
+        builder->compressedBuild(pgrcOut, compressionLevel, true);
         delete(builder);
         closeEntryUpdating();
+
+        sPg->getReadsList()->pos = std::move(orgIdx2pgPos);
         cout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
     }
 

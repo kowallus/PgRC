@@ -206,7 +206,6 @@ namespace PgTools {
             const vector<uint_reads_cnt_std>& orgIdxs, uint8_t coder_level,
             bool completeOrderInfo, bool ignorePairOrderInformation, bool singleFileMode) {
         clock_checkpoint();
-        cout << endl;
         uint_reads_cnt_std readsCount = orgIdxs.size();
         int lzma_reads_dataperiod_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         vector<uint_reads_cnt_std> rev(readsCount);
@@ -302,7 +301,7 @@ namespace PgTools {
                                 PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             }
         }
-        cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
+        cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
     void SeparatedPseudoGenomePersistence::decompressReadsOrder(istream &pgrcIn,
@@ -383,6 +382,34 @@ namespace PgTools {
                 }
             }
         }
+    }
+
+    void SeparatedPseudoGenomePersistence::compressReadsPgPositions(ostream &pgrcOut,
+            vector<uint_pg_len_max> orgIdx2PgPos, bool isJoinedPgLengthStd, uint8_t coder_level, bool singleFileMode) {
+        clock_checkpoint();
+        uint_reads_cnt_std readsTotalCount = orgIdx2PgPos.size();
+        int lzma_pos_dataperiod_param = isJoinedPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
+        if (singleFileMode) {
+            uint_pg_len_max* const pgPosPtr = orgIdx2PgPos.data();
+            if (isJoinedPgLengthStd) {
+                uint_pg_len_std* stdPgPosPtr = (uint_pg_len_std*) pgPosPtr;
+                for (uint_reads_cnt_std i = 0; i < readsTotalCount; i++)
+                    *(stdPgPosPtr++) = (uint_pg_len_std) orgIdx2PgPos[i];
+            }
+            writeCompressed(pgrcOut, (char*) pgPosPtr, readsTotalCount * (isJoinedPgLengthStd?sizeof(uint_pg_len_std):sizeof(uint_pg_len_max)),
+                            LZMA_CODER, coder_level, lzma_pos_dataperiod_param);
+        } else {
+            vector<uint_pg_len_std> basePairPos, pairDelta, posPairDelta;
+            for (uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
+                basePairPos.push_back(orgIdx2PgPos[i]);
+                pairDelta.push_back(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]);
+            }
+            writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len_max),
+                            LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_64_t);
+            writeCompressed(pgrcOut, (char *) pairDelta.data(), pairDelta.size() * sizeof(uint_pg_len_max),
+                            LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_64_t);
+        }
+        cout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string pseudoGenomePrefix,
@@ -573,7 +600,7 @@ namespace PgTools {
         }
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut, uint8_t coder_level) {
+    void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut, uint8_t coder_level, bool ignoreOffDest) {
         prebuildAssert(false);
         buildProps();
         writeReadMode(*pgPropDest, false);
@@ -583,7 +610,7 @@ namespace PgTools {
 //        int lzma_coder_param = this->rsProp->maxReadLength <= UINT8_MAX?PGRC_DATAPERIODCODE_8_t:PGRC_DATAPERIODCODE_16_t;
         cout << "Reads list offsets... ";
 //        compressDest(rlOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+        if (!ignoreOffDest) compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         cout << "Reverse complements info... ";
 //        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
         compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
@@ -605,19 +632,6 @@ namespace PgTools {
         string tmp = ((ostringstream *) rlOrgIdxDest)->str();
         uint_reads_cnt_std *orgIdxPtr = (uint_reads_cnt_std *) tmp.data();
         sPg->getReadsList()->orgIdx.assign(orgIdxPtr, orgIdxPtr + readsCounter);
-        sPg->getReadsList()->readsCount = readsCounter;
-    }
-
-    void SeparatedPseudoGenomeOutputBuilder::updatePositionsIn(SeparatedPseudoGenome *sPg) {
-        string tmp = ((ostringstream*) this->rlOffDest)->str();
-        uint_read_len_min* rlOffPtr = (uint_read_len_min*) tmp.data();
-
-        uint_pg_len_max pos = 0;
-        sPg->getReadsList()->pos.resize(readsCounter);
-        for(uint_reads_cnt_std i = 0; i < readsCounter; i++) {
-            pos += rlOffPtr[i];
-            sPg->getReadsList()->pos[i] = pos;
-        }
         sPg->getReadsList()->readsCount = readsCounter;
     }
 

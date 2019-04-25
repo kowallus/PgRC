@@ -164,12 +164,10 @@ namespace PgTools {
                 //// Already done during runMappingLQReadsOnHQPg()
 //                compressMappedHQPgReadsList();
                 if (!singleReadsMode) {
-                    readsTotalCount = divReadsSets->getLqReadsIndexesMapping()->getReadsTotalCount();
-                    orgIdx2stdPgPos.resize(readsTotalCount, -1);
-                    ConstantAccessExtendedReadsList *const pgRl = hqPg->getReadsList();
-                    for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
-                        orgIdx2stdPgPos[pgRl->orgIdx[i]] = pgRl->pos[i];
-                    orgIdxs = std::move(hqPg->getReadsList()->orgIdx);
+                    if (preserveOrderMode)
+                        orgIdx2PgPos = std::move(hqPg->getReadsList()->pos);
+                    else
+                        orgIdxs = std::move(hqPg->getReadsList()->orgIdx);
                 }
                 hqPg->disposeReadsList();
             }
@@ -186,22 +184,26 @@ namespace PgTools {
                 compressLQPgReadsList();
             }
             if (!singleReadsMode) {
-                ConstantAccessExtendedReadsList *const pgRl = lqPg->getReadsList();
-                uint_pg_len_std startPos = hqPg->getPseudoGenomeLength();
-                for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
-                    orgIdx2stdPgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
-                orgIdxs.insert(orgIdxs.end(), lqPg->getReadsList()->orgIdx.begin(), lqPg->getReadsList()->orgIdx.end());
+                if (preserveOrderMode) {
+                    ConstantAccessExtendedReadsList *const pgRl = lqPg->getReadsList();
+                    uint_pg_len_std startPos = hqPg->getPseudoGenomeLength();
+                    for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
+                        orgIdx2PgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
+                } else
+                    orgIdxs.insert(orgIdxs.end(), lqPg->getReadsList()->orgIdx.begin(), lqPg->getReadsList()->orgIdx.end());
             }
             lqPg->disposeReadsList();
             if (separateNReads) {
                 runNPgGeneration();
                 persistNPg();
                 if (!singleReadsMode) {
-                    uint_pg_len_std startPos = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength();
-                    ConstantAccessExtendedReadsList *const pgRl = nPg->getReadsList();
-                    for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
-                        orgIdx2stdPgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
-                    orgIdxs.insert(orgIdxs.end(), nPg->getReadsList()->orgIdx.begin(),
+                    if (preserveOrderMode) {
+                        uint_pg_len_std startPos = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength();
+                        ConstantAccessExtendedReadsList *const pgRl = nPg->getReadsList();
+                        for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
+                            orgIdx2PgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
+                    } else
+                        orgIdxs.insert(orgIdxs.end(), nPg->getReadsList()->orgIdx.begin(),
                                    nPg->getReadsList()->orgIdx.end());
                 }
                 nPg->disposeReadsList();
@@ -209,25 +211,25 @@ namespace PgTools {
             delete(divReadsSets);
             divReadsSets = 0;
         }
-/*        cout << "Original order positions XP: " << endl;
-        writeCompressed(pgrcOut, (char *) orgIdx2stdPgPos.data(), orgIdx2stdPgPos.size() * sizeof(uint_pg_len_std),
-                        LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
-        if (!pairFastqFile.empty()) {
-            vector<uint_pg_len_std> basePairPos, pairDelta, posPairDelta;
-            for(uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
-                basePairPos.push_back(orgIdx2stdPgPos[i]);
-                pairDelta.push_back(orgIdx2stdPgPos[i + 1] - orgIdx2stdPgPos[i]);
-                posPairDelta.push_back(orgIdx2stdPgPos[i + 1] > orgIdx2stdPgPos[i]?
-                    orgIdx2stdPgPos[i + 1] - orgIdx2stdPgPos[i]:orgIdx2stdPgPos[i] - orgIdx2stdPgPos[i + 1]);
-            }
-            writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len_std),
-                            LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
-            writeCompressed(pgrcOut, (char *) pairDelta.data(), pairDelta.size() * sizeof(uint_pg_len_std),
-                            LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
-            writeCompressed(pgrcOut, (char *) posPairDelta.data(), posPairDelta.size() * sizeof(uint_pg_len_std),
-                            LZMA_CODER, this->compressionLevel, PGRC_DATAPERIODCODE_32_t);
-        }*/
         bad_t = clock();
+        if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
+            if (preserveOrderMode) {
+                bool isJoinedPgLengthStd = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength() + nPg->getPseudoGenomeLength() <= UINT32_MAX;
+                SeparatedPseudoGenomePersistence::compressReadsPgPositions(pgrcOut, orgIdx2PgPos, isJoinedPgLengthStd, compressionLevel, pairFastqFile.empty());
+                orgIdx2PgPos.clear();
+            } else {
+                SeparatedPseudoGenomePersistence::compressReadsOrder(pgrcOut, orgIdxs, compressionLevel, preserveOrderMode,
+                                                                     ignorePairOrderInformation, pairFastqFile.empty());
+                orgIdxs.clear();
+            }
+            if (extraFilesForValidation) {
+                if (separateNReads)
+                    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
+                else
+                    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
+            }
+        }
+        order_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
             string emptySequence;
@@ -236,17 +238,6 @@ namespace PgTools {
                                           extraFilesForValidation?pgSeqFinalHqPrefix:"",
                                           extraFilesForValidation?pgSeqFinalLqPrefix:"",
                                           extraFilesForValidation?pgNPrefix:"", targetPgMatchLength);
-        }
-        pgSeqs_t = clock();
-        if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
-            SeparatedPseudoGenomePersistence::compressReadsOrder(pgrcOut, orgIdxs, compressionLevel, preserveOrderMode,
-                    ignorePairOrderInformation, pairFastqFile.empty());
-            if (extraFilesForValidation) {
-                if (separateNReads)
-                    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix, pgNPrefix});
-                else
-                    SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
-            }
         }
         finalizeCompression();
         disposeChainData();
@@ -429,7 +420,7 @@ namespace PgTools {
         bool hasHeader = (bool) std::ifstream(outputfile);
         fstream fout(outputfile, ios::out | ios::binary | ios::app);
         if (!hasHeader)
-            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\tpgSeq-s[s]\torder[s]" << endl;
+            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%o]\tm\tM\tp\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\torder[s]\tpgSeq-s[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgRCFileName << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
@@ -444,8 +435,8 @@ namespace PgTools {
         fout << getTimeInSec(good_t, pgDiv_t, 2) << "\t";
         fout << getTimeInSec(match_t, good_t, 2) << "\t";
         fout << getTimeInSec(bad_t, match_t, 2) << "\t";
-        fout << getTimeInSec(pgSeqs_t, bad_t, 2) << "\t";
-        fout << getTimeInSec(clock(), pgSeqs_t, 2) << endl;
+        fout << getTimeInSec(order_t, bad_t, 2) << "\t";
+        fout << getTimeInSec(clock(), order_t, 2) << endl;
     }
 
     void PgRCManager::finalizeCompression() {
