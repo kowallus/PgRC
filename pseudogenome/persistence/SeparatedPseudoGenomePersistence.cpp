@@ -28,7 +28,8 @@ namespace PgTools {
                                                                       ostream* pgrcOut, uint8_t coder_level,
                                                                       bool skipPgSequence) {
         clock_checkpoint();
-        SeparatedPseudoGenomeOutputBuilder builder(false, false);
+        SeparatedPseudoGenomeOutputBuilder builder(!sPg->getReadsList()->isRevCompEnabled(),
+                                                   !sPg->getReadsList()->areMismatchesEnabled());
         builder.feedSeparatedPseudoGenome(sPg, true);
         builder.compressedBuild(*pgrcOut, coder_level);
         cout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
@@ -607,25 +608,22 @@ namespace PgTools {
         const string tmp = ((ostringstream*) pgPropDest)->str();
         pgrcOut.write(tmp.data(), tmp.length());
 
-//        int lzma_coder_param = this->rsProp->maxReadLength <= UINT8_MAX?PGRC_DATAPERIODCODE_8_t:PGRC_DATAPERIODCODE_16_t;
-        cout << "Reads list offsets... ";
-//        compressDest(rlOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        if (!ignoreOffDest) compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
-        cout << "Reverse complements info... ";
-//        compressDest(rlRevCompDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, PGRC_DATAPERIODCODE_8_t);
-        compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-//                &SymbolsPackingFacility<uint8_t>::BinaryPacker);
-        cout << "Mismatches counts... ";
-//        compressDest(rlMisCntDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_CNT);
-        cout << "Mismatched symbols codes... ";
-//        compressDest(rlMisSymDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-        compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_SYM);
-//                &SymbolsPackingFacility<uint8_t>::QuaternaryPacker);
-        cout << "Mismatches offsets (rev-coded)... " << endl;
-//        compressDest(rlMisRevOffDest, pgrcOut, LZMA_CODER, PGRC_CODER_LEVEL_MAXIMUM, lzma_coder_param);
-//        compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
-        compressRlMisRevOffDest(pgrcOut, coder_level);
+        if (!ignoreOffDest) {
+            cout << "Reads list offsets... ";
+            compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+        }
+        if (!this->disableRevComp) {
+            cout << "Reverse complements info... ";
+            compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
+        }
+        if (!this->disableMismatches) {
+            cout << "Mismatches counts... ";
+            compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_CNT);
+            cout << "Mismatched symbols codes... ";
+            compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_SYM);
+            cout << "Mismatches offsets (rev-coded)... " << endl;
+            compressRlMisRevOffDest(pgrcOut, coder_level);
+        }
     }
 
     void SeparatedPseudoGenomeOutputBuilder::updateOriginalIndexesIn(SeparatedPseudoGenome *sPg) {

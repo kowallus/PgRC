@@ -67,9 +67,8 @@ namespace PgTools {
                                                                                     bool skipMismatches = false);
 
         static ConstantAccessExtendedReadsList *loadConstantAccessExtendedReadsList(istream &pgrcIn,
-                                                                                    PseudoGenomeHeader *pgh,
-                                                                                    ReadsSetProperties *rsProp,
-                                                                                    const string pseudoGenomePrefix = "");
+                PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp, const string validationPgPrefix = "",
+                bool preserveOrderMode = false, bool disableRevCompl = false, bool disableMismatches = false);
 
         static ConstantAccessExtendedReadsList *loadConstantAccessExtendedReadsList(
                 DefaultSeparatedExtendedReadsListIterator &rl,
@@ -156,7 +155,8 @@ namespace PgTools {
         friend ConstantAccessExtendedReadsList *ConstantAccessExtendedReadsList::
         loadConstantAccessExtendedReadsList(istream &pgrcIn,
                                             PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp,
-                                            const string pseudoGenomePrefix);
+                                            const string validationPgPrefix,
+                                            bool preserveOrderMode, bool disableRevCompl, bool disableMismatches);
     };
 
 }

@@ -308,6 +308,8 @@ namespace PgTools {
 
         void persistNPg();
 
+        void compressNPgReadsList();
+
         void compressMEMMappedPgSequences();
 
         void prepareForPgGeneratorBaseReadsDivision();

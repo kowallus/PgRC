@@ -65,25 +65,33 @@ namespace PgTools {
     }
 
     const string SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx) {
-        string res = pgSequence.substr(this->readsList->pos[idx], this->readsList->readLength);
-        if (this->readsList->revComp[idx])
-            PgSAHelpers::reverseComplementInPlace(res);
-        for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
-            res[this->readsList->getMisOff(idx, i)] =
-                    PgSAHelpers::code2mismatch(res[this->readsList->getMisOff(idx, i)],
-                            this->readsList->getMisSymCode(idx, i));
-        }
+        string res;
+        res.resize(this->readsList->readLength);
+        getRead(idx, (char*) res.data());
         return res;
     }
 
-    void SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx, char *ptr) {
-        memcpy((void*) ptr, (void*) (pgSequence.data() + this->readsList->pos[idx]), this->readsList->readLength);
+    void SeparatedPseudoGenome::getReadUnsafe(uint_reads_cnt_max idx, char *ptr) {
+        getRawSequence(idx, ptr);
         if (this->readsList->revComp[idx])
             PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
         for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
             const uint8_t misPos = this->readsList->getMisOff(idx, i);
             ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
                                                this->readsList->getMisSymCode(idx, i));
+        }
+    }
+
+    void SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx, char *ptr) {
+        getRawSequence(idx, ptr);
+        if (this->readsList->isRevCompEnabled() && this->readsList->revComp[idx])
+            PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+        if (this->readsList->areMismatchesEnabled()) {
+            for (uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
+                const uint8_t misPos = this->readsList->getMisOff(idx, i);
+                ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
+                                                         this->readsList->getMisSymCode(idx, i));
+            }
         }
     }
 

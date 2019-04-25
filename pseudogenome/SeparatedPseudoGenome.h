@@ -23,7 +23,11 @@ namespace PgTools {
         ConstantAccessExtendedReadsList *getReadsList();
 
         const string getRead(uint_reads_cnt_max idx);
-        void getRead(uint_reads_cnt_max idx, char* ptr);
+        inline void getRawSequence(uint_reads_cnt_max idx, char* ptr) {
+            memcpy((void*) ptr, (void*) (pgSequence.data() + this->readsList->pos[idx]), this->readsList->readLength);
+        }
+        void getReadUnsafe(uint_reads_cnt_max idx, char *ptr);
+        void getRead(uint_reads_cnt_max idx, char *ptr);
 
         virtual ~SeparatedPseudoGenome();
 
