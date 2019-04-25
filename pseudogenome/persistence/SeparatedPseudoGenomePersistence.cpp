@@ -400,7 +400,7 @@ namespace PgTools {
             writeCompressed(pgrcOut, (char*) pgPosPtr, readsTotalCount * (isJoinedPgLengthStd?sizeof(uint_pg_len_std):sizeof(uint_pg_len_max)),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param);
         } else {
-            vector<uint_pg_len_std> basePairPos, pairDelta, posPairDelta;
+            vector<uint_pg_len_max> basePairPos, pairDelta;
             for (uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
                 basePairPos.push_back(orgIdx2PgPos[i]);
                 pairDelta.push_back(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]);

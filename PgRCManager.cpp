@@ -186,9 +186,11 @@ namespace PgTools {
             if (!singleReadsMode) {
                 if (preserveOrderMode) {
                     ExtendedReadsListWithConstantAccessOption *const pgRl = lqPg->getReadsList();
-                    uint_pg_len_std startPos = hqPg->getPseudoGenomeLength();
-                    for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
-                        orgIdx2PgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
+                    uint_pg_len_max pos = hqPg->getPseudoGenomeLength();
+                    for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++) {
+                        pos += pgRl->off[i];
+                        orgIdx2PgPos[pgRl->orgIdx[i]] = pos;
+                    }
                 } else
                     orgIdxs.insert(orgIdxs.end(), lqPg->getReadsList()->orgIdx.begin(), lqPg->getReadsList()->orgIdx.end());
             }
@@ -202,10 +204,12 @@ namespace PgTools {
                 }
                 if (!singleReadsMode) {
                     if (preserveOrderMode) {
-                        uint_pg_len_std startPos = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength();
                         ExtendedReadsListWithConstantAccessOption *const pgRl = nPg->getReadsList();
-                        for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
-                            orgIdx2PgPos[pgRl->orgIdx[i]] = pgRl->pos[i] + startPos;
+                        uint_pg_len_max pos = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength();
+                        for (uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++) {
+                            pos += pgRl->off[i];
+                            orgIdx2PgPos[pgRl->orgIdx[i]] = pos;
+                        }
                     } else
                         orgIdxs.insert(orgIdxs.end(), nPg->getReadsList()->orgIdx.begin(),
                                    nPg->getReadsList()->orgIdx.end());

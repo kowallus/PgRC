@@ -47,6 +47,7 @@ namespace PgTools {
     class GeneratedSeparatedPseudoGenome: public SeparatedPseudoGenome {
     private:
         uint_pg_len_max pos = 0;
+        uint_read_len_max delta = 0;
         char_pg* sequence;
 
     public:

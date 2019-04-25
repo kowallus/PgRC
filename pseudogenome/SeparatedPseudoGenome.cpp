@@ -100,21 +100,19 @@ namespace PgTools {
             : SeparatedPseudoGenome(sequenceLength, properties) {
         pgSequence.resize(sequenceLength);
         sequence = (char_pg*) pgSequence.data();
-        readsList->pos.reserve(properties->readsCount);
+        readsList->off.reserve(properties->readsCount);
         readsList->orgIdx.reserve(properties->readsCount);
-        readsList->revComp.reserve(properties->readsCount);
-        readsList->misCumCount.reserve(properties->readsCount);
     }
 
     void GeneratedSeparatedPseudoGenome::append(const string &read, uint_read_len_max length, uint_read_len_max overlap,
                                                 uint_reads_cnt_max orgIdx) {
-        readsList->pos.push_back(pos);
+        readsList->off.push_back(delta);
         readsList->orgIdx.push_back(orgIdx);
 
-        uint_read_len_max len = length - overlap;
-        if (len > 0) {
-            strncpy(this->sequence + pos, read.data(), len);
-            pos += len;
+        delta = length - overlap;
+        if (delta > 0) {
+            strncpy(this->sequence + pos, read.data(), delta);
+            pos += delta;
         }
     }
 

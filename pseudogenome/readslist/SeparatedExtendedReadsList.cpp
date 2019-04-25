@@ -355,7 +355,7 @@ namespace PgTools {
 
     bool ExtendedReadsListWithConstantAccessOption::moveNext() {
         if (++current < readsCount) {
-            entry.advanceEntryByPosition(pos[current], orgIdx[current], this->getRevComp(current));
+            entry.advanceEntryByOffset(off[current], orgIdx[current], this->getRevComp(current));
             if (!misCnt.empty()) {
                 uint8_t mismatchesCount = misCnt[current];
                 for (uint8_t i = 0; i < mismatchesCount; i++)

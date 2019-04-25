@@ -567,8 +567,13 @@ namespace PgTools {
         uint_reads_cnt_std readsTotalCount = orgIndexesMapping->getReadsTotalCount();
         vector<uint_pg_len_max> orgIdx2pgPos(readsTotalCount, -1);
         ExtendedReadsListWithConstantAccessOption *const pgRl = sPg->getReadsList();
-        for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++)
-            orgIdx2pgPos[pgRl->orgIdx[i]] = pgRl->pos[i];
+        uint_pg_len_max pos = 0;
+        for(uint_reads_cnt_std i = 0; i < pgRl->readsCount; i++) {
+            pos += pgRl->off[i];
+            orgIdx2pgPos[pgRl->orgIdx[i]] = pos;
+        }
+        pgRl->off.clear();
+        pgRl->orgIdx.clear();
         initEntryUpdating();
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(sPg);
         int64_t curIdx = -1;
