@@ -295,31 +295,12 @@ namespace PgTools {
             bool preserveOrderMode, bool disableRevCompl, bool disableMismatches) {
         ExtendedReadsListWithConstantAccessOption *res = new ExtendedReadsListWithConstantAccessOption(pgh->getMaxReadLength());
         const uint_reads_cnt_max readsCount = pgh->getReadsCount();
-
-        vector<uint8_t> tmp;
-        if (!preserveOrderMode) {
-            readCompressed(pgrcIn, tmp); // offsets
-            res->pos.reserve(readsCount + 1);
-            uint_pg_len_max pos = 0;
-            for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-                pos = pos + tmp[i];
-                res->pos.push_back(pos);
-            }
-            if (pgh->getPseudoGenomeLength())
-                res->pos.push_back(pgh->getPseudoGenomeLength());
-        }
+        if (!preserveOrderMode)
+            readCompressed(pgrcIn, res->off);
         if (!disableRevCompl)
             readCompressed(pgrcIn, res->revComp);
         if (!disableMismatches) {
-            readCompressed(pgrcIn, tmp); //misCnt;
-            uint_reads_cnt_max cumCount = 0;
-            res->misCumCount.reserve(readsCount + 1);
-            res->misCumCount.push_back(0);
-            for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-                cumCount += tmp[i];
-                res->misCumCount.push_back(cumCount);
-            }
-            tmp.clear();
+            readCompressed(pgrcIn, res->misCnt);
             readCompressed(pgrcIn, res->misSymCode);
             uint8_t mismatchesCountSrcsLimit = 0;
             PgSAHelpers::readValue<uint8_t>(pgrcIn, mismatchesCountSrcsLimit, false);
@@ -334,14 +315,13 @@ namespace PgTools {
             }
             res->misOff.reserve(res->misSymCode.size());
             for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-                uint8_t misCnt = res->getMisCount(i);
+                uint8_t misCnt = res->misCnt[i];
                 uint8_t srcIdx = misCnt2SrcIdx[misCnt];
+                uint64_t misOffStartIdx = res->misOff.size();
                 for (uint8_t m = 0; m < misCnt; m++)
                     res->misOff.push_back(srcs[srcIdx][srcCounter[srcIdx]++]);
-            }
-            for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-                PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + res->misCumCount[i],
-                                                                   res->getMisCount(i), res->readLength);
+                PgSAHelpers::convertMisRevOffsets2Offsets<uint8_t>(res->misOff.data() + misOffStartIdx,
+                                                                   res->misCnt[i], res->readLength);
             }
         }
         if (!validationPgPrefix.empty()) {
@@ -387,21 +367,22 @@ namespace PgTools {
         pos.reserve(readsCount + 1);
         uint_pg_len_max currPos = 0;
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            currPos = currPos + off[i];
+            currPos += off[i];
             this->pos.push_back(currPos);
         }
         this->pos.push_back(this->pos.back() + this->readLength);
-
-        uint_reads_cnt_max cumCount = 0;
-        misCumCount.reserve(readsCount + 1);
-        misCumCount.push_back(0);
-        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            cumCount += misCnt[i];
-            misCumCount.push_back(cumCount);
-        }
-        if (disableIterationMode) {
+        if (disableIterationMode)
             off.clear();
-            misCnt.clear();
+        if (!misCnt.empty()) {
+            uint_reads_cnt_max cumCount = 0;
+            misCumCount.reserve(readsCount + 1);
+            misCumCount.push_back(0);
+            for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                cumCount += misCnt[i];
+                misCumCount.push_back(cumCount);
+            }
+            if (disableIterationMode)
+                misCnt.clear();
         }
     }
 

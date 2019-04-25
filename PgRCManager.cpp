@@ -520,9 +520,12 @@ namespace PgTools {
         ignorePairOrderInformation = pgrc_mode == PGRC_MIN_PE_MODE;
         singleReadsMode = pgrc_mode == PGRC_SE_MODE || pgrc_mode == PGRC_ORD_SE_MODE;
         vector<uint_reads_cnt_std> rlIdxOrder;
-        if (pgrcIn)
+        if (pgrcIn) {
             loadAllPgs(pgrcIn, rlIdxOrder);
-        else
+            hqPg->getReadsList()->enableConstantAccess(true);
+            lqPg->getReadsList()->enableConstantAccess(true);
+            if (nPg) nPg->getReadsList()->enableConstantAccess(true);
+        } else
             loadAllPgs();
         cout << "... loaded Pgs (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
 
@@ -864,6 +867,8 @@ namespace PgTools {
             nCaeRl = ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgrcIn,
                     &nPgh, &nRsProp, srcFastqFile.empty()?"":pgNPrefix, preserveOrderMode, true, true);
         }
+        SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder,
+                preserveOrderMode, ignorePairOrderInformation, singleReadsMode);
         cout << "... loaded Pgs Reads Lists (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
         string hqPgSeq, lqPgSeq, nPgSeq;
         SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgh.getPseudoGenomeLength(), hqPgSeq, lqPgSeq, nPgSeq);
@@ -876,9 +881,6 @@ namespace PgTools {
         nonNPgReadsCount = hqReadsCount + lqReadsCount;
         nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         readsTotalCount = nonNPgReadsCount + nPgReadsCount;
-
-        SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder,
-                preserveOrderMode, ignorePairOrderInformation, singleReadsMode);
     }
 
     void PgRCManager::loadAllPgs() {
