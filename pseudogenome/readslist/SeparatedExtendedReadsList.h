@@ -15,6 +15,11 @@ namespace PgTools {
     typedef SeparatedExtendedReadsListIterator<0> SimpleSeparatedReadsListIterator;
 
     class ExtendedReadsListWithConstantAccessOption : public DefaultReadsListIteratorInterface {
+
+        DefaultReadsListEntry entry;
+        int64_t current = -1;
+        uint64_t curMisCumCount = 0;
+
     public:
 
         uint_read_len_max readLength;
@@ -61,15 +66,11 @@ namespace PgTools {
 
         // iterator routines
 
-        DefaultReadsListEntry entry;
-        int64_t current = -1;
-        uint64_t curMisCumCount = 0;
-
         bool moveNext() override;
-
         void rewind() override;
-
         DefaultReadsListEntry &peekReadEntry() { return entry; };
+
+        // reads list factories
 
         static ExtendedReadsListWithConstantAccessOption *loadConstantAccessExtendedReadsList(const string &pseudoGenomePrefix,
                                                                                     uint_pg_len_max pgLengthPosGuard = 0,

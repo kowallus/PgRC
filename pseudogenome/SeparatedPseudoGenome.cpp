@@ -71,8 +71,8 @@ namespace PgTools {
         return res;
     }
 
-    void SeparatedPseudoGenome::getReadUnsafe(uint_reads_cnt_max idx, char *ptr) {
-        getRawSequence(idx, ptr);
+    void SeparatedPseudoGenome::getRead_Unsafe(uint_reads_cnt_max idx, char *ptr) {
+        getRead_RawSequence(idx, ptr);
         if (this->readsList->revComp[idx])
             PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
         for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
@@ -83,7 +83,7 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx, char *ptr) {
-        getRawSequence(idx, ptr);
+        getRead_RawSequence(idx, ptr);
         if (this->readsList->isRevCompEnabled() && this->readsList->revComp[idx])
             PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
         if (this->readsList->areMismatchesEnabled()) {
@@ -93,6 +93,29 @@ namespace PgTools {
                                                          this->readsList->getMisSymCode(idx, i));
             }
         }
+    }
+
+    void SeparatedPseudoGenome::getNextRead_Unsafe(char *ptr, uint_pg_len_max pos) {
+        getRawSequenceOfReadLength(ptr, pos);
+        if (this->readsList->revComp[nextRlIdx])
+            PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+        uint8_t mismatchesCount = this->readsList->misCnt[nextRlIdx];
+        for (uint8_t i = 0; i < mismatchesCount; i++) {
+            const uint8_t misPos = this->readsList->misOff[curMisCumCount];
+            ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
+                                                     this->readsList->misSymCode[curMisCumCount++]);
+        }
+        nextRlIdx++;
+    }
+
+    void SeparatedPseudoGenome::getNextRead_Unsafe(char *ptr) {
+        curPos += this->readsList->off[nextRlIdx];
+        getNextRead_Unsafe(ptr, curPos);
+    }
+
+    void SeparatedPseudoGenome::getNextRead_RawSequence(char *ptr) {
+        curPos += this->readsList->off[nextRlIdx++];
+        getRawSequenceOfReadLength(ptr, curPos);
     }
 
     GeneratedSeparatedPseudoGenome::GeneratedSeparatedPseudoGenome(uint_pg_len_max sequenceLength,

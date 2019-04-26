@@ -13,6 +13,12 @@ namespace PgTools {
     protected:
         string pgSequence;
         ExtendedReadsListWithConstantAccessOption* readsList;
+
+        // iteration variables
+        uint64_t nextRlIdx = 0;
+        uint64_t curPos = 0;
+        uint64_t curMisCumCount = 0;
+
     public:
         SeparatedPseudoGenome(uint_pg_len_max sequenceLength, ReadsSetProperties* properties);
 
@@ -21,13 +27,6 @@ namespace PgTools {
 
         string &getPgSequence();
         ExtendedReadsListWithConstantAccessOption *getReadsList();
-
-        const string getRead(uint_reads_cnt_max idx);
-        inline void getRawSequence(uint_reads_cnt_max idx, char* ptr) {
-            memcpy((void*) ptr, (void*) (pgSequence.data() + this->readsList->pos[idx]), this->readsList->readLength);
-        }
-        void getReadUnsafe(uint_reads_cnt_max idx, char *ptr);
-        void getRead(uint_reads_cnt_max idx, char *ptr);
 
         virtual ~SeparatedPseudoGenome();
 
@@ -42,6 +41,26 @@ namespace PgTools {
         const string getPseudoGenomeVirtual() override;
 
         void disposeReadsList();
+
+        // read access
+        inline void getRawSequenceOfReadLength(char *ptr, uint_pg_len_max pos) {
+            memcpy((void*) ptr, (void*) (pgSequence.data() + pos), this->readsList->readLength);
+        }
+
+        const string getRead(uint_reads_cnt_max idx);
+        inline void getRead_RawSequence(uint_reads_cnt_max idx, char *ptr) {
+            getRawSequenceOfReadLength(ptr, this->readsList->pos[idx]);
+        }
+        void getRead_Unsafe(uint_reads_cnt_max idx, char *ptr);
+        void getRead(uint_reads_cnt_max idx, char *ptr);
+
+        // iteration routines
+        void getNextRead_RawSequence(char *ptr);
+        void getNextRead_Unsafe(char *ptr, uint_pg_len_max pos);
+        void getNextRead_Unsafe(char *ptr);
+
+        void rewind();
+
     };
 
     class GeneratedSeparatedPseudoGenome: public SeparatedPseudoGenome {

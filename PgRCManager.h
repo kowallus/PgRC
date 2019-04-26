@@ -86,7 +86,7 @@ namespace PgTools {
         SeparatedPseudoGenome *lqPg = 0;
         SeparatedPseudoGenome *nPg = 0;
 
-        vector<uint_reads_cnt_std> orgIdxs;
+        vector<uint_reads_cnt_std> rlIdxOrder;
         vector<uint_pg_len_max> orgIdx2PgPos;
 
         bool revComplPairFile;
@@ -328,17 +328,18 @@ namespace PgTools {
 
         void finalizeCompression();
 
-        void loadAllPgs(istream &pgrcIn, vector<uint_reads_cnt_std>& rlIdxOrder);
+        void loadAllPgs(istream &pgrcIn);
         void loadAllPgs();
 
         void decompressPgRC();
 
-        void applyRevComplPairFileToPgs(vector<uint_reads_cnt_std>& rlIdxOrder);
+        void applyRevComplPairFileToPgs();
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
 
         void writeAllReadsInSEMode(const string &outPrefix) const;
-        void writeAllReads(const string &outPrefix, vector<uint_reads_cnt_std> &rlIdxOrder) const;
+        void writeAllReadsInPEMode(const string &outPrefix) const;
+        void writeAllReadsInORDMode(const string &outPrefix) const;
 
         std::mutex mut;
         std::queue<string> out_queue;
@@ -353,7 +354,7 @@ namespace PgTools {
         void writeFromQueue(const string &outPrefix);
 
         void validateAllPgs();
-        void validatePgsOrder(vector<uint_reads_cnt_std>& rlIdxOrder);
+        void validatePgsOrder();
 
         uint_reads_cnt_max dnaStreamSize() const;
 
