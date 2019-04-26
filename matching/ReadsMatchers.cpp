@@ -576,21 +576,45 @@ namespace PgTools {
         pgRl->orgIdx.clear();
         initEntryUpdating();
         SeparatedPseudoGenomeOutputBuilder* builder = this->createSeparatedPseudoGenomeOutputBuilder(sPg);
-        int64_t curIdx = -1;
-        for(uint_reads_cnt_max i = 0; i < readsCount; i++) {
+        uint_reads_cnt_max nI_start = readsCount;
+        int64_t curOrgIdx = 0;
+        for(uint_reads_cnt_std i = 0; i < readsCount; i++) {
             const uint_reads_cnt_max oIdx = orgIndexesMapping->getReadOriginalIndex(i);
-            while (++curIdx < oIdx) {
+            if (curOrgIdx > oIdx) {
+                nI_start = i;
+                break;
+            }
+            curOrgIdx = oIdx;
+        }
+        curOrgIdx = -1;
+        uint_reads_cnt_max lqI = 0;
+        uint_reads_cnt_max nI = nI_start;
+        while (lqI < nI_start || nI < readsCount) {
+            uint_reads_cnt_max matchIdx = readsCount;
+            if (lqI < nI_start)
+                matchIdx = lqI;
+            if (nI < readsCount && (lqI == nI_start || orgIndexesMapping->getReadOriginalIndex(nI) < orgIndexesMapping->getReadOriginalIndex(lqI)))
+                matchIdx = nI++;
+            else
+                lqI++;
+            const uint_reads_cnt_max oIdx = orgIndexesMapping->getReadOriginalIndex(matchIdx);
+            while (++curOrgIdx < oIdx) {
                 DefaultReadsListEntry entry(0);
-                entry.advanceEntryByPosition(0, curIdx, false);
+                entry.advanceEntryByPosition(0, curOrgIdx, false);
                 builder->writeExtraReadEntry(entry);
             }
-            if (readMatchPos[i] != NOT_MATCHED_POSITION) {
+            if (readMatchPos[matchIdx] != NOT_MATCHED_POSITION) {
                 DefaultReadsListEntry entry(0);
-                entry.advanceEntryByPosition(readMatchPos[i], oIdx, readMatchRC[i]);
-                this->updateEntry(entry, i, revComplPairFile);
+                entry.advanceEntryByPosition(readMatchPos[matchIdx], oIdx, readMatchRC[matchIdx]);
+                this->updateEntry(entry, matchIdx, revComplPairFile);
                 builder->writeExtraReadEntry(entry);
-                orgIdx2pgPos[oIdx] = readMatchPos[i];
+                orgIdx2pgPos[oIdx] = readMatchPos[matchIdx];
             }
+        }
+        while (++curOrgIdx < readsTotalCount) {
+            DefaultReadsListEntry entry(0);
+            entry.advanceEntryByPosition(0, curOrgIdx, false);
+            builder->writeExtraReadEntry(entry);
         }
         builder->build(outPgPrefix);
         builder->compressedBuild(pgrcOut, compressionLevel, true);

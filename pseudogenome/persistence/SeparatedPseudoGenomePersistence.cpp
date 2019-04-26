@@ -26,12 +26,12 @@ namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(SeparatedPseudoGenome *sPg,
                                                                       ostream* pgrcOut, uint8_t coder_level,
-                                                                      bool skipPgSequence) {
+                                                                      bool ignoreOffDest, bool skipPgSequence) {
         clock_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(!sPg->getReadsList()->isRevCompEnabled(),
                                                    !sPg->getReadsList()->areMismatchesEnabled());
         builder.feedSeparatedPseudoGenome(sPg, true);
-        builder.compressedBuild(*pgrcOut, coder_level);
+        builder.compressedBuild(*pgrcOut, coder_level, ignoreOffDest);
         cout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
         if (!skipPgSequence) {
             clock_checkpoint();
@@ -412,6 +412,26 @@ namespace PgTools {
         }
         cout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl << endl;
     }
+
+    template <typename uint_pg_len>
+    void SeparatedPseudoGenomePersistence::decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &orgIdx2PgPos, bool singleFileMode) {
+        if (singleFileMode)
+            readCompressed(pgrcIn, orgIdx2PgPos);
+        else {
+/*            vector<uint_pg_len_max> basePairPos, pairDelta;
+
+            for (uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
+                basePairPos.push_back(orgIdx2PgPos[i]);
+                pairDelta.push_back(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]);
+            }
+            writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len_max),
+                            LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_64_t);
+            writeCompressed(pgrcOut, (char *) pairDelta.data(), pairDelta.size() * sizeof(uint_pg_len_max),
+                            LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_64_t);
+        */}
+    }
+    template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(istream &pgrcIn, vector<uint_pg_len_std> &orgIdx2PgPos, bool singleFileMode);
+    template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_max>(istream &pgrcIn, vector<uint_pg_len_max> &orgIdx2PgPos, bool singleFileMode);
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string pseudoGenomePrefix,
             bool disableRevComp, bool disableMismatches) : pseudoGenomePrefix(pseudoGenomePrefix),

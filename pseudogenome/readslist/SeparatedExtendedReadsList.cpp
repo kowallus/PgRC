@@ -364,13 +364,15 @@ namespace PgTools {
     }
 
     void ExtendedReadsListWithConstantAccessOption::enableConstantAccess(bool disableIterationMode) {
-        pos.reserve(readsCount + 1);
-        uint_pg_len_max currPos = 0;
-        for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
-            currPos += off[i];
-            this->pos.push_back(currPos);
+        if (pos.empty()) {
+            pos.reserve(readsCount + 1);
+            uint_pg_len_max currPos = 0;
+            for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
+                currPos += off[i];
+                this->pos.push_back(currPos);
+            }
+            this->pos.push_back(this->pos.back() + this->readLength);
         }
-        this->pos.push_back(this->pos.back() + this->readLength);
         if (disableIterationMode)
             off.clear();
         if (!misCnt.empty()) {

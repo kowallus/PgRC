@@ -88,6 +88,7 @@ namespace PgTools {
 
         vector<uint_reads_cnt_std> rlIdxOrder;
         vector<uint_pg_len_max> orgIdx2PgPos;
+        vector<uint_pg_len_std> orgIdx2StdPgPos;
 
         bool revComplPairFile;
         bool qualityDivision;
@@ -108,6 +109,9 @@ namespace PgTools {
         uint_reads_cnt_max nonNPgReadsCount;
         uint_reads_cnt_max nPgReadsCount;
         uint_reads_cnt_max readsTotalCount;
+        uint_pg_len_max hqPgLen;
+        uint_pg_len_max nonNPgLen;
+        bool isJoinedPgLengthStd;
 
         // CHAIN METHODS
         void prepareChainData();
@@ -339,7 +343,8 @@ namespace PgTools {
 
         void writeAllReadsInSEMode(const string &outPrefix) const;
         void writeAllReadsInPEMode(const string &outPrefix) const;
-        void writeAllReadsInORDMode(const string &outPrefix) const;
+        template<typename uint_pg_len>
+        void writeAllReadsInORDMode(const string &outPrefix, vector<uint_pg_len> &orgIdx2PgPos) const;
 
         std::mutex mut;
         std::queue<string> out_queue;

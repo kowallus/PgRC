@@ -59,6 +59,8 @@ namespace PgSAIndex {
 
             static const string PSEUDOGENOME_HEADER;
 
+            PseudoGenomeHeader() {}
+
             PseudoGenomeHeader(PseudoGenomeBase* base) {
                 this->type = base->getTypeID();
                 this->constantReadLength = base->getReadsSetProperties()->constantReadLength;
