@@ -8,9 +8,9 @@ using namespace PgTools;
 enum verbosity { v0, v1, v2 };
 enum reverseMode { no, yes, both };
 
-static const int HASH_COLLISIONS_PER_POSITION_LIMIT = 16;
-static const int AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT = 2;
-static const int UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION = 1;
+static const int HASH_COLLISIONS_PER_POSITION_LIMIT = 12;
+static const int AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT = 1;
+static const int UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION = 4;
 static const int HASH_SIZE_MIN_ORDER = 24;
 static const int HASH_SIZE_MAX_ORDER = 31;
 typedef std::pair<std::string, size_t> SequenceItem;
