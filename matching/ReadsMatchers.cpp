@@ -586,35 +586,48 @@ namespace PgTools {
             }
             curOrgIdx = oIdx;
         }
-        curOrgIdx = -1;
-        uint_reads_cnt_max lqI = 0;
-        uint_reads_cnt_max nI = nI_start;
-        while (lqI < nI_start || nI < readsCount) {
-            uint_reads_cnt_max matchIdx = readsCount;
-            if (lqI < nI_start)
-                matchIdx = lqI;
-            if (nI < readsCount && (lqI == nI_start || orgIndexesMapping->getReadOriginalIndex(nI) < orgIndexesMapping->getReadOriginalIndex(lqI)))
-                matchIdx = nI++;
-            else
-                lqI++;
-            const uint_reads_cnt_max oIdx = orgIndexesMapping->getReadOriginalIndex(matchIdx);
-            while (++curOrgIdx < oIdx) {
+        const uint8_t parts = pairFileMode?2:1;
+        const int inc = parts;
+        for(uint8_t p = 0; p < parts; p++) {
+            curOrgIdx = p - inc;
+            uint_reads_cnt_max lqI = 0;
+            uint_reads_cnt_max nI = nI_start;
+            while (lqI < nI_start || nI < readsCount) {
+                uint_reads_cnt_max matchIdx;
+                uint_reads_cnt_max oIdx;
+                do {
+                    matchIdx = readsCount;
+                    if (lqI < nI_start)
+                        matchIdx = lqI;
+                    if (nI < readsCount && (lqI == nI_start || orgIndexesMapping->getReadOriginalIndex(nI) <
+                                                               orgIndexesMapping->getReadOriginalIndex(lqI)))
+                        matchIdx = nI++;
+                    else
+                        lqI++;
+                    if (matchIdx == readsCount)
+                        break;
+                    oIdx = orgIndexesMapping->getReadOriginalIndex(matchIdx);
+                } while (parts != 1 && (oIdx % parts != p));
+                if (matchIdx == readsCount)
+                    break;
+                while ((curOrgIdx += inc) < oIdx) {
+                    DefaultReadsListEntry entry(0);
+                    entry.advanceEntryByPosition(0, curOrgIdx, false);
+                    builder->writeExtraReadEntry(entry);
+                }
+                if (readMatchPos[matchIdx] != NOT_MATCHED_POSITION) {
+                    DefaultReadsListEntry entry(0);
+                    entry.advanceEntryByPosition(readMatchPos[matchIdx], oIdx, readMatchRC[matchIdx]);
+                    this->updateEntry(entry, matchIdx, revComplPairFile);
+                    builder->writeExtraReadEntry(entry);
+                    orgIdx2pgPos[oIdx] = readMatchPos[matchIdx];
+                }
+            }
+            while ((curOrgIdx += inc) < readsTotalCount) {
                 DefaultReadsListEntry entry(0);
                 entry.advanceEntryByPosition(0, curOrgIdx, false);
                 builder->writeExtraReadEntry(entry);
             }
-            if (readMatchPos[matchIdx] != NOT_MATCHED_POSITION) {
-                DefaultReadsListEntry entry(0);
-                entry.advanceEntryByPosition(readMatchPos[matchIdx], oIdx, readMatchRC[matchIdx]);
-                this->updateEntry(entry, matchIdx, revComplPairFile);
-                builder->writeExtraReadEntry(entry);
-                orgIdx2pgPos[oIdx] = readMatchPos[matchIdx];
-            }
-        }
-        while (++curOrgIdx < readsTotalCount) {
-            DefaultReadsListEntry entry(0);
-            entry.advanceEntryByPosition(0, curOrgIdx, false);
-            builder->writeExtraReadEntry(entry);
         }
         builder->build(outPgPrefix);
         builder->compressedBuild(pgrcOut, compressionLevel, true);

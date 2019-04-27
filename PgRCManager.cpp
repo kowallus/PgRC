@@ -222,8 +222,15 @@ namespace PgTools {
         bad_t = clock();
         if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
             if (preserveOrderMode) {
-                bool isJoinedPgLengthStd = hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength() + nPg->getPseudoGenomeLength() <= UINT32_MAX;
-                SeparatedPseudoGenomePersistence::compressReadsPgPositions(pgrcOut, orgIdx2PgPos, isJoinedPgLengthStd, compressionLevel, pairFastqFile.empty());
+                const uint_pg_len_max joinedPgLength =
+                        hqPg->getPseudoGenomeLength() + lqPg->getPseudoGenomeLength() + nPg->getPseudoGenomeLength();
+                bool isJoinedPgLengthStd = joinedPgLength <= UINT32_MAX;
+                if (isJoinedPgLengthStd)
+                    SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_std>(pgrcOut, orgIdx2PgPos,
+                            joinedPgLength, compressionLevel, pairFastqFile.empty());
+                else
+                    SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_max>(pgrcOut, orgIdx2PgPos,
+                            joinedPgLength, compressionLevel, pairFastqFile.empty());
                 orgIdx2PgPos.clear();
             } else {
                 SeparatedPseudoGenomePersistence::compressReadsOrder(pgrcOut, rlIdxOrder, compressionLevel, preserveOrderMode,
@@ -530,7 +537,10 @@ namespace PgTools {
         uint_reads_cnt_max nPgReadsCount = nPg?nPg->getReadsSetProperties()->readsCount:0;
         uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
         if (revComplPairFile)
-            applyRevComplPairFileToPgs();
+            if (isJoinedPgLengthStd)
+                applyRevComplPairFileToPgs<uint_pg_len_std>(orgIdx2StdPgPos);
+            else
+                applyRevComplPairFileToPgs<uint_pg_len_max>(orgIdx2PgPos);
 
         if (srcFastqFile.empty()) {
             if (singleReadsMode && !preserveOrderMode) {
@@ -547,27 +557,7 @@ namespace PgTools {
                 writeAllReadsInORDMode<uint_pg_len_max>(pgRCFileName, orgIdx2PgPos);
             cout << "Decompressed ";
         } else {
-            if (preserveOrderMode) {
-                lqPg->getReadsList()->orgIdx.clear();
-                nPg->getReadsList()->orgIdx.clear();
-                for (uint_reads_cnt_std i = 0; i < readsTotalCount; i++) {
-                    uint_pg_len_max pos = isJoinedPgLengthStd?orgIdx2StdPgPos[i]:orgIdx2PgPos[i];
-                    if (pos < hqPgLen)
-                        hqPg->getReadsList()->pos.push_back(pos);
-                    else if (pos < nonNPgLen) {
-                        lqPg->getReadsList()->pos.push_back(pos - hqPgLen);
-                        lqPg->getReadsList()->orgIdx.push_back(i);
-                    } else {
-                        nPg->getReadsList()->pos.push_back(pos - nonNPgLen);
-                        nPg->getReadsList()->orgIdx.push_back(i);
-                    }
-                }
-                hqPg->getReadsList()->enableConstantAccess(true);
-            }else {
-                hqPg->getReadsList()->enableConstantAccess(true);
-                lqPg->getReadsList()->enableConstantAccess(true);
-                if (nPg) nPg->getReadsList()->enableConstantAccess(true);
-            }
+            preparePgsForValidation();
             validateAllPgs();
             validatePgsOrder();
             cout << "Validated ";
@@ -696,6 +686,7 @@ namespace PgTools {
                          ios_base::out | ios_base::binary | std::ios::trunc);
             string res, read;
             read.resize(readLength);
+            char* readPtr = (char *) read.data();
             uint64_t res_size_guard = CHUNK_SIZE_IN_BYTES;
             uint64_t totalSize = dnaStreamSize();
             res.reserve(totalSize < res_size_guard ? totalSize : res_size_guard + (readLength + 1));
@@ -706,17 +697,16 @@ namespace PgTools {
                     res.resize(0);
                 }
                 uint_reads_cnt_std idx = rlIdxOrder[i];
-                SeparatedPseudoGenome* pg;
                 if (idx < hqReadsCount)
-                    pg = hqPg;
-                else if (idx < nonNPgReadsCount) {
-                    pg = lqPg;
-                    idx -= hqReadsCount;
-                } else {
-                    pg = nPg;
-                    idx -= nonNPgReadsCount;
+                    hqPg->getRead(idx, readPtr);
+                else {
+                    if (idx < nonNPgReadsCount)
+                        lqPg->getRead_RawSequence(idx - hqReadsCount, readPtr);
+                    else
+                        nPg->getRead_RawSequence(idx - nonNPgReadsCount, readPtr);
+                    if (p)
+                        PgSAHelpers::reverseComplementInPlace(readPtr, readLength);
                 }
-                pg->getRead(idx, (char *) read.data());
                 res.append(read);
                 res.push_back('\n');
             }
@@ -728,7 +718,6 @@ namespace PgTools {
     template <typename uint_pg_len>
     void PgRCManager::writeAllReadsInORDMode(const string &outPrefix, vector<uint_pg_len> &orgIdx2PgPos) const {
         uint8_t parts = singleReadsMode?1:2;
-        int inc = singleReadsMode?1:2;
 
         for(uint8_t p = 0; p < parts; p++) {
             fstream fout(outPrefix + "_out" + (singleReadsMode?"":("_" + toString(p + 1))),
@@ -740,7 +729,8 @@ namespace PgTools {
             uint64_t totalSize = dnaStreamSize();
             res.reserve(totalSize < res_size_guard ? totalSize : res_size_guard + (readLength + 1));
             uint_reads_cnt_max i = 0;
-            for (i = p; i < readsTotalCount; i += inc) {
+            uint_reads_cnt_std endI = (readsTotalCount / parts) * (p + 1);
+            for (i = (readsTotalCount / parts) * p; i < endI; i++) {
                 if (res.size() > res_size_guard) {
                     fout << res;
                     res.resize(0);
@@ -748,10 +738,14 @@ namespace PgTools {
                 uint_pg_len pos = orgIdx2PgPos[i];
                 if (pos < hqPgLen)
                     hqPg->getNextRead_Unsafe(readPtr, pos);
-                else if (pos < nonNPgLen)
-                    lqPg->getRawSequenceOfReadLength(readPtr, pos - hqPgLen);
-                else
-                    nPg->getRawSequenceOfReadLength(readPtr, pos - nonNPgLen);
+                else {
+                    if (pos < nonNPgLen)
+                        lqPg->getRawSequenceOfReadLength(readPtr, pos - hqPgLen);
+                    else
+                        nPg->getRawSequenceOfReadLength(readPtr, pos - nonNPgLen);
+                    if (p)
+                        PgSAHelpers::reverseComplementInPlace(readPtr, readLength);
+                }
                 res.append(read);
                 res.push_back('\n');
             }
@@ -765,6 +759,32 @@ namespace PgTools {
     uint_reads_cnt_max PgRCManager::dnaStreamSize() const {
         return (hqPg->getReadsSetProperties()->readsCount + lqPg->getReadsSetProperties()->readsCount) *
                (hqPg->getReadsSetProperties()->maxReadLength + 1);
+    }
+
+    void PgRCManager::preparePgsForValidation() const {
+        if (preserveOrderMode) {
+            lqPg->getReadsList()->orgIdx.clear();
+            nPg->getReadsList()->orgIdx.clear();
+            uint8_t parts = singleReadsMode?1:2;
+            for (uint_reads_cnt_std i = 0; i < readsTotalCount; i++) {
+                uint_pg_len_max pos = isJoinedPgLengthStd ? orgIdx2StdPgPos[i] : orgIdx2PgPos[i];
+                uint_reads_cnt_std orgIdx = i < readsTotalCount / parts ? i * parts : (i - readsTotalCount / parts) * parts + 1;
+                if (pos < hqPgLen)
+                    hqPg->getReadsList()->pos.push_back(pos);
+                else if (pos < nonNPgLen) {
+                    lqPg->getReadsList()->pos.push_back(pos - hqPgLen);
+                    lqPg->getReadsList()->orgIdx.push_back(orgIdx);
+                } else {
+                    nPg->getReadsList()->pos.push_back(pos - nonNPgLen);
+                    nPg->getReadsList()->orgIdx.push_back(orgIdx);
+                }
+            }
+            hqPg->getReadsList()->enableConstantAccess(true);
+        } else {
+            hqPg->getReadsList()->enableConstantAccess(true);
+            lqPg->getReadsList()->enableConstantAccess(true);
+            if (nPg) nPg->getReadsList()->enableConstantAccess(true);
+        }
     }
 
     void PgRCManager::validateAllPgs() {
@@ -782,6 +802,7 @@ namespace PgTools {
             }
             string read;
             uint_reads_cnt_max idx = orgIdx2rlIdx[i];
+            //uint_reads_cnt_max idx = (i % 2) * (readsTotalCount / 2) + (i / 2);
             if (validated[idx]) {
                 notValidatedCount++;
                 continue;
@@ -789,10 +810,14 @@ namespace PgTools {
             validated[idx] = true;
             if (idx < hqReadsCount)
                 read = hqPg->getRead(idx);
-            else if (idx < nonNPgReadsCount)
-                read = lqPg->getRead(idx - hqReadsCount);
-            else
-                read = nPg->getRead(idx - nonNPgReadsCount);
+            else {
+                if (idx < nonNPgReadsCount)
+                    read = lqPg->getRead(idx - hqReadsCount);
+                else
+                    read = nPg->getRead(idx - nonNPgReadsCount);
+                if (!singleReadsMode && !ignorePairOrderInformation && (i % 2 == 1))
+                    PgSAHelpers::reverseComplementInPlace(read);
+            }
             if (read != allReadsIterator->getRead())
                 errorsCount++;
         }
@@ -879,27 +904,33 @@ namespace PgTools {
             cout << "Order validation successful!" << endl;
     }
 
-    void PgRCManager::applyRevComplPairFileToPgs() {
-        if (!lqPg->getReadsList()->isRevCompEnabled())
-            lqPg->getReadsList()->revComp.resize(lqPg->getReadsSetProperties()->readsCount, false);
-        if (!nPg->getReadsList()->isRevCompEnabled())
-            nPg->getReadsList()->revComp.resize(nPg->getReadsSetProperties()->readsCount, false);
-
-        for (uint_reads_cnt_max i = 1; i < readsTotalCount; i += 2) {
-            uint_reads_cnt_std idx = rlIdxOrder[i];
-            SeparatedPseudoGenome* pg;
-            if (idx < hqReadsCount)
-                pg = hqPg;
-            else if (idx < nonNPgReadsCount) {
-                pg = lqPg;
-                idx -= hqReadsCount;
-            } else {
-                pg = nPg;
-                idx -= nonNPgReadsCount;
+    template<typename uint_pg_len>
+    void PgRCManager::applyRevComplPairFileToPgs(vector<uint_pg_len> &orgIdx2PgPos) {
+        if (preserveOrderMode) {
+            uint_reads_cnt_std hqRlIdx = 0;
+            const uint_reads_cnt_max pairsCount = readsTotalCount / 2;
+            for (uint_reads_cnt_max i = 0; i < pairsCount; i++) {
+                    uint_pg_len pgPos = orgIdx2PgPos[i];
+                    if (pgPos < hqPgLen)
+                        hqRlIdx++;
             }
-            pg->getReadsList()->revComp[idx] = !pg->getReadsList()->revComp[idx];
+            for (uint_reads_cnt_max i = pairsCount; i < readsTotalCount; i++) {
+                uint_pg_len pgPos = orgIdx2PgPos[i];
+                if (pgPos < hqPgLen) {
+                    hqPg->getReadsList()->revComp[hqRlIdx] = !hqPg->getReadsList()->revComp[hqRlIdx];
+                    hqRlIdx++;
+                }
+            }
+        } else {
+            for (uint_reads_cnt_max i = 1; i < readsTotalCount; i += 2) {
+                uint_reads_cnt_std idx = rlIdxOrder[i];
+                if (idx < hqReadsCount)
+                    hqPg->getReadsList()->revComp[idx] = !hqPg->getReadsList()->revComp[idx];
+            }
         }
     }
+    template void PgRCManager::applyRevComplPairFileToPgs<uint_pg_len_std>(vector<uint_pg_len_std> &orgIdx2PgPos);
+    template void PgRCManager::applyRevComplPairFileToPgs<uint_pg_len_max>(vector<uint_pg_len_max> &orgIdx2PgPos);
 
     void PgRCManager::loadAllPgs(istream& pgrcIn) {
         clock_t start_t = clock();
@@ -944,13 +975,12 @@ namespace PgTools {
         nonNPgLen = hqPgLen + lqPgh.getPseudoGenomeLength();
         if (preserveOrderMode) {
             isJoinedPgLengthStd = nonNPgLen + nPgh.getPseudoGenomeLength() <= UINT32_MAX;
-            if (isJoinedPgLengthStd) {
-                orgIdx2StdPgPos.reserve(readsTotalCount);
-                SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(pgrcIn, orgIdx2StdPgPos, pairFastqFile.empty());
-            } else {
-                orgIdx2PgPos.reserve(readsTotalCount);
-                SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_max>(pgrcIn, orgIdx2PgPos, pairFastqFile.empty());
-            }
+            if (isJoinedPgLengthStd)
+                SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(pgrcIn, orgIdx2StdPgPos,
+                        readsTotalCount, singleReadsMode);
+            else
+                SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_max>(pgrcIn, orgIdx2PgPos,
+                        readsTotalCount, singleReadsMode);
         } else {
             SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder,
                                                                    preserveOrderMode, ignorePairOrderInformation, singleReadsMode);

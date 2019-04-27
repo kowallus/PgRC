@@ -337,7 +337,8 @@ namespace PgTools {
 
         void decompressPgRC();
 
-        void applyRevComplPairFileToPgs();
+        template<typename uint_pg_len>
+        void applyRevComplPairFileToPgs(vector<uint_pg_len> &orgIdx2PgPos);
 
         const size_t CHUNK_SIZE_IN_BYTES = 100000;
 
@@ -365,6 +366,8 @@ namespace PgTools {
 
         const vector<uint_reads_cnt_max> getAllPgsOrgIdxs2RlIdx() const;
         const uint_reads_cnt_max getAllPgsOrgIdx(uint_reads_cnt_max idx) const;
+
+        void preparePgsForValidation() const;
     };
 }
 
