@@ -209,8 +209,10 @@ namespace PgTools {
         comboPgSeq.reserve(comboPgSeq.size() + lqPgSequence.size() + nPgSequence.size());
         comboPgSeq.append(lqPgSequence);
         lqPgSequence.clear();
+        lqPgSequence.shrink_to_fit();
         comboPgSeq.append(nPgSequence);
         nPgSequence.clear();
+        nPgSequence.shrink_to_fit();
 
         cout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
         writeCompressed(pgrcOut, comboPgSeq.data(), comboPgSeq.size(), LZMA_CODER, coder_level,
@@ -242,6 +244,8 @@ namespace PgTools {
     void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen, string &hqPgSequence, string &lqPgSequence,
             string &nPgSequence) {
         uint_pg_len_max hqPgMappedLen, lqPgMappedLen, nPgMappedLen;
+        string pgMapOff, pgMapLen;
+        istringstream pgMapOffSrc, pgMapLenSrc;
         PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, hqPgMappedLen, false);
         PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, lqPgMappedLen, false);
         PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, nPgMappedLen, false);
@@ -249,34 +253,34 @@ namespace PgTools {
         readCompressed(pgrcIn, comboPgMapped);
         string nPgMapped(comboPgMapped, hqPgMappedLen + lqPgMappedLen);
         comboPgMapped.resize(hqPgMappedLen + lqPgMappedLen);
-        string lqPgMapped(comboPgMapped, hqPgMappedLen);
-        comboPgMapped.resize(hqPgMappedLen);
-        string hqPgMapped = std::move(comboPgMapped);
-        string pgMapOff, pgMapLen;
-        readCompressed(pgrcIn, pgMapOff);
-        readCompressed(pgrcIn, pgMapLen);
-        istringstream pgMapOffSrc, pgMapLenSrc;
-        pgMapOffSrc.str(pgMapOff);
-        pgMapLenSrc.str(pgMapLen);
-        hqPgSequence.clear();
-        hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
-                                                  true, false, true);
-        hqPgMapped.clear();
-        readCompressed(pgrcIn, pgMapOff);
-        readCompressed(pgrcIn, pgMapLen);
-        pgMapOffSrc.str(pgMapOff);
-        pgMapLenSrc.str(pgMapLen);
-        lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
-                                                         true, false);
-        lqPgMapped.clear();
+        {
+            string lqPgMapped(comboPgMapped, hqPgMappedLen);
+            comboPgMapped.resize(hqPgMappedLen);
+            comboPgMapped.shrink_to_fit();
+            {
+                string hqPgMapped = std::move(comboPgMapped);
+                readCompressed(pgrcIn, pgMapOff);
+                readCompressed(pgrcIn, pgMapLen);
+                pgMapOffSrc.str(pgMapOff);
+                pgMapLenSrc.str(pgMapLen);
+                hqPgSequence.clear();
+                hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
+                                                                 true, false, true);
+            }
+            readCompressed(pgrcIn, pgMapOff);
+            readCompressed(pgrcIn, pgMapLen);
+            pgMapOffSrc.str(pgMapOff);
+            pgMapLenSrc.str(pgMapLen);
+            lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
+                                                             true, false);
+        }
         if (nPgMappedLen) {
             readCompressed(pgrcIn, pgMapOff);
             readCompressed(pgrcIn, pgMapLen);
             pgMapOffSrc.str(pgMapOff);
             pgMapLenSrc.str(pgMapLen);
             nPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, nPgMapped, pgMapOffSrc, pgMapLenSrc,
-                                                             true, false);
-            nPgMapped.clear();
+                                                            true, false);
         }
     }
 
