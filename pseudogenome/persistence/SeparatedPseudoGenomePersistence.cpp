@@ -403,40 +403,41 @@ namespace PgTools {
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
         } else {
             vector<uint_pg_len> basePairPos;
-            vector<uint8_t> deltaInUint8Flag;
+            vector<uint8_t> deltaInUint16Flag;
             vector<uint8_t> deltaIsBaseFirstFlag;
-            vector<uint8_t> deltaInUint8Value;
+            vector<uint16_t> deltaInUint16Value;
             vector<uint_pg_len> notBasePairPos;
             basePairPos.reserve(readsTotalCount / 2);
-            deltaInUint8Flag.reserve(readsTotalCount / 2);
+            deltaInUint16Flag.reserve(readsTotalCount / 2);
             deltaIsBaseFirstFlag.reserve(readsTotalCount / 2);
-            deltaInUint8Value.reserve(readsTotalCount / 2);
+            deltaInUint16Value.reserve(readsTotalCount / 2);
             notBasePairPos.reserve(readsTotalCount / 8);
+
             for (uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
                 basePairPos.push_back(orgIdx2PgPos[i]);
                 bool isBaseBefore = orgIdx2PgPos[i] < orgIdx2PgPos[i + 1];
                 uint_pg_len delta = isBaseBefore?(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]):
                                     orgIdx2PgPos[i] - orgIdx2PgPos[i + 1];
-                const bool isDeltaInUint8 = delta <= UINT8_MAX;
-                deltaInUint8Flag.push_back(isDeltaInUint8 ? 1 : 0);
-                if (isDeltaInUint8) {
+                const bool isDeltaInUint16 = delta < (1 << 12);
+                deltaInUint16Flag.push_back(isDeltaInUint16 ? 1 : 0);
+                if (isDeltaInUint16) {
                     deltaIsBaseFirstFlag.push_back(isBaseBefore?1:0);
-                    deltaInUint8Value.push_back((uint8_t) delta);
+                    deltaInUint16Value.push_back((uint16_t) delta);
                 } else
                     notBasePairPos.push_back(orgIdx2PgPos[i + 1]);
             }
             cout << "Base pair position... ";
             writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
-            cout << "Uint8 delta of pair positions (flag)... ";
-            writeCompressed(pgrcOut, (char *) deltaInUint8Flag.data(), deltaInUint8Flag.size() * sizeof(uint8_t),
+            cout << "Uint16 delta of pair positions (flag)... ";
+            writeCompressed(pgrcOut, (char *) deltaInUint16Flag.data(), deltaInUint16Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Is uint8 delta of pair positions positive (flag)... ";
+            cout << "Is uint16 delta of pair positions positive (flag)... ";
             writeCompressed(pgrcOut, (char *) deltaIsBaseFirstFlag.data(), deltaIsBaseFirstFlag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Uint8 delta of pair positions (value)... ";
-            writeCompressed(pgrcOut, (char*) deltaInUint8Value.data(), deltaInUint8Value.size() * sizeof(uint8_t),
-                    LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t);
+            cout << "Uint16 delta of pair positions (value)... ";
+            writeCompressed(pgrcOut, (char*) deltaInUint16Value.data(), deltaInUint16Value.size() * sizeof(uint16_t),
+                            PPMD7_CODER, coder_level, 3);
             cout << "Not-base pair position... ";
             writeCompressed(pgrcOut, (char *) notBasePairPos.data(), notBasePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
@@ -444,13 +445,13 @@ namespace PgTools {
         cout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl << endl;
     }
     template void SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_std>(ostream &pgrcOut,
-            vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
+                                                                                              vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
     template void SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_max>(ostream &pgrcOut,
-            vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
+                                                                                              vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
 
     template <typename uint_pg_len>
     void SeparatedPseudoGenomePersistence::decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos,
-            uint_reads_cnt_std readsTotalCount, bool singleFileMode) {
+                                                                          uint_reads_cnt_std readsTotalCount, bool singleFileMode) {
         if (singleFileMode)
             readCompressed(pgrcIn, pgPos);
         else {
@@ -480,6 +481,14 @@ namespace PgTools {
                 }
                 deltaInUint8Flag.pop_back();
             }
+
+            vector<uint_pg_len_max> orgIdx2PgPos;
+            for(uint_reads_cnt_std i = 0; i < pairsCount; i++) {
+                orgIdx2PgPos.push_back(pgPos[i]);
+                orgIdx2PgPos.push_back(pgPos[i + pairsCount]);
+            }
+            ostringstream out;
+            compressReadsPgPositions<uint_pg_len>(out, orgIdx2PgPos, INT32_MAX, 2, false);
         }
     }
     template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(istream &pgrcIn, vector<uint_pg_len_std> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
