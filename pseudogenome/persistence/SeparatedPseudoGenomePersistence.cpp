@@ -698,18 +698,17 @@ namespace PgTools {
 
     void SeparatedPseudoGenomeOutputBuilder::compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level,
             bool transposeMode) {
-        const uint8_t MISMATCHES_COUNT_DESTS_LIMIT = coder_level == PGRC_CODER_LEVEL_FAST?1:12;
-        PgSAHelpers::writeValue<uint8_t>(pgrcOut, MISMATCHES_COUNT_DESTS_LIMIT);
-        if (MISMATCHES_COUNT_DESTS_LIMIT == 1) {
+        uint8_t mismatches_dests_count = coder_level == PGRC_CODER_LEVEL_FAST?1:(UINT8_MAX-1);
+        if (mismatches_dests_count == 1) {
+            PgSAHelpers::writeValue<uint8_t>(pgrcOut, 1);
             compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
             return;
         }
         vector<uint8_t> misCnt2DestIdx; // NOT-TESTED => {0, 1, 2, 3, 4, 5, 6, 7, 7, 9, 9, 9 };
-        misCnt2DestIdx.insert(misCnt2DestIdx.end(), UINT8_MAX, MISMATCHES_COUNT_DESTS_LIMIT);
-        for(uint8_t m = 1; m < MISMATCHES_COUNT_DESTS_LIMIT; m++) {
+        misCnt2DestIdx.insert(misCnt2DestIdx.end(), UINT8_MAX, mismatches_dests_count);
+        for(uint8_t m = 1; m < mismatches_dests_count; m++)
             misCnt2DestIdx[m] = m;
-            PgSAHelpers::writeValue<uint8_t>(pgrcOut, misCnt2DestIdx[m]);
-        }
+
         ostringstream dests[UINT8_MAX];
         istringstream misRevOffSrc(((ostringstream*) rlMisRevOffDest)->str());
         istringstream misCntSrc(((ostringstream*) rlMisCntDest)->str());
@@ -726,7 +725,7 @@ namespace PgTools {
 
 
         if (transposeMode) {
-            for (uint8_t d = 1; d < MISMATCHES_COUNT_DESTS_LIMIT; d++) {
+            for (uint8_t d = 1; d < mismatches_dests_count; d++) {
                 if (misCnt2DestIdx[d] == misCnt2DestIdx[d - 1] || misCnt2DestIdx[d] == misCnt2DestIdx[d + 1])
                     continue;
                 string matrix = dests[d].str();
@@ -737,8 +736,12 @@ namespace PgTools {
                     dests[d].str(transpose<uint16_t>(matrix, readsCount, d));
             }
         }
-
-        for(uint8_t m = 1; m <= MISMATCHES_COUNT_DESTS_LIMIT; m++) {
+        while (mismatches_dests_count > 0 && dests[mismatches_dests_count].tellp() == 0)
+            mismatches_dests_count--;
+        PgSAHelpers::writeValue<uint8_t>(pgrcOut, mismatches_dests_count);
+        for(uint8_t m = 1; m < mismatches_dests_count; m++)
+            PgSAHelpers::writeValue<uint8_t>(pgrcOut, misCnt2DestIdx[m]);
+        for(uint8_t m = 1; m <= mismatches_dests_count; m++) {
             cout << (int) m << ": ";
             compressDest(&dests[m], pgrcOut, PPMD7_CODER, coder_level, 2);
         }
@@ -909,10 +912,10 @@ namespace PgTools {
         if (sPg->isReadLengthMin())
             bytePerReadLengthMode = true;
         setReadsSourceIterator(sPg->getReadsList());
-        writeReadsFromIterator();
-
         if (pgh == 0)
             pgh = new PseudoGenomeHeader(sPg);
+        writeReadsFromIterator();
+
         if (rsProp == 0)
             rsProp = new ReadsSetProperties(*(sPg->getReadsSetProperties()));
         if (pgh->getReadsCount() != readsCounter) {
