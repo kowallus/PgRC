@@ -51,7 +51,8 @@ namespace PgTools {
         static void writePseudoGenomeSequence(string &pgSequence, string pgPrefix);
 
         template <typename uint_pg_len>
-        static void compressReadsPgPositions(ostream &pgrcOut, vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
+        static void compressReadsPgPositions(ostream &pgrcOut, vector<uint_pg_len_max> orgIdx2PgPos,
+                uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode, bool deltaPairEncodingEnabled = false);
         template <typename uint_pg_len>
         static void decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
     };

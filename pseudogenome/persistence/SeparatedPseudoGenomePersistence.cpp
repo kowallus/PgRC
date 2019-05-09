@@ -226,7 +226,7 @@ namespace PgTools {
             if (!ignorePairOrderInformation)
                 pairBaseFileFlag.reserve(readsCount / 2);
 
-            // coding reads list index offset of paired read
+            // coding reads list index relative offset of paired read
             vector<uint8_t> offsetInUint8Flag;
             offsetInUint8Flag.reserve(readsCount / 2);
             vector<uint8_t> offsetInUint8Value;
@@ -253,42 +253,42 @@ namespace PgTools {
                     revPairBaseOrgIdx[orgIdx / 2] = offsetInUint8Flag.size() * 2 + orgIdx % 2;
                 else if (!ignorePairOrderInformation)
                     pairBaseFileFlag.push_back(orgIdx % 2);
-                int64_t pairOffset = i2 - i1;
-                offsetInUint8Flag.push_back((uint8_t) (pairOffset <= UINT8_MAX));
-                if (pairOffset <= UINT8_MAX) {
-                    offsetInUint8Value.push_back((uint8_t) pairOffset);
+                int64_t pairRelativeOffset = i2 - i1;
+                offsetInUint8Flag.push_back((uint8_t) (pairRelativeOffset <= UINT8_MAX));
+                if (pairRelativeOffset <= UINT8_MAX) {
+                    offsetInUint8Value.push_back((uint8_t) pairRelativeOffset);
                     continue;
                 }
-                const int64_t delta = pairOffset - refPrev;
+                const int64_t delta = pairRelativeOffset - refPrev;
                 const bool isDeltaInInt8 = delta <= INT8_MAX && delta >= INT8_MIN;
                 deltaInInt8Flag.push_back((uint8_t) isDeltaInInt8);
                 if (isDeltaInInt8) {
                     match = true;
                     deltaInInt8Value.push_back((int8_t) delta);
-                    refPrev = pairOffset;
+                    refPrev = pairRelativeOffset;
                 } else {
                     if (!match || refPrev != prev)
-                        refPrev = pairOffset;
-                    fullOffset.push_back(pairOffset);
+                        refPrev = pairRelativeOffset;
+                    fullOffset.push_back(pairRelativeOffset);
                     match = false;
                 }
-                prev = pairOffset;
+                prev = pairRelativeOffset;
             }
 
-            cout << "Uint8 reads list offsets of pair reads (flag)... ";
+            cout << "Uint8 reads list relative offsets of pair reads (flag)... ";
             writeCompressed(pgrcOut, (char *) offsetInUint8Flag.data(), offsetInUint8Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Uint8 reads list offsets of pair reads (value)... ";
+            cout << "Uint8 reads list relative offsets of pair reads (value)... ";
             writeCompressed(pgrcOut, (char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 2);
-            cout << "Offsets deltas of pair reads (flag)... ";
+            cout << "Relative offsets deltas of pair reads (flag)... ";
             writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Offsets deltas of pair reads (value)... ";
+            cout << "Relative offsets deltas of pair reads (value)... ";
             writeCompressed(pgrcOut, (char*) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(uint8_t),
                             LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t);
 //            writeCompressed(pgrcOut, (char *) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(int8_t), PPMD7_CODER, coder_level, 2);
-            cout << "Full reads list offsets of pair reads ... ";
+            cout << "Full reads list relative offsets of pair reads ... ";
             double estimated_reads_ratio = simpleUintCompressionEstimate(readsCount, readsCount <= UINT32_MAX?UINT32_MAX:UINT64_MAX);
             writeCompressed(pgrcOut, (char *) fullOffset.data(), fullOffset.size() * sizeof(uint_reads_cnt_std),
                             LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
@@ -387,7 +387,8 @@ namespace PgTools {
 
     template <typename uint_pg_len>
     void SeparatedPseudoGenomePersistence::compressReadsPgPositions(ostream &pgrcOut,
-            vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode) {
+            vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level,
+            bool singleFileMode, bool deltaPairEncodingEnabled) {
         clock_checkpoint();
         uint_reads_cnt_std readsTotalCount = orgIdx2PgPos.size();
         int lzma_pos_dataperiod_param = sizeof(uint_pg_len) == 4 ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
@@ -403,16 +404,25 @@ namespace PgTools {
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
         } else {
             vector<uint_pg_len> basePairPos;
-            vector<uint8_t> deltaInUint16Flag;
+            // pair relative offset info
+            vector<uint8_t> offsetInUint16Flag;
+            vector<uint8_t> offsetIsBaseFirstFlag;
+            vector<uint16_t> offsetInUint16Value;
+            vector<uint8_t> deltaInInt16Flag;
             vector<uint8_t> deltaIsBaseFirstFlag;
-            vector<uint16_t> deltaInUint16Value;
+            vector<int16_t> deltaInInt16Value;
             vector<uint_pg_len> notBasePairPos;
             const uint_reads_cnt_std pairsCount = readsTotalCount / 2;
             basePairPos.reserve(pairsCount);
-            deltaInUint16Flag.reserve(pairsCount);
-            deltaIsBaseFirstFlag.reserve(readsTotalCount / 2);
-            deltaInUint16Value.reserve(readsTotalCount / 2);
-            notBasePairPos.reserve(readsTotalCount / 8);
+            offsetInUint16Flag.reserve(pairsCount);
+            offsetIsBaseFirstFlag.reserve(pairsCount);
+            offsetInUint16Value.reserve(pairsCount);
+            if (deltaPairEncodingEnabled) {
+                deltaInInt16Flag.reserve(pairsCount / 2);
+                deltaIsBaseFirstFlag.reserve(pairsCount / 8);
+                deltaInInt16Value.reserve(pairsCount / 8);
+            }
+            notBasePairPos.reserve(pairsCount / 4);
 
             vector<uint_reads_cnt_std> bppRank;
             bppRank.reserve(pairsCount);
@@ -424,31 +434,67 @@ namespace PgTools {
                     [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                         { return basePairPos[idx1] < basePairPos[idx2]; });
             cout << "... reordering bases checkpoint: " << clock_millis() << " msec. " << endl;
+            int64_t refPrev = 0;
+            int64_t prev = 0;
+            bool match = false;
             for (uint_reads_cnt_std p = 0; p < pairsCount; p++) {
                 uint_reads_cnt_std i = bppRank[p] * 2;
+
                 bool isBaseBefore = orgIdx2PgPos[i] < orgIdx2PgPos[i + 1];
-                uint_pg_len delta = isBaseBefore?(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]):
+                uint_pg_len relativeAbsOffset = isBaseBefore?(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]):
                                     orgIdx2PgPos[i] - orgIdx2PgPos[i + 1];
-                const bool isDeltaInUint16 = delta <= UINT16_MAX;
-                deltaInUint16Flag.push_back(isDeltaInUint16 ? 1 : 0);
-                if (isDeltaInUint16) {
-                    deltaIsBaseFirstFlag.push_back(isBaseBefore?1:0);
-                    deltaInUint16Value.push_back((uint16_t) delta);
-                } else
-                    notBasePairPos.push_back(orgIdx2PgPos[i + 1]);
+                const bool isOffsetInUint16 = relativeAbsOffset <= UINT16_MAX;
+                offsetInUint16Flag.push_back(isOffsetInUint16 ? 1 : 0);
+                if (isOffsetInUint16) {
+                    offsetIsBaseFirstFlag.push_back(isBaseBefore?1:0);
+                    offsetInUint16Value.push_back((uint16_t) relativeAbsOffset);
+                    continue;
+                }
+                if (deltaPairEncodingEnabled) {
+                    const int64_t delta = relativeAbsOffset - refPrev;
+                    const bool isDeltaInInt16 = delta <= INT16_MAX && delta >= INT16_MIN;
+                    deltaInInt16Flag.push_back((uint8_t) isDeltaInInt16);
+                    if (isDeltaInInt16) {
+                        match = true;
+                        deltaIsBaseFirstFlag.push_back(isBaseBefore ? 1 : 0);
+                        deltaInInt16Value.push_back((int16_t) delta);
+                        refPrev = relativeAbsOffset;
+                    } else {
+                        if (!match || refPrev != prev)
+                            refPrev = relativeAbsOffset;
+                        notBasePairPos.push_back((uint_pg_len) orgIdx2PgPos[i + 1]);
+                        match = false;
+                    }
+                    prev = relativeAbsOffset;
+                } else {
+                    notBasePairPos.push_back((uint_pg_len) orgIdx2PgPos[i + 1]);
+                }
             }
+            pgrcOut.put(deltaPairEncodingEnabled);
             cout << "Base pair position... ";
             writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
-            cout << "Uint16 delta of pair positions (flag)... ";
-            writeCompressed(pgrcOut, (char *) deltaInUint16Flag.data(), deltaInUint16Flag.size() * sizeof(uint8_t),
+            cout << "Uint16 relative offset of pair positions (flag)... ";
+            writeCompressed(pgrcOut, (char *) offsetInUint16Flag.data(), offsetInUint16Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Is uint16 delta of pair positions positive (flag)... ";
-            writeCompressed(pgrcOut, (char *) deltaIsBaseFirstFlag.data(), deltaIsBaseFirstFlag.size() * sizeof(uint8_t),
+            cout << "Is uint16 relative offset of pair positions positive (flag)... ";
+            writeCompressed(pgrcOut, (char *) offsetIsBaseFirstFlag.data(), offsetIsBaseFirstFlag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Uint16 delta of pair positions (value)... ";
-            writeCompressed(pgrcOut, (char*) deltaInUint16Value.data(), deltaInUint16Value.size() * sizeof(uint16_t),
+            cout << "Uint16 relative offset of pair positions (value)... ";
+            writeCompressed(pgrcOut, (char*) offsetInUint16Value.data(), offsetInUint16Value.size() * sizeof(uint16_t),
                             PPMD7_CODER, coder_level, 3);
+            if (deltaPairEncodingEnabled) {
+                cout << "Relative offset deltas of pair positions (flag)... ";
+                writeCompressed(pgrcOut, (char *) deltaInInt16Flag.data(), deltaInInt16Flag.size() * sizeof(uint8_t),
+                                PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cout << "Is relative offset (for deltas stream) of pair positions positive (flag)... ";
+                writeCompressed(pgrcOut, (char *) deltaIsBaseFirstFlag.data(),
+                                deltaIsBaseFirstFlag.size() * sizeof(uint8_t),
+                                PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cout << "Relative offset deltas of pair positions (value)... ";
+                writeCompressed(pgrcOut, (char *) deltaInInt16Value.data(), deltaInInt16Value.size() * sizeof(int16_t),
+                                PPMD7_CODER, coder_level, 3);
+            }
             cout << "Not-base pair position... ";
             writeCompressed(pgrcOut, (char *) notBasePairPos.data(), notBasePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
@@ -456,9 +502,11 @@ namespace PgTools {
         cout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl << endl;
     }
     template void SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_std>(ostream &pgrcOut,
-                                                                                              vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
+            vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level,
+            bool singleFileMode, bool deltaPairEncodingEnabled);
     template void SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_max>(ostream &pgrcOut,
-                                                                                              vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode);
+            vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level,
+            bool singleFileMode, bool deltaPairEncodingEnabled);
 
     template <typename uint_pg_len>
     void SeparatedPseudoGenomePersistence::decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos,
@@ -466,40 +514,43 @@ namespace PgTools {
         if (singleFileMode)
             readCompressed(pgrcIn, pgPos);
         else {
-            vector<uint8_t> deltaInUint8Flag;
-            vector<uint8_t> deltaIsBaseFirstFlag;
-            vector<uint8_t> deltaInUint8Value;
+            bool deltaPairEncodingEnabled = (bool) pgrcIn.get();
+            if (deltaPairEncodingEnabled) {
+                fprintf(stderr, "ERROR: Unsupported reads Pg positions encoding mode: deltaPairEncoding!");
+                exit(EXIT_FAILURE);
+            }
+            vector<uint8_t> offsetInUint16Flag;
+            vector<uint8_t> offsetIsBaseFirstFlag;
+            vector<uint16_t> offsetInUint16Value;
             vector<uint_pg_len> notBasePairPos;
             pgPos.reserve(readsTotalCount);
             readCompressed(pgrcIn, pgPos);
-            readCompressed(pgrcIn, deltaInUint8Flag);
-            readCompressed(pgrcIn, deltaIsBaseFirstFlag);
-            readCompressed(pgrcIn, deltaInUint8Value);
+            readCompressed(pgrcIn, offsetInUint16Flag);
+            readCompressed(pgrcIn, offsetIsBaseFirstFlag);
+            readCompressed(pgrcIn, offsetInUint16Value);
             readCompressed(pgrcIn, notBasePairPos);
-            pgPos.resize(readsTotalCount);
             const uint_reads_cnt_std pairsCount = readsTotalCount / 2;
-            for (uint_reads_cnt_std p = pairsCount; p-- > 0;) {
-                if (deltaInUint8Flag.back() == 1) {
-                    int delta = deltaInUint8Value.back();
-                    deltaInUint8Value.pop_back();
-                    if (deltaIsBaseFirstFlag.back() == 0)
-                        delta = -delta;
-                    deltaIsBaseFirstFlag.pop_back();
-                    pgPos[pairsCount + p] = pgPos[p] + delta;
-                } else {
-                    pgPos[pairsCount + p] = notBasePairPos.back();
-                    notBasePairPos.pop_back();
-                }
-                deltaInUint8Flag.pop_back();
-            }
+            vector<uint_reads_cnt_std> bppRank;
+            bppRank.reserve(pairsCount);
+            for (uint_reads_cnt_std p = 0; p < pairsCount; p++)
+                bppRank.push_back(p);
+            std::stable_sort(bppRank.begin(), bppRank.end(),
+                             [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
+                             { return pgPos[idx1] < pgPos[idx2]; });
 
-            vector<uint_pg_len_max> orgIdx2PgPos;
-            for(uint_reads_cnt_std i = 0; i < pairsCount; i++) {
-                orgIdx2PgPos.push_back(pgPos[i]);
-                orgIdx2PgPos.push_back(pgPos[i + pairsCount]);
+            pgPos.resize(readsTotalCount);
+            int64_t offIdx = -1;
+            int64_t nbpPosIdx = -1;
+            for (uint_reads_cnt_std i = 0; i < pairsCount; i++) {
+                uint_reads_cnt_std p = bppRank[i];
+                if (offsetInUint16Flag[i] == 1) {
+                    int delta = offsetInUint16Value[++offIdx];
+                    if (offsetIsBaseFirstFlag[offIdx] == 0)
+                        delta = -delta;
+                    pgPos[pairsCount + p] = pgPos[p] + delta;
+                } else
+                    pgPos[pairsCount + p] = notBasePairPos[++nbpPosIdx];
             }
-            ostringstream out;
-            compressReadsPgPositions<uint_pg_len>(out, orgIdx2PgPos, INT32_MAX, 2, false);
         }
     }
     template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(istream &pgrcIn, vector<uint_pg_len_std> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
