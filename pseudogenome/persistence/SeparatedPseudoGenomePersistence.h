@@ -52,7 +52,7 @@ namespace PgTools {
 
         template <typename uint_pg_len>
         static void compressReadsPgPositions(ostream &pgrcOut, vector<uint_pg_len_max> orgIdx2PgPos,
-                uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode, bool deltaPairEncodingEnabled = false);
+                uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode, bool deltaPairEncodingEnabled = true);
         template <typename uint_pg_len>
         static void decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
     };

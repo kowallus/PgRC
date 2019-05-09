@@ -515,19 +515,23 @@ namespace PgTools {
             readCompressed(pgrcIn, pgPos);
         else {
             bool deltaPairEncodingEnabled = (bool) pgrcIn.get();
-            if (deltaPairEncodingEnabled) {
-                fprintf(stderr, "ERROR: Unsupported reads Pg positions encoding mode: deltaPairEncoding!");
-                exit(EXIT_FAILURE);
-            }
             vector<uint8_t> offsetInUint16Flag;
             vector<uint8_t> offsetIsBaseFirstFlag;
             vector<uint16_t> offsetInUint16Value;
+            vector<uint8_t> deltaInInt16Flag;
+            vector<uint8_t> deltaIsBaseFirstFlag;
+            vector<int16_t> deltaInInt16Value;
             vector<uint_pg_len> notBasePairPos;
             pgPos.reserve(readsTotalCount);
             readCompressed(pgrcIn, pgPos);
             readCompressed(pgrcIn, offsetInUint16Flag);
             readCompressed(pgrcIn, offsetIsBaseFirstFlag);
             readCompressed(pgrcIn, offsetInUint16Value);
+            if (deltaPairEncodingEnabled) {
+                readCompressed(pgrcIn, deltaInInt16Flag);
+                readCompressed(pgrcIn, deltaIsBaseFirstFlag);
+                readCompressed(pgrcIn, deltaInInt16Value);
+            }
             readCompressed(pgrcIn, notBasePairPos);
             const uint_reads_cnt_std pairsCount = readsTotalCount / 2;
             vector<uint_reads_cnt_std> bppRank;
@@ -539,17 +543,40 @@ namespace PgTools {
                              { return pgPos[idx1] < pgPos[idx2]; });
 
             pgPos.resize(readsTotalCount);
+            int64_t nbpPos = 0;
             int64_t offIdx = -1;
+            int64_t delFlagIdx = -1;
+            int64_t delIdx = -1;
             int64_t nbpPosIdx = -1;
+            int64_t refPrev = 0;
+            int64_t prev = 0;
+            bool match = false;
             for (uint_reads_cnt_std i = 0; i < pairsCount; i++) {
                 uint_reads_cnt_std p = bppRank[i];
                 if (offsetInUint16Flag[i] == 1) {
-                    int delta = offsetInUint16Value[++offIdx];
+                    int64_t delta = offsetInUint16Value[++offIdx];
                     if (offsetIsBaseFirstFlag[offIdx] == 0)
                         delta = -delta;
-                    pgPos[pairsCount + p] = pgPos[p] + delta;
-                } else
-                    pgPos[pairsCount + p] = notBasePairPos[++nbpPosIdx];
+                    nbpPos = pgPos[p] + delta;
+                } else if (deltaInInt16Flag[++delFlagIdx]){
+                    int64_t delta = refPrev + deltaInInt16Value[++delIdx];
+                    refPrev = delta;
+                    prev = delta;
+                    if (deltaIsBaseFirstFlag[delIdx] == 0)
+                        delta = -delta;
+                    nbpPos = pgPos[p] + delta;
+                    match = true;
+                } else {
+                    nbpPos = notBasePairPos[++nbpPosIdx];
+                    int64_t delta = nbpPos - pgPos[p];
+                    if (delta < 0)
+                        delta = -delta;
+                    if (!match || refPrev != prev)
+                        refPrev = delta;
+                    match = false;
+                    prev = delta;
+                }
+                pgPos[pairsCount + p] = nbpPos;
             }
         }
     }
