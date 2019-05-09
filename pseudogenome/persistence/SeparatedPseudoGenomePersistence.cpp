@@ -407,18 +407,29 @@ namespace PgTools {
             vector<uint8_t> deltaIsBaseFirstFlag;
             vector<uint16_t> deltaInUint16Value;
             vector<uint_pg_len> notBasePairPos;
-            basePairPos.reserve(readsTotalCount / 2);
-            deltaInUint16Flag.reserve(readsTotalCount / 2);
+            const uint_reads_cnt_std pairsCount = readsTotalCount / 2;
+            basePairPos.reserve(pairsCount);
+            deltaInUint16Flag.reserve(pairsCount);
             deltaIsBaseFirstFlag.reserve(readsTotalCount / 2);
             deltaInUint16Value.reserve(readsTotalCount / 2);
             notBasePairPos.reserve(readsTotalCount / 8);
 
+            vector<uint_reads_cnt_std> bppRank;
+            bppRank.reserve(pairsCount);
             for (uint_reads_cnt_std i = 0; i < readsTotalCount; i += 2) {
                 basePairPos.push_back(orgIdx2PgPos[i]);
+                bppRank.push_back(i >> 1);
+            }
+            std::stable_sort(bppRank.begin(), bppRank.end(),
+                    [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
+                        { return basePairPos[idx1] < basePairPos[idx2]; });
+            cout << "... reordering bases checkpoint: " << clock_millis() << " msec. " << endl;
+            for (uint_reads_cnt_std p = 0; p < pairsCount; p++) {
+                uint_reads_cnt_std i = bppRank[p] * 2;
                 bool isBaseBefore = orgIdx2PgPos[i] < orgIdx2PgPos[i + 1];
                 uint_pg_len delta = isBaseBefore?(orgIdx2PgPos[i + 1] - orgIdx2PgPos[i]):
                                     orgIdx2PgPos[i] - orgIdx2PgPos[i + 1];
-                const bool isDeltaInUint16 = delta < (1 << 12);
+                const bool isDeltaInUint16 = delta <= UINT16_MAX;
                 deltaInUint16Flag.push_back(isDeltaInUint16 ? 1 : 0);
                 if (isDeltaInUint16) {
                     deltaIsBaseFirstFlag.push_back(isBaseBefore?1:0);
