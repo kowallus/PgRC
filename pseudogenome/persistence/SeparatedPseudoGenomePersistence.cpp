@@ -222,9 +222,12 @@ namespace PgTools {
             if (completeOrderInfo)
                 revPairBaseOrgIdx.resize(readsCount / 2);
             // flag indicating a processed pair base file (0 - Second, 1 - First)
-            vector<uint8_t> pairBaseFileFlag;
-            if (!ignorePairOrderInformation)
-                pairBaseFileFlag.reserve(readsCount / 2);
+            vector<uint8_t> offsetPairBaseFileFlag;
+            vector<uint8_t> nonOffsetPairBaseFileFlag;
+            if (!ignorePairOrderInformation) {
+                offsetPairBaseFileFlag.reserve(readsCount / 2);
+                nonOffsetPairBaseFileFlag.reserve(readsCount / 4);
+            }
 
             // coding reads list index relative offset of paired read
             vector<uint8_t> offsetInUint8Flag;
@@ -251,14 +254,16 @@ namespace PgTools {
                 isReadDone[i2] = true;
                 if (completeOrderInfo)
                     revPairBaseOrgIdx[orgIdx / 2] = offsetInUint8Flag.size() * 2 + orgIdx % 2;
-                else if (!ignorePairOrderInformation)
-                    pairBaseFileFlag.push_back(orgIdx % 2);
                 int64_t pairRelativeOffset = i2 - i1;
                 offsetInUint8Flag.push_back((uint8_t) (pairRelativeOffset <= UINT8_MAX));
                 if (pairRelativeOffset <= UINT8_MAX) {
                     offsetInUint8Value.push_back((uint8_t) pairRelativeOffset);
+                    if (!completeOrderInfo && !ignorePairOrderInformation)
+                        offsetPairBaseFileFlag.push_back(orgIdx % 2);
                     continue;
                 }
+                if (!completeOrderInfo && !ignorePairOrderInformation)
+                    nonOffsetPairBaseFileFlag.push_back(orgIdx % 2);
                 const int64_t delta = pairRelativeOffset - refPrev;
                 const bool isDeltaInInt8 = delta <= INT8_MAX && delta >= INT8_MIN;
                 deltaInInt8Flag.push_back((uint8_t) isDeltaInInt8);
@@ -297,8 +302,11 @@ namespace PgTools {
                 writeCompressed(pgrcOut, (char *) revPairBaseOrgIdx.data(), revPairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
                                 LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             } else if (!ignorePairOrderInformation) {
-                cout << "File flags of pair bases... ";
-                writeCompressed(pgrcOut, (char *) pairBaseFileFlag.data(), pairBaseFileFlag.size() * sizeof(uint8_t),
+                cout << "File flags of pair bases (for offsets)... ";
+                writeCompressed(pgrcOut, (char *) offsetPairBaseFileFlag.data(), offsetPairBaseFileFlag.size() * sizeof(uint8_t),
+                                PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cout << "File flags of pair bases (for non-offsets)... ";
+                writeCompressed(pgrcOut, (char *) nonOffsetPairBaseFileFlag.data(), nonOffsetPairBaseFileFlag.size() * sizeof(uint8_t),
                                 PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             }
         }
@@ -372,10 +380,15 @@ namespace PgTools {
                 }
                 rlIdxOrder = std::move(revPairBaseOrgIdx);
             } else if (!ignorePairOrderInformation) {
-                vector<uint8_t> pairBaseFileFlag;
-                readCompressed<uint8_t>(pgrcIn, pairBaseFileFlag);
+                vector<uint8_t> offsetPairBaseFileFlag;
+                vector<uint8_t> nonOffsetPairBaseFileFlag;
+                readCompressed<uint8_t>(pgrcIn, offsetPairBaseFileFlag);
+                readCompressed<uint8_t>(pgrcIn, nonOffsetPairBaseFileFlag);
+                int64_t offIdx = -1;
+                int64_t nonOffIdx = -1;
                 for(uint_reads_cnt_std p = 0; p < readsCount / 2; p++) {
-                    if (pairBaseFileFlag[p]) {
+                    bool swapPair = offsetInUint8Flag[p]?offsetPairBaseFileFlag[++offIdx]:nonOffsetPairBaseFileFlag[++nonOffIdx];
+                    if (swapPair) {
                         uint_reads_cnt_std tmpIdx = rlIdxOrder[p * 2];
                         rlIdxOrder[p * 2] = rlIdxOrder[p * 2 + 1];
                         rlIdxOrder[p * 2 + 1] = tmpIdx;
