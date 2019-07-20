@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 #include <vector>
-#include "../rollinghash/cyclichash.h"
+#include "rollinghash/cyclichash.h"
 #include "../readsset/ReadsSetInterface.h"
 
 using namespace std;

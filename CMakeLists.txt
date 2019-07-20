@@ -84,13 +84,13 @@ set(PG_GEN_FILES
         pseudogenome/generator/PseudoGenomeGeneratorBase.h)
 
 set(HASHES_FILES
-        rollinghash/characterhash.h
-        rollinghash/cyclichash.h
-        rollinghash/generalhash.h
-        rollinghash/mersennetwister.cpp
-        rollinghash/mersennetwister.h
-        rollinghash/rabinkarphash.h
-        rollinghash/threewisehash.h
+        matching/rollinghash/characterhash.h
+        matching/rollinghash/cyclichash.h
+        matching/rollinghash/generalhash.h
+        matching/rollinghash/mersennetwister.cpp
+        matching/rollinghash/mersennetwister.h
+        matching/rollinghash/rabinkarphash.h
+        matching/rollinghash/threewisehash.h
         matching/copmem/Hashes.h
         matching/copmem/metrohash64.cpp matching/copmem/metrohash64.h matching/copmem/platform.h
         matching/copmem/xxhash.c matching/copmem/xxhash.h
