@@ -83,11 +83,6 @@ set(PG_GEN_FILES
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
         pseudogenome/generator/PseudoGenomeGeneratorBase.h)
 
-set(STRAND_DETECTOR_FILES
-        ${PG_FILES}
-        strands/DefaultStrandDetector.cpp strands/DefaultStrandDetector.h strands/StrandDetectorBase.h
-        strands/AbstractStrandDetector.cpp strands/AbstractStrandDetector.h PgRCManager.cpp PgRCManager.h)
-
 set(HASHES_FILES
         rollinghash/characterhash.h
         rollinghash/cyclichash.h
@@ -112,22 +107,11 @@ set(MATCHER_FILES
         matching/TextMatchers.cpp matching/TextMatchers.h
         matching/copmem/CopMEMMatcher.cpp matching/copmem/CopMEMMatcher.h)
 
-#add_executable(PgExtractor PgExtractor.cpp ${PG_FILES})
-#add_executable(PgGenerator PgGenerator.cpp ${PG_GEN_FILES})
-#add_executable(PgStrandDetector PgStrandDetector.cpp ${STRAND_DETECTOR_FILES})
-#add_executable(ReadsDivider ReadsDivider.cpp ${READSSET_FILES})
-#add_executable(ReadsMatcher ReadsMatcher.cpp ${MATCHER_FILES})
-#add_executable(PgRewriter PgRewriter.cpp ${PG_FILES})
-#add_executable(PgValidator PgValidator.cpp ${PG_FILES})
-#add_executable(Pgs2Pairs Pgs2Pairs.cpp ${PG_FILES})
-
 add_executable(PgRC PgRC.cpp PgRCManager.cpp PgRCManager.h ${MATCHER_FILES} ${PG_GEN_FILES})
 TARGET_LINK_LIBRARIES(PgRC pthread)
 add_executable(PgRC-win PgRC.cpp PgRCManager.cpp PgRCManager.h ${MATCHER_FILES} ${PG_GEN_FILES})
 TARGET_LINK_LIBRARIES(PgRC-win pthread)
-#add_executable(PgMatcher PgMatcher.cpp ${MATCHER_FILES})
 if((CYGWIN OR MINGW) AND ${CMAKE_BUILD_TYPE} MATCHES "Release")
     message("Windows static build: ${CMAKE_SYSTEM} ${CMAKE_SYSTEM_NAME}")
     target_link_libraries(PgRC-win  -static -static-libgcc -static-libstdc++)
-#    target_link_libraries(PgMatcher -static -static-libgcc -static-libstdc++)
 endif()
