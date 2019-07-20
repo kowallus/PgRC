@@ -162,7 +162,7 @@ namespace PgTools {
             PgRCManager::forceConstantParamsMode = false;
         }
 
-        void setError_limit_in_promils(uint16_t error_limit_in_promils) {
+        void setQualityBasedDivisionErrorLimitInPromils(uint16_t error_limit_in_promils) {
             if (PgRCManager::error_limit_in_promils != DEFAULT_UINT16_PARAM)
                 return;
             if (error_limit_in_promils > 1000) {
@@ -172,7 +172,7 @@ namespace PgTools {
             PgRCManager::error_limit_in_promils = error_limit_in_promils;
         }
 
-        void setGen_quality_str(const string &gen_quality_str) {
+        void setPgGeneratorBasedDivisionOverlapThreshold_str(const string &gen_quality_str) {
             if (PgRCManager::gen_quality_coef != DEFAULT_DOUBLE_PARAM)
                 return;
             gen_quality_coef = atoi(gen_quality_str.c_str()) / 100.0;
@@ -196,7 +196,7 @@ namespace PgTools {
             PgRCManager::extraFilesForValidation = true;
         }
 
-        void setReadsExactMatchingChars(uint16_t readsExactMatchingChars) {
+        void setReadSeedLength(uint16_t readsExactMatchingChars) {
             if (PgRCManager::readsExactMatchingChars != DEFAULT_UINT16_PARAM)
                 return;
             if (readsExactMatchingChars < MIN_READS_EXACT_MATCHING_CHARS) {
@@ -241,7 +241,7 @@ namespace PgTools {
             PgRCManager::matchingMode = matchingMode;
         }
 
-        void setMinimalPgMatchLength(uint16_t targetPgMatchLength) {
+        void setMinimalPgReverseComplementedRepeatLength(uint16_t targetPgMatchLength) {
             if (PgRCManager::targetPgMatchLength != DEFAULT_UINT16_PARAM)
                 return;
             if (targetPgMatchLength < MIN_CHARS_PER_PGMATCH) {
@@ -267,7 +267,7 @@ namespace PgTools {
             PgRCManager::pairFastqFile = pairFastqFile;
         }
 
-        void setSkipStages(uint8_t skipStages) {
+        void setBeginAfterStage(uint8_t skipStages) {
             if (skipStages >= endAtStage) {
                 fprintf(stdout,
                         "Number of stages to skip (%d) should be smaller than a number of a stage to finish (%d).\n",

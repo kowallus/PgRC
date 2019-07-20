@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     bool compressionParamPresent = false;
     bool decompressMode = false;
 
-    while ((opt = getopt(argc, argv, "c:i:q:g:m:M:p:l:S:E:dosIrNVvtaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:q:g:s:M:p:l:B:E:doSIrNVvtaA?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'c':
@@ -42,13 +42,13 @@ int main(int argc, char *argv[])
 
             case 'q':
                 compressionParamPresent = true;
-                pgRC->setError_limit_in_promils(atoi(optarg));
+                pgRC->setQualityBasedDivisionErrorLimitInPromils(atoi(optarg));
                 break;
             case 'g':
                 compressionParamPresent = true;
-                pgRC->setGen_quality_str(optarg);
+                pgRC->setPgGeneratorBasedDivisionOverlapThreshold_str(optarg);
                 break;
-            case 'm':
+            case 's':
                 compressionParamPresent = true;
                 valPtr = optarg + 1;
                 switch (*optarg) {
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
                         break;
                     default: valPtr--;
                 }
-                pgRC->setReadsExactMatchingChars(atoi(valPtr));
+                pgRC->setReadSeedLength(atoi(valPtr));
                 break;
             case 'M':
                 compressionParamPresent = true;
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
                 break;
             case 'p':
                 compressionParamPresent = true;
-                pgRC->setMinimalPgMatchLength(atoi(optarg));
+                pgRC->setMinimalPgReverseComplementedRepeatLength(atoi(optarg));
                 break;
 
             case 'l':
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
                 }
                 pgRC->setPreReadsExactMatchingChars(atoi(valPtr));
                 break;
-            case 's':
+            case 'S':
                 compressionParamPresent = true;
                 pgRC->setSingleReadsMode();
                 break;
@@ -125,9 +125,9 @@ int main(int argc, char *argv[])
                 compressionParamPresent = true;
                 SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
                 break;
-            case 'S':
+            case 'B':
                 compressionParamPresent = true;
-                pgRC->setSkipStages(atoi(optarg));
+                pgRC->setBeginAfterStage(atoi(optarg));
                 break;
             case 'E':
                 compressionParamPresent = true;
@@ -143,16 +143,16 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-o preserve original order information\n\n");
                 fprintf(stderr, "------------------ EXPERT OPTIONS ----------------\n");
                 fprintf(stderr, "[-q qualityStreamErrorProbability*1000] (1000 => disable)\n"
-                                "[-g generatorBasedQualityCoefficientIn_%%] (0 => disable; ov param in the paper)\n"
-                                "[-m [matchingMode]lengthOfReadSeedPartForReadsAlignmentPhase]\n"
+                                "[-g generatorBasedQualityCoefficientIn_%%] (0 => disable; 'ov' param in the paper)\n"
+                                "[-s [matchingMode]lengthOfReadSeedPartForReadsAlignmentPhase]\n"
                                 "[-M minimalNumberOfCharsPerMismatchForReadsAlignmentPhase]\n"
                                 "[-p minimalReverseComplementedRepeatLength]\n\n");
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
                 fprintf(stderr, "------------------ DEVELOPER OPTIONS ----------------\n");
-                fprintf(stderr, "[-l [matchingMode]lengthOfExactMatchedReadPart] (enables preliminary reads matching stage)\n"
-                                "[-s] [-I] [-r] [-N] [-V] [-v] [-t] [-a] [-A]\n"
-                                "[-S numberOfStagesToSkip] [-E numberOfAStageToEnd]\n\n");
-                fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
+                fprintf(stderr, "[-l [matchingMode]lengthOfReadSeedPartForReadsAlignmentPhase] (enables preliminary reads matching stage)\n"
+                                "[-S] [-I] [-r] [-N] [-V] [-v] [-t] [-a] [-A]\n"
+                                "[-B numberOfStagesToSkip] [-E numberOfAStageToEnd]\n\n");
+                fprintf(stderr, "-S ignore pair information (explicit single reads mode)\n");
                 fprintf(stderr, "-I ignore order of reads in a pair (works when pairSrcFile is specified)\n");
                 fprintf(stderr, "-r disable reverse compliment reads in a pair file for all PE modes\n");
                 fprintf(stderr, "-N reads containing N are not processed separately\n");

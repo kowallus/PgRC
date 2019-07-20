@@ -28,31 +28,31 @@ namespace PgTools {
         setPreMatchingMode('c');
         switch (compressionLevel) {
             case PGRC_CODER_LEVEL_FAST:
-                setError_limit_in_promils(1);
-                setGen_quality_str("0");
+                setQualityBasedDivisionErrorLimitInPromils(1);
+                setPgGeneratorBasedDivisionOverlapThreshold_str("0");
                 setMatchingMode('C');
                 setPreReadsExactMatchingChars(0);
-                setReadsExactMatchingChars(54);
+                setReadSeedLength(54);
                 setMinCharsPerMismatch(2);
-                setMinimalPgMatchLength(25);
+                setMinimalPgReverseComplementedRepeatLength(25);
                 break;
             case PGRC_CODER_LEVEL_NORMAL:
-                setError_limit_in_promils(1000);
-                setGen_quality_str("65");
+                setQualityBasedDivisionErrorLimitInPromils(1000);
+                setPgGeneratorBasedDivisionOverlapThreshold_str("65");
                 setPreReadsExactMatchingChars(0);
                 setMatchingMode('c');
-                setReadsExactMatchingChars(38);
+                setReadSeedLength(38);
                 setMinCharsPerMismatch(6);
-                setMinimalPgMatchLength(50);
+                setMinimalPgReverseComplementedRepeatLength(50);
                 break;
             case PGRC_CODER_LEVEL_MAX:
-                setError_limit_in_promils(1000);
-                setGen_quality_str("65");
+                setQualityBasedDivisionErrorLimitInPromils(1000);
+                setPgGeneratorBasedDivisionOverlapThreshold_str("65");
                 setPreReadsExactMatchingChars(64);
                 setMatchingMode('c');
-                setReadsExactMatchingChars(30);
+                setReadSeedLength(30);
                 setMinCharsPerMismatch(6);
-                setMinimalPgMatchLength(50);
+                setMinimalPgReverseComplementedRepeatLength(50);
                 break;
             default:
                 fprintf(stderr, "Error: unknown compression level: %d.", compressionLevel);
