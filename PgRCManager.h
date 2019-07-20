@@ -26,7 +26,7 @@ namespace PgTools {
     class PgRCManager {
     private:
         static const int MIN_CHARS_PER_PGMATCH = 20;
-        static const int MIN_CHARS_PER_MISMATCH = 4;
+        static const int MIN_CHARS_PER_MISMATCH = 2;
         static const int MIN_READS_EXACT_MATCHING_CHARS = 20;
 
         static const char DEFAULT_CHAR_PARAM = CHAR_MAX;

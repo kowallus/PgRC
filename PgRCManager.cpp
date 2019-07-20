@@ -25,30 +25,34 @@ namespace PgTools {
         return toString(((double) (end_t - begin_t)) / CLOCKS_PER_SEC, decimalPlaces); }
 
     void PgRCManager::initCompressionParameters() {
-        setError_limit_in_promils(1000);
         setPreMatchingMode('c');
-        setMinimalPgMatchLength(50);
         switch (compressionLevel) {
             case PGRC_CODER_LEVEL_FAST:
-                setGen_quality_str("50");
+                setError_limit_in_promils(1);
+                setGen_quality_str("0");
                 setMatchingMode('C');
                 setPreReadsExactMatchingChars(0);
                 setReadsExactMatchingChars(54);
-                setMinCharsPerMismatch(10);
+                setMinCharsPerMismatch(2);
+                setMinimalPgMatchLength(25);
                 break;
             case PGRC_CODER_LEVEL_NORMAL:
+                setError_limit_in_promils(1000);
                 setGen_quality_str("65");
                 setPreReadsExactMatchingChars(0);
                 setMatchingMode('c');
                 setReadsExactMatchingChars(38);
                 setMinCharsPerMismatch(6);
+                setMinimalPgMatchLength(50);
                 break;
             case PGRC_CODER_LEVEL_MAX:
-                setGen_quality_str("70");
+                setError_limit_in_promils(1000);
+                setGen_quality_str("65");
                 setPreReadsExactMatchingChars(64);
                 setMatchingMode('c');
-                setReadsExactMatchingChars(34);
+                setReadsExactMatchingChars(30);
                 setMinCharsPerMismatch(6);
+                setMinimalPgMatchLength(50);
                 break;
             default:
                 fprintf(stderr, "Error: unknown compression level: %d.", compressionLevel);
