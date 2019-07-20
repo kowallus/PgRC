@@ -92,6 +92,7 @@ namespace PgTools {
 
         bool revComplPairFile;
         bool qualityDivision;
+        bool generatorDivision;
         string lqDivisionFile;
         string nDivisionFile;
         string pgHqPrefix;
@@ -175,8 +176,8 @@ namespace PgTools {
             if (PgRCManager::gen_quality_coef != DEFAULT_DOUBLE_PARAM)
                 return;
             gen_quality_coef = atoi(gen_quality_str.c_str()) / 100.0;
-            if (gen_quality_coef > 1 || gen_quality_coef <= 0) {
-                fprintf(stderr, "Generate quality coefficient should be between 1 and 100.\n");
+            if (gen_quality_coef > 1 || gen_quality_coef < 0) {
+                fprintf(stderr, "Generate quality coefficient should be between 0 and 100.\n");
                 exit(EXIT_FAILURE);
             }
             PgRCManager::gen_quality_str = gen_quality_str;

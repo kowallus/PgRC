@@ -59,6 +59,7 @@ namespace PgTools {
     void PgRCManager::prepareChainData() {
         initCompressionParameters();
         qualityDivision = error_limit_in_promils < 1000;
+        generatorDivision = gen_quality_coef > 0;
         readLength = probeReadsLength(srcFastqFile);
         if (pairFastqFile.empty() && !preserveOrderMode)
             singleReadsMode = true;
@@ -136,11 +137,13 @@ namespace PgTools {
         div_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgGeneratorBaseReadsDivision();
-            runPgGeneratorBasedReadsDivision();
+            if (generatorDivision)
+                runPgGeneratorBasedReadsDivision();
             if (disableInMemoryMode || endAtStage == stageCount) {
                 persistReadsQualityDivision();
                 disposeChainData();
             }
+
         }
         pgDiv_t = clock();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
