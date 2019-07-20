@@ -17,64 +17,36 @@ int main(int argc, char *argv[])
     bool compressionParamPresent = false;
     bool decompressMode = false;
 
-    while ((opt = getopt(argc, argv, "c:i:l:m:M:p:q:g:S:E:dsoIvrNtaAV?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:i:q:g:m:M:p:l:S:E:dosIrNVvtaA?")) != -1) {
         char* valPtr;
         switch (opt) {
             case 'c':
                 compressionParamPresent = true;
                 pgRC->setCompressionLevel(atoi(optarg));
                 break;
-            case 's':
-                compressionParamPresent = true;
-                pgRC->setSingleReadsMode();
+            case 'i':
+                pgRC->setSrcFastqFile(optarg);
+                srcFilePresent = true;
+                if (optind < (argc - 1) && argv[optind][0] != '-') {
+                    pgRC->setPairFastqFile(argv[optind++]);
+                    pairFilePresent = true;
+                }
                 break;
             case 'o':
                 compressionParamPresent = true;
                 pgRC->setPreserveOrderMode();
                 break;
-            case 'I':
-                compressionParamPresent = true;
-                expectedPairFile = true;
-                pgRC->setIgnorePairOrderInformation();
-                break;
-            case 'V':
-                compressionParamPresent = true;
-                pgRC->allowVariableParams();
-                break;
             case 'd':
                 decompressMode = true;
                 break;
-            case 'r':
+
+            case 'q':
                 compressionParamPresent = true;
-                expectedPairFile = true;
-                pgRC->disableRevComplPairFile();
+                pgRC->setError_limit_in_promils(atoi(optarg));
                 break;
-            case 'N':
+            case 'g':
                 compressionParamPresent = true;
-                pgRC->doNotSeparateNReads();
-                break;
-            case 'n':
-                compressionParamPresent = true;
-                pgRC->setNReadsLQ();
-                break;
-            case 'v':
-                compressionParamPresent = true;
-                pgRC->setValidationOutputMode();
-                break;
-            case 'l':
-                compressionParamPresent = true;
-                valPtr = optarg + 1;
-                switch (*optarg) {
-                    case 'd':case 'i':case 'c':
-                        if(*valPtr == 's') {
-                            valPtr++;
-                            pgRC->setPreMatchingMode(toupper(*optarg));
-                        } else
-                            pgRC->setPreMatchingMode(*optarg);
-                        break;
-                    default: valPtr--;
-                }
-                pgRC->setPreReadsExactMatchingChars(atoi(valPtr));
+                pgRC->setGen_quality_str(optarg);
                 break;
             case 'm':
                 compressionParamPresent = true;
@@ -95,21 +67,51 @@ int main(int argc, char *argv[])
                 compressionParamPresent = true;
                 pgRC->setMinCharsPerMismatch(atoi(optarg));
                 break;
-            case 'q':
-                compressionParamPresent = true;
-                pgRC->setError_limit_in_promils(atoi(optarg));
-                break;
             case 'p':
                 compressionParamPresent = true;
                 pgRC->setMinimalPgMatchLength(atoi(optarg));
                 break;
-            case 'S':
+
+            case 'l':
                 compressionParamPresent = true;
-                pgRC->setSkipStages(atoi(optarg));
+                valPtr = optarg + 1;
+                switch (*optarg) {
+                    case 'd':case 'i':case 'c':
+                        if(*valPtr == 's') {
+                            valPtr++;
+                            pgRC->setPreMatchingMode(toupper(*optarg));
+                        } else
+                            pgRC->setPreMatchingMode(*optarg);
+                        break;
+                    default: valPtr--;
+                }
+                pgRC->setPreReadsExactMatchingChars(atoi(valPtr));
                 break;
-            case 'E':
+            case 's':
                 compressionParamPresent = true;
-                pgRC->setEndAtStage(atoi(optarg));
+                pgRC->setSingleReadsMode();
+                break;
+            case 'I':
+                compressionParamPresent = true;
+                expectedPairFile = true;
+                pgRC->setIgnorePairOrderInformation();
+                break;
+            case 'r':
+                compressionParamPresent = true;
+                expectedPairFile = true;
+                pgRC->disableRevComplPairFile();
+                break;
+            case 'N':
+                compressionParamPresent = true;
+                pgRC->doNotSeparateNReads();
+                break;
+            case 'V':
+                compressionParamPresent = true;
+                pgRC->allowVariableParams();
+                break;
+            case 'v':
+                compressionParamPresent = true;
+                pgRC->setValidationOutputMode();
                 break;
             case 't':
                 compressionParamPresent = true;
@@ -123,42 +125,43 @@ int main(int argc, char *argv[])
                 compressionParamPresent = true;
                 SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation = false;
                 break;
-            case 'i':
-                pgRC->setSrcFastqFile(optarg);
-                srcFilePresent = true;
-                if (optind < (argc - 1) && argv[optind][0] != '-') {
-                    pgRC->setPairFastqFile(argv[optind++]);
-                    pairFilePresent = true;
-                }
-                break;
-            case 'g':
+            case 'S':
                 compressionParamPresent = true;
-                pgRC->setGen_quality_str(optarg);
+                pgRC->setSkipStages(atoi(optarg));
+                break;
+            case 'E':
+                compressionParamPresent = true;
+                pgRC->setEndAtStage(atoi(optarg));
                 break;
             case '?':
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-c 1<=compressionLevel<=3 (2 - default)] [-d] [-s] [-o] [-I]\n"
-                                "[-i readssrcfile [pairsrcfile]] pgRCFileName\n\n"
-                                ,
-                        argv[0]);
-                fprintf(stderr, "-d for decompression mode (supports only -i parameter for validation mode)\n");
-                fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
+                fprintf(stderr, "PgRC 1.0 beta: Copyright (c) 2019 Tomasz Kowalski, Szymon Grabowski : 2019-07-20\n\n");
+                fprintf(stderr, "Usage: %s [-c compressionLevel] [-i inputSrcFile [pairSrcFile]] [-o] [-d] "
+                                "outputName\n\n", argv[0]);
+                fprintf(stderr, "-c compression levels: 1 - fast; 2 - default; 3 - max\n");
+                fprintf(stderr, "-d decompression mode\n");
                 fprintf(stderr, "-o preserve original order information\n\n");
-                fprintf(stderr, "-I ignore order of reads in a pair (works when pairsrcfile is specified) \n\n");
-                fprintf(stderr, "------------------ EXPERT(/DEVELOPER) OPTIONS ----------------\n");
-                fprintf(stderr, "[-m [matchingMode]lengthOfExactMatchedReadPart] [-M minCharsPerMismatch]\n"
-                                "[-l [matchingMode]lengthOfExactMatchedReadPart]\n[-p minimalExactMatchingLength]\n"
-                                "[-q error_probability*1000]\n[-g gen_quality_coef_in_%%]\n"
-                                "[-N] [-V] [-r] [-a] [-A] [-t]\n\n");
-                fprintf(stderr, "-N reads containing N are not processed separately\n"); // -n reads containing N are low quality
-                fprintf(stderr, "-l enables preliminary reads matching stage\n");
+                fprintf(stderr, "------------------ EXPERT OPTIONS ----------------\n");
+                fprintf(stderr, "[-q qualityStreamErrorProbability*1000] (1000 => disable)\n"
+                                "[-g generatorBasedQualityCoefficientIn_%%] (0 => disable; ov param in the paper)\n"
+                                "[-m [matchingMode]lengthOfReadSeedPartForReadsAlignmentPhase]\n"
+                                "[-M minimalNumberOfCharsPerMismatchForReadsAlignmentPhase]\n"
+                                "[-p minimalReverseComplementedRepeatLength]\n\n");
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
-                fprintf(stderr, "(Stages: 1:division; 2:PgGenDivision; 3:Pg(good); 4:ReadsMatching; 5:Pg(bad&N); 6:PgSeqsCompression; 7:orderInfo\n");
+                fprintf(stderr, "------------------ DEVELOPER OPTIONS ----------------\n");
+                fprintf(stderr, "[-l [matchingMode]lengthOfExactMatchedReadPart] (enables preliminary reads matching stage)\n"
+                                "[-s] [-I] [-r] [-N] [-V] [-v] [-t] [-a] [-A]\n"
+                                "[-S numberOfStagesToSkip] [-E numberOfAStageToEnd]\n\n");
+                fprintf(stderr, "-s ignore pair information (explicit single reads mode)\n");
+                fprintf(stderr, "-I ignore order of reads in a pair (works when pairSrcFile is specified)\n");
                 fprintf(stderr, "-r disable reverse compliment reads in a pair file for all PE modes\n");
-                fprintf(stderr, "-v dump extra files for validation mode purposes\n-t write numbers in text mode\n");
+                fprintf(stderr, "-N reads containing N are not processed separately\n");
+                fprintf(stderr, "-V allow variable (auto-adjusting) parameters during processing\n");
+                fprintf(stderr, "-v dump extra files for validation mode purposes "
+                                "(decompression supports -i parameter in validation mode)\n"
+                                "-t write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
-                fprintf(stderr, "-S number of stages to skip \n-E number of a stage to finish\n");
-                fprintf(stderr, "\n\n");
+                fprintf(stderr, "Stages: 1:QualDivision; 2:PgGenDivision; 3:Pg(HQ); 4:ReadsMatching; 5:Pg(LQ&N); 6:OrderInfo; 7:PgSequences\n");
                 exit(EXIT_FAILURE);
         }
     }
