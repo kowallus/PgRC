@@ -85,7 +85,8 @@ namespace PgTools {
         if (separateNReadsSet)
             cout << " (including " << nMapping.size() << " containing N)";
         cout << " reads (out of " <<
-            (divReadsIt->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl << endl;
+            (divReadsIt->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl;
+        *logout << endl;
 
         readsSets->lqMapping = new VectorMapping(std::move(lqMapping), divReadsIt->getReadOriginalIndex());
         if (separateNReadsSet)

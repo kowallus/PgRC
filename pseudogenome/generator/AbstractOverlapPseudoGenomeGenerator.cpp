@@ -51,7 +51,8 @@ namespace PgSAIndex {
         }
         dispose();
 
-        cout << "Found " << resCount << " both-side overlapped reads in " << clock_millis() << " msec\n\n";
+        cout << "Found " << resCount << " both-side overlapped reads in " << clock_millis() << " msec\n";
+        *logout << endl;
 
         return res;
     }
@@ -124,9 +125,9 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::quick_stats() {
 
-        cout << pseudoGenomeLength << " bytes after overlapping\n";
-        cout << countComponents() << " pseudo-genome components\n";
-        cout << countSingles() << " single reads\n";
+        *logout << pseudoGenomeLength << " pseudo-genome length after overlapping\n";
+        *logout << countComponents() << " pseudo-genome components\n";
+        *logout << countSingles() << " single reads\n";
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
@@ -151,7 +152,7 @@ namespace PgSAIndex {
         }
 
         genPG->validate();
-        cout << "Pseudogenome assembled in " << clock_millis() << " msec\n\n";
+        *logout << "Pseudogenome assembled in " << clock_millis() << " msec\n\n";
 
         return genPG;
     }

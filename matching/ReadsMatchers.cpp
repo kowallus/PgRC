@@ -181,10 +181,10 @@ namespace PgTools {
             : DefaultReadsMatcher(pgPtr, pgLength, revComplPg, readsSet, matchPrefixLength) {}
 
     void DefaultReadsExactMatcher::initMatching() {
-        cout << "Feeding patterns...\n" << endl;
+        *logout << "Feeding patterns...\n" << endl;
         this->hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(matchingLength);
         this->hashMatcher->addReadsSetOfPatterns(readsSet);
-        cout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
         DefaultReadsMatcher::initMatching();
     }
 
@@ -258,20 +258,20 @@ namespace PgTools {
 
 
     void AbstractReadsApproxMatcher::printApproxMatchingStats() {
-        cout << "... approximate matching procedure checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... approximate matching procedure checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
              << " left; " << betterMatchCount << " better-matches). False matches reported: " << falseMatchCount << "."
              << endl;
 
         for (uint8_t i = 0; i <= maxMismatches; i++)
-            cout << "Matched " << matchedCountPerMismatches[i] << " reads with " << (int) i << " mismatches." << endl;
+            *logout << "Matched " << matchedCountPerMismatches[i] << " reads with " << (int) i << " mismatches." << endl;
     }
 
     void DefaultReadsApproxMatcher::initMatching() {
-        cout << "Feeding patterns...\n" << endl;
+        *logout << "Feeding patterns...\n" << endl;
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
         this->hashMatcher->addReadsSetOfPatterns(readsSet, targetMismatches + 1);
-        cout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
@@ -283,7 +283,7 @@ namespace PgTools {
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
         this->hashMatcher->addReadsSetOfPatterns(readsSet, targetMismatches + 1,
                                                  pMatcher->getMatchedReadsBitmap(minMismatches));
-        cout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
     }
@@ -339,7 +339,7 @@ namespace PgTools {
         cout << "Feeding patterns...\n" << endl;
         hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, targetMismatches + 1);
         this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1);
-        cout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
@@ -351,7 +351,7 @@ namespace PgTools {
         hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, targetMismatches + 1);
         this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1,
                 pMatcher->getMatchedReadsBitmap(minMismatches));
-        cout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
     }
@@ -417,7 +417,7 @@ namespace PgTools {
     void CopMEMReadsApproxMatcher::executeMatching(bool revCompMode) {
         cout << "Feeding " << (revCompMode?"rc of ":"") << "pseudogenome sequence... " << endl;
         CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(pgPtr, pgLength, partLength);
-        cout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
         for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
                 continue;
@@ -555,7 +555,7 @@ namespace PgTools {
             builder->updateOriginalIndexesIn(sPg);
         delete(builder);
         closeEntryUpdating();
-        cout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
+        *logout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
     void DefaultReadsMatcher::exportMatchesInOriginalOrder(SeparatedPseudoGenome *sPg, ostream &pgrcOut,
@@ -635,7 +635,7 @@ namespace PgTools {
         closeEntryUpdating();
 
         sPg->getReadsList()->pos = std::move(orgIdx2pgPos);
-        cout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
+        *logout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
     }
 
     const vector<bool> DefaultReadsMatcher::getMatchedReadsBitmap(uint8_t maxMismatches) {
@@ -702,10 +702,11 @@ namespace PgTools {
                     fprintf(stderr, "Unknown matching mode: %c.\n", currentMatchingMode);
                     exit(EXIT_FAILURE);
             }
-        cout << "Target pseudogenome length: " << sPg->getPgSequence().length() << endl << endl;
-        cout << "readsExactMatchingChars (minCharsPerMismatch, matchingMode): " << (int) currentExactMatchingChars <<
+        cout << "Target pseudogenome length: " << sPg->getPgSequence().length() << endl;
+        *logout << endl;
+        cout << "readsAlignmentSeedLength (minCharsPerMismatch, matchingMode): " << (int) currentExactMatchingChars <<
              " (" << (int) minCharsPerMismatch << ", " << currentMatchingMode << ")" << endl;
-        cout << "targetMismatches (maxMismatches, minMismatches): " << (int) targetMismatches <<
+        *logout << "targetMismatches (maxMismatches, minMismatches): " << (int) targetMismatches <<
              " (" << (int) maxMismatches << ", " << (int) currentMinMismatches << ")" << endl;
         matcher->matchConstantLengthReads();
 

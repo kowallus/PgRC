@@ -82,15 +82,15 @@ namespace PgSAReadsSet {
 
             void printout(bool verbose = false) {
                 std::cout << "reads count: " << readsCount << endl;
-                std::cout << "all reads length: " << allReadsLength << endl;
-                std::cout << "reads length is " << (constantReadLength?"constant":"variable") << endl;
-                std::cout << "minReadLength: " << minReadLength << endl;
-                std::cout << "maxReadLength: " << maxReadLength << endl;
-                std::cout << "symbolsCount: " << (int) symbolsCount << endl;
-                std::cout << "symbols: ";
+                *PgSAHelpers::logout << "all reads length: " << allReadsLength << endl;
+                *PgSAHelpers::logout << "reads length is " << (constantReadLength?"constant":"variable") << endl;
+                *PgSAHelpers::logout << "minReadLength: " << minReadLength << endl;
+                *PgSAHelpers::logout << "maxReadLength: " << maxReadLength << endl;
+                *PgSAHelpers::logout << "symbolsCount: " << (int) symbolsCount << endl;
+                *PgSAHelpers::logout << "symbols: ";
                 for(uint_symbols_cnt i = 0; i < symbolsCount; i++)
-                    std::cout << symbolsList[(unsigned char) i];
-                std::cout << "\n" << endl;
+                    *PgSAHelpers::logout << symbolsList[(unsigned char) i];
+                *PgSAHelpers::logout << "\n" << endl;
             }
     };
 

@@ -94,7 +94,7 @@ namespace PgTools {
 
         istream* srcs[UINT8_MAX];
         for(uint8_t m = 1; m <= mismatchesCountSrcsLimit; m++) {
-            cout << (int) m << ": ";
+            *logout << (int) m << ": ";
             decompressSrc(srcs[m], pgrcIn);
         }
 
@@ -310,7 +310,7 @@ namespace PgTools {
             vector<uint8_t> srcs[UINT8_MAX];
             vector<uint_reads_cnt_std> srcCounter(UINT8_MAX, 0);
             for (uint8_t m = 1; m <= mismatchesCountSrcsLimit; m++) {
-                cout << (int) m << ": ";
+                *logout << (int) m << ": ";
                 readCompressed(pgrcIn, srcs[m]);
             }
             res->misOff.reserve(res->misSymCode.size());

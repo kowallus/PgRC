@@ -106,7 +106,7 @@ void LzmaEncProps_Set(CLzmaEncProps *p, int coder_level, size_t dataLength, int 
     }
     p->numThreads = numThreads;
     p->reduceSize = dataLength;
-    cout << " lzma (level = " << p->level << "; dictSize = " << (p->dictSize >> 20) << "MB; lp,pb = " << p->lp << ") ...";
+    *PgSAHelpers::logout << " lzma (level = " << p->level << "; dictSize = " << (p->dictSize >> 20) << "MB; lp,pb = " << p->lp << ") ...";
 }
 
 void Ppmd7_SetProps(uint32_t &memSize, uint8_t coder_level, size_t dataLength, int& order_param) {
@@ -127,7 +127,7 @@ void Ppmd7_SetProps(uint32_t &memSize, uint8_t coder_level, size_t dataLength, i
             fprintf(stderr, "Unsupported %d PgRC coding level for LZMA compression.\n", coder_level);
             exit(EXIT_FAILURE);
     }
-    cout << " ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order_param << ") ... ";
+    *PgSAHelpers::logout << " ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order_param << ") ... ";
     const unsigned kMult = 16;
     if (memSize / kMult > dataLength)
     {
@@ -282,7 +282,7 @@ MY_STDAPI LzmaUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
     size_t propsSize = LZMA_PROPS_SIZE;
     size_t srcBufSize = *srcLen - LZMA_PROPS_SIZE;
     ELzmaStatus status;
-    cout << "... lzma ... ";
+    *PgSAHelpers::logout << "... lzma ... ";
     return LzmaDecode(dest, destLen, src + propsSize, &srcBufSize, src, (unsigned) propsSize, LZMA_FINISH_ANY, &status, &g_Alloc);
 }
 
@@ -331,7 +331,7 @@ MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
         return SZ_ERROR_MEM;
     unsigned int order = src[0];
     Ppmd7_Init(&ppmd, order);
-    cout << "... ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order << ") ... ";
+    *PgSAHelpers::logout << "... ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order << ") ... ";
     CPpmd7z_RangeDec rDec;
     Ppmd7z_RangeDec_CreateVTable(&rDec);
     CByteInBufWrap _inStream((unsigned char *) src + propsSize, *srcLen - propsSize);
@@ -388,12 +388,12 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
     }
 
     const double ratio = ((double) destLen) / srcLen;
-    cout << "compressed " << srcLen << " bytes to " << destLen << " bytes (ratio "
+    *PgSAHelpers::logout << "compressed " << srcLen << " bytes to " << destLen << " bytes (ratio "
          << PgSAHelpers::toString(ratio, 3) << " vs estimated "
          << PgSAHelpers::toString(estimated_compression, 3) << ") in "
          << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
     if (ratio > estimated_compression)
-        cout << "WARNING: compression ratio " << PgSAHelpers::toString(ratio / estimated_compression, 5)
+        *PgSAHelpers::logout << "WARNING: compression ratio " << PgSAHelpers::toString(ratio / estimated_compression, 5)
         << " times greater than estimation." << endl;
 
     return (char*) dest;
@@ -423,7 +423,7 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint
         fprintf(stderr, "Error during decompression (code: %d).\n", res);
         exit(EXIT_FAILURE);
     }
-    cout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
+    *PgSAHelpers::logout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
          << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
 }
 
@@ -431,7 +431,7 @@ void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t code
                      int coder_param, double estimated_compression) {
     PgSAHelpers::writeValue<uint64_t>(dest, srcLen, false);
     if (srcLen == 0) {
-        cout << "skipped compression (0 bytes)." << endl;
+        *PgSAHelpers::logout << "skipped compression (0 bytes)." << endl;
         return;
     }
     size_t compLen = 0;

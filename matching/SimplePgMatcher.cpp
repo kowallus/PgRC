@@ -39,7 +39,7 @@ namespace PgTools {
         } else
             matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, minMatchLength);
 
-        cout << "... found " << textMatches.size() << " exact matches in " << clock_millis() << " msec. " << endl;
+        *logout << "... found " << textMatches.size() << " exact matches in " << clock_millis() << " msec. " << endl;
 
         /*        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
             { return match1.length > match2.length; });
@@ -91,7 +91,7 @@ namespace PgTools {
 
         sort( textMatches.begin(), textMatches.end() );
         textMatches.erase( unique( textMatches.begin(), textMatches.end() ), textMatches.end() );
-        cout << "Unique exact matches: " << textMatches.size() << endl;
+        *logout << "Unique exact matches: " << textMatches.size() << endl;
 
         uint_pg_len_max pos = 0;
         uint_pg_len_max nPos = 0;
@@ -139,7 +139,7 @@ namespace PgTools {
         resPgMapLen = pgMapLenDest.str();
         pgMapLenDest.clear();
 
-        cout << "Preparing output time: " << clock_millis(post_start) << endl;
+        *logout << "Preparing output time: " << clock_millis(post_start) << endl;
         cout << "Final size of Pg: " << nPos << " (removed: " <<
              getTotalMatchStat(totalMatched) << "; " << totalDestOverlap << " chars in overlapped dest symbol)" << endl;
     }
@@ -178,13 +178,13 @@ namespace PgTools {
         bool isPgLengthStd = refSequenceLength <= UINT32_MAX;
         
         PgTools::SimplePgMatcher* matcher = new PgTools::SimplePgMatcher(hqPgSequence, targetMatchLength, minMatchLength);
-        cout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
+        *logout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
         clock_t lq_start = clock();
         string lqPgMapOff, lqPgMapLen;
         matcher->markAndRemoveExactMatches(false, lqPgSequence, lqPgMapOff, lqPgMapLen, true, minMatchLength);
         if (!lqPgPrefix.empty())
             matcher->writeMatchingResult(lqPgPrefix, lqPgSequence, lqPgMapOff, lqPgMapLen);
-        cout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
+        *logout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
 
         clock_t n_start = clock();
         string nPgMapOff, nPgMapLen;
@@ -192,14 +192,14 @@ namespace PgTools {
         if (!nPgPrefix.empty())
             matcher->writeMatchingResult(nPgPrefix, nPgSequence, nPgMapOff, nPgMapLen);
         if (!nPgSequence.empty())
-            cout << "PgMatching nPg finished in " << clock_millis(n_start) << " msec. " << endl;
+            *logout << "PgMatching nPg finished in " << clock_millis(n_start) << " msec. " << endl;
 
         clock_t hq_start = clock();
         string hqPgMapOff, hqPgMapLen;
         matcher->markAndRemoveExactMatches(true, hqPgSequence, hqPgMapOff, hqPgMapLen, true, minMatchLength);
         if (!hqPgPrefix.empty())
             matcher->writeMatchingResult(hqPgPrefix, hqPgSequence, hqPgMapOff, hqPgMapLen);
-        cout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
+        *logout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
         delete(matcher);
 
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, hqPgSequence.length(), false);
@@ -214,28 +214,28 @@ namespace PgTools {
         nPgSequence.clear();
         nPgSequence.shrink_to_fit();
 
-        cout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
+        *logout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
         writeCompressed(pgrcOut, comboPgSeq.data(), comboPgSeq.size(), LZMA_CODER, coder_level,
                 PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
-        cout << "Good sequence mapping - offsets... ";
+        *logout << "Good sequence mapping - offsets... ";
         double estimated_pg_offset_ratio = simpleUintCompressionEstimate(refSequenceLength, isPgLengthStd?UINT32_MAX:UINT64_MAX);
         const int pgrc_pg_offset_dataperiodcode = isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, coder_level,
                         pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
-        cout << "lengths... ";
+        *logout << "lengths... ";
         writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
-        cout << "Bad sequence mapping - offsets... ";
+        *logout << "Bad sequence mapping - offsets... ";
         writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, coder_level,
                         pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
-        cout << "lengths... ";
+        *logout << "lengths... ";
         writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, coder_level,
                         PGRC_DATAPERIODCODE_8_t);
         if (separateNReads) {
-            cout << "N sequence mapping - offsets... ";
+            *logout << "N sequence mapping - offsets... ";
             writeCompressed(pgrcOut, nPgMapOff.data(), nPgMapOff.size(), LZMA_CODER, coder_level,
                             pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
-            cout << "lengths... ";
+            *logout << "lengths... ";
             writeCompressed(pgrcOut, nPgMapLen.data(), nPgMapLen.size(), LZMA_CODER, coder_level,
                             PGRC_DATAPERIODCODE_8_t);
         }

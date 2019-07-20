@@ -15,6 +15,12 @@
 
 using namespace std;
 
+class NullBuffer : public std::streambuf
+{
+public:
+    int overflow(int c) { return c; }
+};
+
 namespace PgSAHelpers {
 
     // bioinformatical routines
@@ -108,6 +114,8 @@ namespace PgSAHelpers {
     int strcmplcp(const char* lStrPtr, const char* rStrPtr, int length);
 
     // input output routines
+
+    extern std::ostream *logout;
 
     void* readArray(std::istream&, size_t arraySizeInBytes);
     void readArray(std::istream&, void* destArray, size_t arraySizeInBytes);

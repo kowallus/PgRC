@@ -2,6 +2,8 @@
 
 #include "byteswap.h"
 
+std::ostream *PgSAHelpers::logout = &std::cout;
+
 // TIME
 
 clock_t checkpoint;

@@ -32,12 +32,12 @@ namespace PgTools {
                                                    !sPg->getReadsList()->areMismatchesEnabled());
         builder.feedSeparatedPseudoGenome(sPg, true);
         builder.compressedBuild(*pgrcOut, coder_level, ignoreOffDest);
-        cout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
+        *logout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
         if (!skipPgSequence) {
             clock_checkpoint();
             writeCompressed(*pgrcOut, sPg->getPgSequence().data(), sPg->getPgSequence().size(), LZMA_CODER, coder_level,
                             PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
-            cout << "Compressed Pg sequence in " << clock_millis() << " msec." << endl << endl;
+            *logout << "Compressed Pg sequence in " << clock_millis() << " msec." << endl << endl;
         }
     }
 
@@ -200,7 +200,7 @@ namespace PgTools {
             SeparatedPseudoGenomePersistence::appendIndexesFromPg(pgFilePrefix, orgIdxs);
 
         SeparatedPseudoGenomePersistence::writePairMapping(pgFilePrefixes[0], orgIdxs);
-        cout << "... dumping pairs completed in " << clock_millis() << " msec. " << endl;
+        *logout << "... dumping pairs completed in " << clock_millis() << " msec. " << endl;
     }
 
     void SeparatedPseudoGenomePersistence::compressReadsOrder(ostream &pgrcOut,
@@ -213,7 +213,7 @@ namespace PgTools {
         for (uint_reads_cnt_std i = 0; i < readsCount; i++)
             rev[orgIdxs[i]] = i;
         if (completeOrderInfo && singleFileMode) {
-            cout << "Reverse index of original indexes... ";
+            *logout << "Reverse index of original indexes... ";
             writeCompressed(pgrcOut, (char *) rev.data(), rev.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
                     coder_level, lzma_reads_dataperiod_param);
         } else {
@@ -280,37 +280,38 @@ namespace PgTools {
                 prev = pairRelativeOffset;
             }
 
-            cout << "Uint8 reads list relative offsets of pair reads (flag)... ";
+            *logout << "Uint8 reads list relative offsets of pair reads (flag)... ";
             writeCompressed(pgrcOut, (char *) offsetInUint8Flag.data(), offsetInUint8Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Uint8 reads list relative offsets of pair reads (value)... ";
+            *logout << "Uint8 reads list relative offsets of pair reads (value)... ";
             writeCompressed(pgrcOut, (char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 2);
-            cout << "Relative offsets deltas of pair reads (flag)... ";
+            *logout << "Relative offsets deltas of pair reads (flag)... ";
             writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Relative offsets deltas of pair reads (value)... ";
+            *logout << "Relative offsets deltas of pair reads (value)... ";
             writeCompressed(pgrcOut, (char*) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(uint8_t),
                             LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t);
 //            writeCompressed(pgrcOut, (char *) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(int8_t), PPMD7_CODER, coder_level, 2);
-            cout << "Full reads list relative offsets of pair reads ... ";
+            *logout << "Full reads list relative offsets of pair reads ... ";
             double estimated_reads_ratio = simpleUintCompressionEstimate(readsCount, readsCount <= UINT32_MAX?UINT32_MAX:UINT64_MAX);
             writeCompressed(pgrcOut, (char *) fullOffset.data(), fullOffset.size() * sizeof(uint_reads_cnt_std),
                             LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             if (completeOrderInfo) {
-                cout << "Original indexes of pair bases... ";
+                *logout << "Original indexes of pair bases... ";
                 writeCompressed(pgrcOut, (char *) revPairBaseOrgIdx.data(), revPairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
                                 LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
             } else if (!ignorePairOrderInformation) {
-                cout << "File flags of pair bases (for offsets)... ";
+                *logout << "File flags of pair bases (for offsets)... ";
                 writeCompressed(pgrcOut, (char *) offsetPairBaseFileFlag.data(), offsetPairBaseFileFlag.size() * sizeof(uint8_t),
                                 PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-                cout << "File flags of pair bases (for non-offsets)... ";
+                *logout << "File flags of pair bases (for non-offsets)... ";
                 writeCompressed(pgrcOut, (char *) nonOffsetPairBaseFileFlag.data(), nonOffsetPairBaseFileFlag.size() * sizeof(uint8_t),
                                 PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             }
         }
-        cout << "... compressing order information completed in " << clock_millis() << " msec. " << endl << endl;
+        *logout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
+        *logout << endl;
     }
 
     void SeparatedPseudoGenomePersistence::decompressReadsOrder(istream &pgrcIn,
@@ -446,7 +447,7 @@ namespace PgTools {
             std::stable_sort(bppRank.begin(), bppRank.end(),
                     [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                         { return basePairPos[idx1] < basePairPos[idx2]; });
-            cout << "... reordering bases checkpoint: " << clock_millis() << " msec. " << endl;
+            *logout << "... reordering bases checkpoint: " << clock_millis() << " msec. " << endl;
             int64_t refPrev = 0;
             int64_t prev = 0;
             bool match = false;
@@ -484,35 +485,36 @@ namespace PgTools {
                 }
             }
             pgrcOut.put(deltaPairEncodingEnabled);
-            cout << "Base pair position... ";
+            *logout << "Base pair position... ";
             writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
-            cout << "Uint16 relative offset of pair positions (flag)... ";
+            *logout << "Uint16 relative offset of pair positions (flag)... ";
             writeCompressed(pgrcOut, (char *) offsetInUint16Flag.data(), offsetInUint16Flag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Is uint16 relative offset of pair positions positive (flag)... ";
+            *logout << "Is uint16 relative offset of pair positions positive (flag)... ";
             writeCompressed(pgrcOut, (char *) offsetIsBaseFirstFlag.data(), offsetIsBaseFirstFlag.size() * sizeof(uint8_t),
                             PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            cout << "Uint16 relative offset of pair positions (value)... ";
+            *logout << "Uint16 relative offset of pair positions (value)... ";
             writeCompressed(pgrcOut, (char*) offsetInUint16Value.data(), offsetInUint16Value.size() * sizeof(uint16_t),
                             PPMD7_CODER, coder_level, 3);
             if (deltaPairEncodingEnabled) {
-                cout << "Relative offset deltas of pair positions (flag)... ";
+                *logout << "Relative offset deltas of pair positions (flag)... ";
                 writeCompressed(pgrcOut, (char *) deltaInInt16Flag.data(), deltaInInt16Flag.size() * sizeof(uint8_t),
                                 PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-                cout << "Is relative offset (for deltas stream) of pair positions positive (flag)... ";
+                *logout << "Is relative offset (for deltas stream) of pair positions positive (flag)... ";
                 writeCompressed(pgrcOut, (char *) deltaIsBaseFirstFlag.data(),
                                 deltaIsBaseFirstFlag.size() * sizeof(uint8_t),
                                 PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-                cout << "Relative offset deltas of pair positions (value)... ";
+                *logout << "Relative offset deltas of pair positions (value)... ";
                 writeCompressed(pgrcOut, (char *) deltaInInt16Value.data(), deltaInInt16Value.size() * sizeof(int16_t),
                                 PPMD7_CODER, coder_level, 3);
             }
-            cout << "Not-base pair position... ";
+            *logout << "Not-base pair position... ";
             writeCompressed(pgrcOut, (char *) notBasePairPos.data(), notBasePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
         }
-        cout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl << endl;
+        *logout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl;
+        *logout << endl;
     }
     template void SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_std>(ostream &pgrcOut,
             vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level,
@@ -782,7 +784,7 @@ namespace PgTools {
         for(uint8_t m = 1; m < mismatches_dests_count; m++)
             PgSAHelpers::writeValue<uint8_t>(pgrcOut, misCnt2DestIdx[m]);
         for(uint8_t m = 1; m <= mismatches_dests_count; m++) {
-            cout << (int) m << ": ";
+            *logout << (int) m << ": ";
             compressDest(&dests[m], pgrcOut, PPMD7_CODER, coder_level, 2);
         }
     }
@@ -795,19 +797,19 @@ namespace PgTools {
         pgrcOut.write(tmp.data(), tmp.length());
 
         if (!ignoreOffDest) {
-            cout << "Reads list offsets... ";
+            *logout << "Reads list offsets... ";
             compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
         }
         if (!this->disableRevComp) {
-            cout << "Reverse complements info... ";
+            *logout << "Reverse complements info... ";
             compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
         }
         if (!this->disableMismatches) {
-            cout << "Mismatches counts... ";
+            *logout << "Mismatches counts... ";
             compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_CNT);
-            cout << "Mismatched symbols codes... ";
+            *logout << "Mismatched symbols codes... ";
             compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_SYM);
-            cout << "Mismatches offsets (rev-coded)... " << endl;
+            *logout << "Mismatches offsets (rev-coded)... " << endl;
             compressRlMisRevOffDest(pgrcOut, coder_level);
         }
     }

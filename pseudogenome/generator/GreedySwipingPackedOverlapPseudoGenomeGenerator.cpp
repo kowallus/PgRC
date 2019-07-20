@@ -120,7 +120,7 @@ namespace PgSAIndex {
     void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::findOverlappingReads(double overlappedReadsCountStopCoef) {
 
         initAndFindDuplicates();
-        cout << "Start overlapping.\n";
+        *logout << "Start overlapping.\n";
 
         uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
 
@@ -197,7 +197,7 @@ namespace PgSAIndex {
             ssiSymbolIdx.swap(ssiSymbolIdxLeft);
             ssiSymbolEnd.swap(ssiSymbolEndLeft);
         
-            cout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap" << endl;
+            *logout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap" << endl;
         }
 
         sortedReadsIdxs.clear();
@@ -209,10 +209,11 @@ namespace PgSAIndex {
         ssiSymbolEnd.clear();
         ssiSymbolEnd.shrink_to_fit();
         ssiOrder.clear();
+
+        *logout << this->countComponents() << " pseudo-genome components\n";
         
-        cout << this->countComponents() << " pseudo-genome components\n";
-        
-        cout << "Overlapping done in " << clock_millis() << " msec\n\n";     
+        cout << "Overlapping done in " << clock_millis() << " msec\n";
+        *logout << endl;
     }
 
 // FACTORY

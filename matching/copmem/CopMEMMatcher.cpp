@@ -64,16 +64,6 @@ void CopMEMMatcher::initHashFuncMatrix() {
 
 //////////////////// GLOBALS ////////////////////////////
 
-class NullBuffer : public std::streambuf
-{
-public:
-	int overflow(int c) { return c; }
-};
-
-
-NullBuffer null_buffer;
-std::ostream null_stream(&null_buffer);
-
 std::ostream *v1logger;
 
 void CopMEMMatcher::initParams(uint32 minMatchLength) {
@@ -92,7 +82,7 @@ void CopMEMMatcher::initParams(uint32 minMatchLength) {
     if (KmmL < K) K = KmmL;
     calcCoprimes();
     hashFunc32 = hashFuncMatrix[K][H];
-    v1logger = &std::cout;
+    v1logger = PgSAHelpers::logout;
 
     LK2 = (L - K) / 2;
     LK2_MINUS_4 = LK2 - 4;
@@ -106,16 +96,16 @@ void CopMEMMatcher::initParams(uint32 minMatchLength) {
 }
 
 void CopMEMMatcher::displayParams() {
-	std::cout << "PARAMETERS" << std::endl;
+	std::cout << "copMEM PARAMETERS: ";
 	std::cout << "l = " << L << "; ";
 	std::cout << "K = " << K << "; ";
 	std::cout << "HASH_SIZE = " << hash_size << "; ";
 	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
-	std::cout << "Hash function: maRushPrime1HashSimplified" << std::endl;
-    std::cout << "Hash collisions per position limit: " << HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
-    std::cout << "Average hash collisions per position limit (in approx mode): " << AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
-    std::cout << "Unlimited number of hash collisions per position (in approx mode): " << UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION << std::endl;
+	*PgSAHelpers::logout << "Hash function: maRushPrime1HashSimplified" << std::endl;
+    *PgSAHelpers::logout << "Hash collisions per position limit: " << HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
+    *PgSAHelpers::logout << "Average hash collisions per position limit (in approx mode): " << AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
+    *PgSAHelpers::logout << "Unlimited number of hash collisions per position (in approx mode): " << UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION << std::endl;
 }
 
 void CopMEMMatcher::calcCoprimes()

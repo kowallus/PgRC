@@ -263,7 +263,9 @@ namespace PgTools {
         }
         finalizeCompression();
         disposeChainData();
+#ifdef DEVELOPER_BUILD
         generateReport();
+#endif
     }
 
     void PgRCManager::runQualityBasedDivision() {
@@ -297,6 +299,7 @@ namespace PgTools {
     }
 
     void PgRCManager::runPgGeneratorBasedReadsDivision() {
+        cout << "HQ ";
         divReadsSets->getHqReadsSet()->printout();
         const vector<bool>& isReadHqInHqReadsSet = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
                 divReadsSets->getHqReadsSet(), gen_quality_coef);
@@ -314,6 +317,7 @@ namespace PgTools {
     }
 
     void PgRCManager::runHQPgGeneration() {
+        cout << "HQ ";
         divReadsSets->getHqReadsSet()->printout();
         hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getHqReadsSet());
@@ -340,9 +344,12 @@ namespace PgTools {
     }
 
     void PgRCManager::runMappingLQReadsOnHQPg() {
+        cout << "LQ ";
         divReadsSets->getLqReadsSet()->printout();
-        if (separateNReads)
+        if (separateNReads) {
+            cout << "N ";
             divReadsSets->getNReadsSet()->printout();
+        }
         ConstantLengthReadsSetInterface* readsSet =
                 separateNReads?((ConstantLengthReadsSetInterface*) new SumOfConstantLengthReadsSets(
                         divReadsSets->getLqReadsSet(), divReadsSets->getNReadsSet())): divReadsSets->getLqReadsSet();
@@ -391,6 +398,7 @@ namespace PgTools {
     }
 
     void PgRCManager::runLQPgGeneration() {
+        cout << "LQ ";
         divReadsSets->getLqReadsSet()->printout();
         lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getLqReadsSet());
@@ -409,6 +417,7 @@ namespace PgTools {
     }
 
     void PgRCManager::runNPgGeneration() {
+        cout << "N ";
         divReadsSets->getNReadsSet()->printout();
         nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getNReadsSet());
