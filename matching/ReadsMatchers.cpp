@@ -4,6 +4,7 @@
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include "../pseudogenome/readslist/SeparatedExtendedReadsList.h"
+#include <omp.h>
 
 namespace PgTools {
 
@@ -151,7 +152,6 @@ namespace PgTools {
         missedReadsDest.close();
     }
     void DefaultReadsMatcher::matchConstantLengthReads() {
-        clock_checkpoint();
         initMatching();
 
         this->executeMatching(false);
@@ -164,7 +164,6 @@ namespace PgTools {
     }
 
     void AbstractReadsApproxMatcher::continueMatchingConstantLengthReads(DefaultReadsMatcher *pMatcher) {
-        clock_checkpoint();
         this->initMatchingContinuation(pMatcher);
 
         this->executeMatching(false);
@@ -189,8 +188,8 @@ namespace PgTools {
     }
 
     void DefaultReadsExactMatcher::executeMatching(bool revCompMode) {
+        clock_checkpoint();
         cout << "Matching" << (revCompMode?" in Pg reverse":"") << "...\n" << endl;
-
         hashMatcher->iterateOver(pgPtr, pgLength);
 
         while (hashMatcher->moveNext()) {
@@ -258,9 +257,8 @@ namespace PgTools {
 
 
     void AbstractReadsApproxMatcher::printApproxMatchingStats() {
-        *logout << "... approximate matching procedure checkpoint " << clock_millis() << " msec. " << endl;
         cout << "Matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
-             << " left; " << betterMatchCount << " better-matches). False matches reported: " << falseMatchCount << "."
+             << " left; " << betterMatchCount << " better-matches) in " << clock_millis() << " msec.  False matches reported: " << falseMatchCount << "."
              << endl;
 
         for (uint8_t i = 0; i <= maxMismatches; i++)
@@ -289,10 +287,9 @@ namespace PgTools {
     }
 
     void DefaultReadsApproxMatcher::executeMatching(bool revCompMode) {
-
+        clock_checkpoint();
         cout << "Matching" << (revCompMode?" in Pg reverse":"") << "...\n" << endl;
         hashMatcher->iterateOver(pgPtr, pgLength);
-
         while (hashMatcher->moveNext()) {
             const uint32_t matchPatternIndex = hashMatcher->getHashMatchPatternIndex();
             uint32_t matchReadIndex = matchPatternIndex / (targetMismatches + 1);
@@ -357,10 +354,9 @@ namespace PgTools {
     }
 
     void InterleavedReadsApproxMatcher::executeMatching(bool revCompMode) {
-
+        clock_checkpoint();
         cout << "Matching" << (revCompMode?" in Pg reverse":"") << "...\n" << endl;
         hashMatcher->iterateOver(pgPtr, pgLength);
-
         while (hashMatcher->moveNext()) {
             const uint32_t matchPatternIndex = hashMatcher->getHashMatchPatternIndex();
             uint32_t matchReadIndex = matchPatternIndex / (targetMismatches + 1);
@@ -415,29 +411,34 @@ namespace PgTools {
     }
 
     void CopMEMReadsApproxMatcher::executeMatching(bool revCompMode) {
+        clock_checkpoint();
         cout << "Feeding " << (revCompMode?"rc of ":"") << "pseudogenome sequence... " << endl;
         CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(pgPtr, pgLength, partLength);
         *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        uint_reads_cnt_std count = 0;
+        #pragma omp parallel for reduction(+:count)
         for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
+            char_pg currentReadPtr[UINT8_MAX];
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
                 continue;
-            readsSet->getRead(matchReadIndex, (char_pg*) currentRead.data());
+            readsSet->getRead(matchReadIndex, currentReadPtr);
             uint8_t mismatchesCount = readMismatchesCount[matchReadIndex];
-            uint64_t matchPosition = copMEMMatcher->approxMatchPattern(currentRead.data(), matchingLength,
+            uint64_t matchPosition = copMEMMatcher->approxMatchPattern(currentReadPtr, matchingLength,
                                                                        maxMismatches, minMismatches, mismatchesCount,
                                                                        betterMatchCount, falseMatchCount);
             if (matchPosition == UINT64_MAX)
                 continue;
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
-                    matchedReadsCount++;
-                matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--;
-                matchedCountPerMismatches[mismatchesCount]++;
+                    count++;
+                matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--; // non-thread safe
+                matchedCountPerMismatches[mismatchesCount]++; // non-thread safe
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                 readMatchRC[matchReadIndex] = revCompMode;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
             }
         }
+        matchedReadsCount += count;
         delete(copMEMMatcher);
         printApproxMatchingStats();
     }
