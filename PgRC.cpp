@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-d decompression mode\n");
                 fprintf(stderr, "-o preserve original read order information\n\n");
                 fprintf(stderr, "------------------ EXPERT OPTIONS ----------------\n");
-                fprintf(stderr, "[-q qualityStreamErrorProbability*1000] (1000 => disable)\n"
-                                "[-g generatorBasedQualityCoefficientIn_%%] (0 => disable; 'ov' param in the paper)\n"
+                fprintf(stderr, "[-q qualityStreamErrorProbability*1000] (1000=>disable)\n"
+                                "[-g generatorBasedQualityCoefficientIn_%%] (0=>disable; 'ov' param in the paper)\n"
                                 "[-s "
 #ifdef DEVELOPER_BUILD
                                 "[matchingMode]"
