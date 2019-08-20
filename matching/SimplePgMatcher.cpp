@@ -22,7 +22,7 @@ namespace PgTools {
     }
 
     void SimplePgMatcher::exactMatchPg(string& destPg, bool destPgIsSrcPg, uint32_t minMatchLength) {
-        clock_checkpoint();
+        time_checkpoint();
 
         if (!destPgIsSrcPg)
             cout << "Destination pseudogenome length: " << destPgLength << endl;
@@ -39,7 +39,7 @@ namespace PgTools {
         } else
             matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, minMatchLength);
 
-        *logout << "... found " << textMatches.size() << " exact matches in " << clock_millis() << " msec. " << endl;
+        *logout << "... found " << textMatches.size() << " exact matches in " << time_millis() << " msec. " << endl;
 
         /*        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
             { return match1.length > match2.length; });
@@ -80,7 +80,7 @@ namespace PgTools {
             minMatchLength = targetMatchLength;
         exactMatchPg(destPg, destPgIsSrcPg, minMatchLength);
 
-        clock_t post_start = clock();
+        chrono::steady_clock::time_point post_start = chrono::steady_clock::now();
         if (destPgIsSrcPg)
             resolveMappingCollisionsInTheSameText();
 
@@ -139,7 +139,7 @@ namespace PgTools {
         resPgMapLen = pgMapLenDest.str();
         pgMapLenDest.clear();
 
-        *logout << "Preparing output time: " << clock_millis(post_start) << endl;
+        *logout << "Preparing output time: " << time_millis(post_start) << endl;
         cout << "Final size of Pg: " << nPos << " (removed: " <<
              getTotalMatchStat(totalMatched) << "; " << totalDestOverlap << " chars in overlapped dest symbol)" << endl;
     }
@@ -173,33 +173,33 @@ namespace PgTools {
                                         bool separateNReads, ostream &pgrcOut, uint8_t coder_level,
                                         const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
                                         uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
-        clock_t ref_start = clock();
+        chrono::steady_clock::time_point ref_start = chrono::steady_clock::now();
         const unsigned long refSequenceLength = hqPgSequence.length();
         bool isPgLengthStd = refSequenceLength <= UINT32_MAX;
         
         PgTools::SimplePgMatcher* matcher = new PgTools::SimplePgMatcher(hqPgSequence, targetMatchLength, minMatchLength);
-        *logout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
-        clock_t lq_start = clock();
+        *logout << "Feeding reference pseudogenome finished in " << time_millis(ref_start) << " msec. " << endl;
+        chrono::steady_clock::time_point lq_start = chrono::steady_clock::now();
         string lqPgMapOff, lqPgMapLen;
         matcher->markAndRemoveExactMatches(false, lqPgSequence, lqPgMapOff, lqPgMapLen, true, minMatchLength);
         if (!lqPgPrefix.empty())
             matcher->writeMatchingResult(lqPgPrefix, lqPgSequence, lqPgMapOff, lqPgMapLen);
-        *logout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
+        *logout << "PgMatching lqPg finished in " << time_millis(lq_start) << " msec. " << endl;
 
-        clock_t n_start = clock();
+        chrono::steady_clock::time_point n_start = chrono::steady_clock::now();
         string nPgMapOff, nPgMapLen;
         matcher->markAndRemoveExactMatches(false, nPgSequence, nPgMapOff, nPgMapLen, true, minMatchLength);
         if (!nPgPrefix.empty())
             matcher->writeMatchingResult(nPgPrefix, nPgSequence, nPgMapOff, nPgMapLen);
         if (!nPgSequence.empty())
-            *logout << "PgMatching nPg finished in " << clock_millis(n_start) << " msec. " << endl;
+            *logout << "PgMatching nPg finished in " << time_millis(n_start) << " msec. " << endl;
 
-        clock_t hq_start = clock();
+        chrono::steady_clock::time_point hq_start = chrono::steady_clock::now();
         string hqPgMapOff, hqPgMapLen;
         matcher->markAndRemoveExactMatches(true, hqPgSequence, hqPgMapOff, hqPgMapLen, true, minMatchLength);
         if (!hqPgPrefix.empty())
             matcher->writeMatchingResult(hqPgPrefix, hqPgSequence, hqPgMapOff, hqPgMapLen);
-        *logout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
+        *logout << "PgMatching hqPg finished in " << time_millis(hq_start) << " msec. " << endl;
         delete(matcher);
 
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, hqPgSequence.length(), false);

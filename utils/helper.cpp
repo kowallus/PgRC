@@ -4,6 +4,8 @@
 
 std::ostream *PgSAHelpers::logout = &std::cout;
 
+int PgSAHelpers::numberOfThreads = 8;
+
 // TIME
 
 clock_t checkpoint;
@@ -21,6 +23,26 @@ unsigned long long int PgSAHelpers::clock_millis(clock_t checkpoint) {
 unsigned long long int PgSAHelpers::clock_millis() {
     return clock_millis(checkpoint);
 }
+
+
+chrono::steady_clock::time_point chronocheckpoint;
+
+chrono::steady_clock::time_point PgSAHelpers::time_checkpoint() {
+    chronocheckpoint = chrono::steady_clock::now();
+    return chronocheckpoint;
+}
+
+unsigned long long int PgSAHelpers::time_millis(chrono::steady_clock::time_point checkpoint) {
+    chrono::nanoseconds time_span = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now() - checkpoint);
+    return (double)time_span.count() / 1000000.0;
+}
+
+unsigned long long int PgSAHelpers::time_millis() {
+    return time_millis(chronocheckpoint);
+}
+
+
+
 
 const size_t chunkSize = 10000000;
 
@@ -89,25 +111,25 @@ void* PgSAHelpers::readWholeArray(std::istream& in, size_t& arraySizeInBytes) {
 }
 
 void* PgSAHelpers::readWholeArrayFromFile(string srcFile, size_t& arraySizeInBytes) {
-    clock_checkpoint();
+    time_checkpoint();
 
     std::ifstream in(srcFile.c_str(), std::ifstream::binary);
 
     void* destArray = PgSAHelpers::readWholeArray(in, arraySizeInBytes);
 
-    cout << "Read " << arraySizeInBytes << " bytes from " << srcFile << " in " << clock_millis() << " msec \n";
+    cout << "Read " << arraySizeInBytes << " bytes from " << srcFile << " in " << time_millis() << " msec \n";
 
     return destArray;
 }
 
 void PgSAHelpers::writeArrayToFile(string destFile, void* srcArray, size_t arraySize) {
-    clock_checkpoint();
+    time_checkpoint();
 
     std::ofstream out(destFile.c_str(), std::ios::out | std::ios::binary);
 
     PgSAHelpers::writeArray(out, srcArray, arraySize);
 
-    cout << "Write " << arraySize << " bytes to " << destFile << " in " << clock_millis() << " msec \n";
+    cout << "Write " << arraySize << " bytes to " << destFile << " in " << time_millis() << " msec \n";
 }
 
 void PgSAHelpers::writeStringToFile(string destFile, const string &src) {

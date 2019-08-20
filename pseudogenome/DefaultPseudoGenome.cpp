@@ -214,7 +214,7 @@ namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class GeneratedReadsListClass>
     void GeneratedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, GeneratedReadsListClass>::buildRepetitiveReadsFilter() {
-        clock_checkpoint();
+        time_checkpoint();
 
         uint_max filterCount = 0;
 
@@ -254,7 +254,7 @@ namespace PgSAIndex {
         delete[] lookup;
         
         cout << "Found " << filterCount << " reads containing duplicate " << (int) genReadsList->getDuplicateFilterKmerLength()
-                << "-mers in " << clock_millis() << " msec!\n";
+                << "-mers in " << time_millis() << " msec!\n";
     }
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class GeneratedReadsListClass>

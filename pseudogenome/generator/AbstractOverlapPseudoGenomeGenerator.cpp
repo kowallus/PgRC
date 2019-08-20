@@ -27,7 +27,7 @@ namespace PgSAIndex {
     const vector<bool> AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::getBothSidesOverlappedReads(
             double overlappedReadsCountStopCoef) {
 
-        clock_checkpoint();
+        time_checkpoint();
         init();
         performOverlapping(overlappedReadsCountStopCoef);
 
@@ -51,7 +51,7 @@ namespace PgSAIndex {
         }
         dispose();
 
-        cout << "Found " << resCount << " both-side overlapped reads in " << clock_millis() << " msec\n";
+        cout << "Found " << resCount << " both-side overlapped reads in " << time_millis() << " msec\n";
         *logout << endl;
 
         return res;
@@ -59,7 +59,7 @@ namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::performOverlapping(double overlappedReadsCountStopCoef) {
-        clock_checkpoint();
+        time_checkpoint();
         findOverlappingReads(overlappedReadsCountStopCoef);
         pseudoGenomeLength = countPseudoGenomeLength();
         quick_stats();
@@ -133,7 +133,7 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     template<class GeneratedPseudoGenome>
     GeneratedPseudoGenome* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::assemblePseudoGenomeTemplate() {
-        clock_checkpoint();
+        time_checkpoint();
         if (!getReadsSetProperties()->constantReadLength) {
             cout << "ERROR: Unsuported variable reads length!";
             exit(EXIT_FAILURE);
@@ -152,7 +152,7 @@ namespace PgSAIndex {
         }
 
         genPG->validate();
-        *logout << "Pseudogenome assembled in " << clock_millis() << " msec\n\n";
+        *logout << "Pseudogenome assembled in " << time_millis() << " msec\n\n";
 
         return genPG;
     }

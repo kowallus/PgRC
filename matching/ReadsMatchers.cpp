@@ -183,12 +183,12 @@ namespace PgTools {
         *logout << "Feeding patterns...\n" << endl;
         this->hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(matchingLength);
         this->hashMatcher->addReadsSetOfPatterns(readsSet);
-        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << time_millis() << " msec. " << endl;
         DefaultReadsMatcher::initMatching();
     }
 
     void DefaultReadsExactMatcher::executeMatching(bool revCompMode) {
-        clock_checkpoint();
+        time_checkpoint();
         cout << "Matching" << (revCompMode?" in Pg reverse":"") << "...\n" << endl;
         hashMatcher->iterateOver(pgPtr, pgLength);
 
@@ -215,7 +215,7 @@ namespace PgTools {
             }*/
         }
 
-        cout << "... exact matching procedure completed in " << clock_millis() << " msec. " << endl;
+        cout << "... exact matching procedure completed in " << time_millis() << " msec. " << endl;
         cout << "Exact matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
              << " left; " << betterMatchCount << " multi-matches). False matches reported: " << falseMatchCount << "."
              << endl;
@@ -258,7 +258,7 @@ namespace PgTools {
 
     void AbstractReadsApproxMatcher::printApproxMatchingStats() {
         cout << "Matched " << matchedReadsCount << " reads (" << (readsCount - matchedReadsCount)
-             << " left; " << betterMatchCount << " better-matches) in " << clock_millis() << " msec.  False matches reported: " << falseMatchCount << "."
+             << " left; " << betterMatchCount << " better-matches) in " << time_millis() << " msec.  False matches reported: " << falseMatchCount << "."
              << endl;
 
         for (uint8_t i = 0; i <= maxMismatches; i++)
@@ -269,7 +269,7 @@ namespace PgTools {
         *logout << "Feeding patterns...\n" << endl;
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
         this->hashMatcher->addReadsSetOfPatterns(readsSet, targetMismatches + 1);
-        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << time_millis() << " msec. " << endl;
 
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
@@ -281,13 +281,13 @@ namespace PgTools {
         hashMatcher = new DefaultConstantLengthPatternsOnTextHashMatcher(partLength);
         this->hashMatcher->addReadsSetOfPatterns(readsSet, targetMismatches + 1,
                                                  pMatcher->getMatchedReadsBitmap(minMismatches));
-        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << time_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
     }
 
     void DefaultReadsApproxMatcher::executeMatching(bool revCompMode) {
-        clock_checkpoint();
+        time_checkpoint();
         cout << "Matching" << (revCompMode?" in Pg reverse":"") << "...\n" << endl;
         hashMatcher->iterateOver(pgPtr, pgLength);
         while (hashMatcher->moveNext()) {
@@ -336,7 +336,7 @@ namespace PgTools {
         cout << "Feeding patterns...\n" << endl;
         hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, targetMismatches + 1);
         this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1);
-        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << time_millis() << " msec. " << endl;
 
         DefaultReadsMatcher::initMatching();
         readMismatchesCount.clear();
@@ -348,13 +348,13 @@ namespace PgTools {
         hashMatcher = new InterleavedConstantLengthPatternsOnTextHashMatcher(partLength, targetMismatches + 1);
         this->hashMatcher->addPackedPatterns(readsSet, targetMismatches + 1,
                 pMatcher->getMatchedReadsBitmap(minMismatches));
-        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << time_millis() << " msec. " << endl;
 
         AbstractReadsApproxMatcher::initMatchingContinuation(pMatcher);
     }
 
     void InterleavedReadsApproxMatcher::executeMatching(bool revCompMode) {
-        clock_checkpoint();
+        time_checkpoint();
         cout << "Matching" << (revCompMode?" in Pg reverse":"") << "...\n" << endl;
         hashMatcher->iterateOver(pgPtr, pgLength);
         while (hashMatcher->moveNext()) {
@@ -411,14 +411,11 @@ namespace PgTools {
     }
 
     void CopMEMReadsApproxMatcher::executeMatching(bool revCompMode) {
-        clock_checkpoint();
+        time_checkpoint();
         cout << "Feeding " << (revCompMode?"rc of ":"") << "pseudogenome sequence... " << endl;
         CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(pgPtr, pgLength, partLength);
-        *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
+        *logout << "... checkpoint " << time_millis() << " msec. " << endl;
         uint_reads_cnt_std count = 0;
-        const int threadsCount = 1;
-        omp_set_num_threads(threadsCount);
-        cout << "Threads count: " << threadsCount << endl;
         #pragma omp parallel for reduction(+:count)
         for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
             char_pg currentReadPtr[UINT8_MAX];
@@ -451,7 +448,7 @@ namespace PgTools {
     const string DefaultReadsMatcher::MISSED_READS_SUFFIX = "_missed.txt";
 
     void DefaultReadsExactMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
-        clock_checkpoint();
+        time_checkpoint();
 
         for (uint_reads_cnt_max i = 0; i < readMatchPos.size(); i++) {
             if (readMatchPos[i] == NOT_MATCHED_POSITION)
@@ -463,11 +460,11 @@ namespace PgTools {
             }
         }
 
-        cout << "... writing info dump files completed in  " << clock_millis() << " msec. " << endl;
+        cout << "... writing info dump files completed in  " << time_millis() << " msec. " << endl;
     }
 
     void AbstractReadsApproxMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
-        clock_checkpoint();
+        time_checkpoint();
 
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
@@ -484,7 +481,7 @@ namespace PgTools {
             }
         }
 
-        cout << "... writing info dump files completed in " << clock_millis() << " msec. " << endl;
+        cout << "... writing info dump files completed in " << time_millis() << " msec. " << endl;
     }
 
     SeparatedPseudoGenomeOutputBuilder *AbstractReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
@@ -531,7 +528,7 @@ namespace PgTools {
     void DefaultReadsMatcher::exportMatchesInPgOrder(SeparatedPseudoGenome* sPg, ostream &pgrcOut, uint8_t compressionLevel,
                                                      const string &outPgPrefix, IndexesMapping *orgIndexesMapping,
                                                      bool pairFileMode, bool revComplPairFile) {
-        clock_checkpoint();
+        time_checkpoint();
         vector<uint_reads_cnt_max> idxs(matchedReadsCount);
         uint64_t counter = 0;
         for(uint_reads_cnt_max i = 0; i < readsCount; i++)
@@ -559,14 +556,14 @@ namespace PgTools {
             builder->updateOriginalIndexesIn(sPg);
         delete(builder);
         closeEntryUpdating();
-        *logout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
+        *logout << "... exporting matches (" << outPgPrefix << ") completed in " << time_millis() << " msec. " << endl << endl;
     }
 
     void DefaultReadsMatcher::exportMatchesInOriginalOrder(SeparatedPseudoGenome *sPg, ostream &pgrcOut,
                                                            uint8_t compressionLevel, const string &outPgPrefix,
                                                            IndexesMapping *orgIndexesMapping, bool pairFileMode,
                                                            bool revComplPairFile) {
-        clock_checkpoint();
+        time_checkpoint();
 
         uint_reads_cnt_std readsTotalCount = orgIndexesMapping->getReadsTotalCount();
         vector<uint_pg_len_max> orgIdx2pgPos(readsTotalCount, -1);
@@ -639,7 +636,7 @@ namespace PgTools {
         closeEntryUpdating();
 
         sPg->getReadsList()->pos = std::move(orgIdx2pgPos);
-        *logout << "... exporting matches (" << outPgPrefix << ") completed in " << clock_millis() << " msec. " << endl << endl;
+        *logout << "... exporting matches (" << outPgPrefix << ") completed in " << time_millis() << " msec. " << endl << endl;
     }
 
     const vector<bool> DefaultReadsMatcher::getMatchedReadsBitmap(uint8_t maxMismatches) {

@@ -3,6 +3,7 @@
 
 #include "PgRCManager.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
+#include <omp.h>
 
 using namespace std;
 using namespace PgTools;
@@ -24,10 +25,10 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DEVELOPER_BUILD
-    while ((opt = getopt(argc, argv, "c:i:q:g:s:M:p:l:B:E:doSIrNVvtaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:t:i:q:g:s:M:p:l:B:E:doSIrNVvTaA?")) != -1) {
         char* valPtr;
 #else
-    while ((opt = getopt(argc, argv, "c:i:q:g:s:M:p:do?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:t:i:q:g:s:M:p:do?")) != -1) {
 #endif
         switch (opt) {
             case 'c':
@@ -48,6 +49,9 @@ int main(int argc, char *argv[])
                 break;
             case 'd':
                 decompressMode = true;
+                break;
+            case 't':
+                numberOfThreads = atoi(optarg);
                 break;
 
             case 'q':
@@ -127,7 +131,7 @@ int main(int argc, char *argv[])
                 compressionParamPresent = true;
                 pgRC->setValidationOutputMode();
                 break;
-            case 't':
+            case 'T':
                 compressionParamPresent = true;
                 plainTextWriteMode = true;
                 break;
@@ -151,9 +155,10 @@ int main(int argc, char *argv[])
             case '?':
             default: /* '?' */
                 fprintf(stderr, "PgRC 1.0: Copyright (c) 2019 Tomasz Kowalski, Szymon Grabowski : 2019-07-20\n\n");
-                fprintf(stderr, "Usage: %s [-c compressionLevel] [-i inputSrcFile [pairSrcFile]] [-o] [-d] "
-                                "outputName\n\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-c compressionLevel] [-i inputSrcFile [pairSrcFile]] [-t noOfThreads]"
+                                "\n[-o] [-d] outputName\n\n", argv[0]);
                 fprintf(stderr, "-c compression levels: 1 - fast; 2 - default; 3 - max\n");
+                fprintf(stderr, "-t number of threads used (8 - default)\n");
                 fprintf(stderr, "-d decompression mode\n");
                 fprintf(stderr, "-o preserve original read order information\n\n");
                 fprintf(stderr, "------------------ EXPERT OPTIONS ----------------\n");
@@ -179,7 +184,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-V allow variable (auto-adjusting) parameters during processing\n");
                 fprintf(stderr, "-v dump extra files for validation mode purposes "
                                 "(decompression supports -i parameter in validation mode)\n"
-                                "-t write numbers in text mode\n");
+                                "-T write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
                 fprintf(stderr, "Stages: 1:QualDivision; 2:PgGenDivision; 3:Pg(HQ); 4:ReadsMatching; 5:Pg(LQ&N); 6:OrderInfo; 7:PgSequences\n\n");
 #endif
@@ -209,6 +214,11 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 #endif
+    if (numberOfThreads <= 0) {
+        fprintf(stderr, "The number of threads must be positive.\n");
+        exit(EXIT_FAILURE);
+    }
+    omp_set_num_threads(numberOfThreads);
 
     pgRC->setPgRCFileName(argv[optind++]);
 

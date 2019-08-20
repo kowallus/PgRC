@@ -364,7 +364,7 @@ MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
 
 char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
                int coder_param, double estimated_compression) {
-    clock_t start_t = clock();
+    chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
     unsigned char* dest = 0;
     int res = 0;
     switch (coder_type) {
@@ -391,7 +391,7 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
     *PgSAHelpers::logout << "compressed " << srcLen << " bytes to " << destLen << " bytes (ratio "
          << PgSAHelpers::toString(ratio, 3) << " vs estimated "
          << PgSAHelpers::toString(estimated_compression, 3) << ") in "
-         << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
+         << PgSAHelpers::time_millis(start_t) << " msec." << endl;
     if (ratio > estimated_compression)
         *PgSAHelpers::logout << "WARNING: compression ratio " << PgSAHelpers::toString(ratio / estimated_compression, 5)
         << " times greater than estimation." << endl;
@@ -400,7 +400,7 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
 }
 
 void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type) {
-    clock_t start_t = clock();
+    chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
     int res = 0;
     size_t outLen = destLen;
     switch (coder_type) {
@@ -424,7 +424,7 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint
         exit(EXIT_FAILURE);
     }
     *PgSAHelpers::logout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
-         << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
+         << PgSAHelpers::time_millis(start_t) << " msec." << endl;
 }
 
 void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,

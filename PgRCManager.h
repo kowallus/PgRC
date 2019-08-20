@@ -65,13 +65,13 @@ namespace PgTools {
 
         // TESTING&REPORTING
         bool disableInMemoryMode = false;
-        clock_t start_t;
-        clock_t div_t;
-        clock_t pgDiv_t;
-        clock_t good_t;
-        clock_t match_t;
-        clock_t bad_t;
-        clock_t order_t;
+        chrono::steady_clock::time_point start_t;
+        chrono::steady_clock::time_point div_t;
+        chrono::steady_clock::time_point pgDiv_t;
+        chrono::steady_clock::time_point good_t;
+        chrono::steady_clock::time_point match_t;
+        chrono::steady_clock::time_point bad_t;
+        chrono::steady_clock::time_point order_t;
         size_t pgRCSize = 0;
 
         void generateReport();
