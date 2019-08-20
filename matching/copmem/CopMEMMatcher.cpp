@@ -397,8 +397,9 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
     MyUINT2 posArray[2];
 
     uint_read_len_max k2positionsCount = (N2 + 1 - K) / k2;
-    uint64_t falseMatchCountLimit = falseMatchCount + k2positionsCount * AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT;
 
+    uint64_t falseMatchCountLimit = k2positionsCount * AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT;
+    uint64_t currentFalseMatchCount = 0;
     uint64_t matchPosition = NOT_MATCHED_POSITION;
     size_t i1 = 0;
     const char* curr2 = start2 + i1;
@@ -409,7 +410,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             curr2 += k2;
             continue;
         }
-        if (falseMatchCountLimit < falseMatchCount) {
+        if (falseMatchCountLimit < currentFalseMatchCount) {
             MyUINT2 tmp = posArray[0] + UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION;
             if (posArray[1] > tmp)
                 posArray[1] = tmp;
@@ -423,7 +424,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             const char* curr1 = start1 + sampledPositions[j];
 
             if (memcmp(curr1, curr2, K) != 0) {
-                falseMatchCount++;
+                currentFalseMatchCount++;
                 continue;
             }
             uint8_t res = 0;
@@ -432,13 +433,13 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             while (patternPtr != curr2) {
                 if (*patternPtr++ != *textPtr++) {
                     if (res++ >= maxMismatches) {
-                        falseMatchCount++;
+                        currentFalseMatchCount++;
                         break;
                     }
                 }
             }
             if (res > maxMismatches) {
-                falseMatchCount++;
+                currentFalseMatchCount++;
                 continue;
             }
             patternPtr += K;
@@ -446,26 +447,28 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             while (patternPtr != start2 + N2) {
                 if (*patternPtr++ != *textPtr++) {
                     if (res++ >= maxMismatches) {
-                        falseMatchCount++;
+                        currentFalseMatchCount++;
                         break;
                     }
                 }
             }
             if (res > maxMismatches){
-                falseMatchCount++;
+                currentFalseMatchCount++;
                 continue;
             }
-            if (mismatchesCount != UINT8_MAX)
-                betterMatchCount++;
+/*            if (mismatchesCount != UINT8_MAX)
+                betterMatchCount++;*/ //non-thread safe
             mismatchesCount = res;
             matchPosition = curr1 - start1 - positionShift;
-            if (res <= minMismatches)
+            if (res <= minMismatches) {
+//                falseMatchCount += currentFalseMatchCount; //non-thread safe
                 return matchPosition;
+            }
             maxMismatches = res - 1;
         }
         curr2 += k2;
     }
-
+//    falseMatchCount += currentFalseMatchCount;
     return matchPosition;
 }
 

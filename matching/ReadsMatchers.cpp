@@ -416,6 +416,9 @@ namespace PgTools {
         CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(pgPtr, pgLength, partLength);
         *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
         uint_reads_cnt_std count = 0;
+        const int threadsCount = 1;
+        omp_set_num_threads(threadsCount);
+        cout << "Threads count: " << threadsCount << endl;
         #pragma omp parallel for reduction(+:count)
         for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
             char_pg currentReadPtr[UINT8_MAX];
@@ -431,8 +434,8 @@ namespace PgTools {
             if (mismatchesCount < readMismatchesCount[matchReadIndex]) {
                 if (readMismatchesCount[matchReadIndex] == NOT_MATCHED_COUNT)
                     count++;
-                matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--; // non-thread safe
-                matchedCountPerMismatches[mismatchesCount]++; // non-thread safe
+//                matchedCountPerMismatches[readMismatchesCount[matchReadIndex]]--; // non-thread safe
+//                matchedCountPerMismatches[mismatchesCount]++; // non-thread safe
                 readMatchPos[matchReadIndex] = revCompMode?pgLength-(matchPosition+matchingLength):matchPosition;
                 readMatchRC[matchReadIndex] = revCompMode;
                 readMismatchesCount[matchReadIndex] = mismatchesCount;
