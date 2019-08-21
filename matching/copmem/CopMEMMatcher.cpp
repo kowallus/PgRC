@@ -456,19 +456,19 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
                 currentFalseMatchCount++;
                 continue;
             }
-/*            if (mismatchesCount != UINT8_MAX)
-                betterMatchCount++;*/ //non-thread safe
+            if (mismatchesCount != UINT8_MAX)
+                betterMatchCount++;
             mismatchesCount = res;
             matchPosition = curr1 - start1 - positionShift;
             if (res <= minMismatches) {
-//                falseMatchCount += currentFalseMatchCount; //non-thread safe
+                falseMatchCount += currentFalseMatchCount;
                 return matchPosition;
             }
             maxMismatches = res - 1;
         }
         curr2 += k2;
     }
-//    falseMatchCount += currentFalseMatchCount;
+    falseMatchCount += currentFalseMatchCount;
     return matchPosition;
 }
 
