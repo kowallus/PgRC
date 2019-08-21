@@ -106,7 +106,7 @@ void LzmaEncProps_Set(CLzmaEncProps *p, int coder_level, size_t dataLength, int 
     }
     p->numThreads = numThreads;
     p->reduceSize = dataLength;
-    *PgSAHelpers::logout << " lzma (level = " << p->level << "; dictSize = " << (p->dictSize >> 20) << "MB; lp,pb = " << p->lp << ") ...";
+    *PgSAHelpers::logout << " lzma (level = " << p->level << "; dictSize = " << (p->dictSize >> 20) << "MB; lp,pb = " << p->lp << "; th = " << p->numThreads << ") ...";
 }
 
 void Ppmd7_SetProps(uint32_t &memSize, uint8_t coder_level, size_t dataLength, int& order_param) {
@@ -367,13 +367,16 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
     chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
     unsigned char* dest = 0;
     int res = 0;
+    int noOfThreads = PgSAHelpers::numberOfThreads;
     switch (coder_type) {
         case LZMA_CODER:
-            res = LzmaCompress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
-                               estimated_compression);
+            noOfThreads = noOfThreads>1?2:1;
+            res = LzmaCompress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, noOfThreads, coder_param,
+                    estimated_compression);
             break;
         case PPMD7_CODER:
-            res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
+            noOfThreads = 1;
+            res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, noOfThreads, coder_param,
                     estimated_compression);
             break;
         case LZMA2_CODER:
