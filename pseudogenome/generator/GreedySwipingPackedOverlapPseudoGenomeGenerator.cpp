@@ -1,6 +1,8 @@
 #include "GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 
+#include <parallel/algorithm>
+
 using namespace PgSAReadsSet;
 using namespace PgSAHelpers;
 
@@ -87,7 +89,7 @@ namespace PgSAIndex {
             sortedReadsIdxs.push_back(i);
         
         PackedReadsComparator comparePacked = PackedReadsComparator(this);
-        std::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
+        __gnu_parallel::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
 
         uint_reads_cnt sortedReadsLeftCount = 1;
 
