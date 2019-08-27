@@ -81,6 +81,8 @@ set(PG_GEN_FILES
         pseudogenome/generator/AbstractOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.cpp
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
+        pseudogenome/generator/ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.cpp
+        pseudogenome/generator/ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
         pseudogenome/generator/PseudoGenomeGeneratorBase.h)
 

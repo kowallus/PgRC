@@ -50,6 +50,7 @@ namespace PgSAReadsSet {
             int compareSuffixWithPrefix(uint_reads_cnt_max sufIdx, uint_reads_cnt_max preIdx, uint_read_len_max sufOffset);
 
             int compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern);
+            int compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern, int length);
             uint8_t countMismatchesVsPattern(uint_reads_cnt_max i, const char *pattern, uint_read_len_max length, uint8_t maxMismatches);
 
             uint_read_len_max maxReadLengthVirtual() { return maxReadLength(); };

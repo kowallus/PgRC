@@ -6,6 +6,7 @@
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
+#include "pseudogenome/generator/ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
@@ -307,7 +308,7 @@ namespace PgTools {
     void PgRCManager::runPgGeneratorBasedReadsDivision() {
         cout << "HQ ";
         divReadsSets->getHqReadsSet()->printout();
-        const vector<bool>& isReadHqInHqReadsSet = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
+        const vector<bool>& isReadHqInHqReadsSet = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
                 divReadsSets->getHqReadsSet(), gen_quality_coef);
         divReadsSets->moveLqReadsFromHqReadsSetsToLqReadsSets(isReadHqInHqReadsSet);
     }

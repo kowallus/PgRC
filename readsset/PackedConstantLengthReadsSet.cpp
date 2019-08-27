@@ -104,6 +104,10 @@ namespace PgSAReadsSet {
         return sPacker->compareSequenceWithUnpacked(packedReads.data() + i * (size_t) packedLength, pattern, properties->maxReadLength);
     }
 
+    int PackedConstantLengthReadsSet::compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern, int length) {
+        return sPacker->compareSequenceWithUnpacked(packedReads.data() + i * (size_t) packedLength, pattern, length);
+    }
+
     uint8_t PackedConstantLengthReadsSet::countMismatchesVsPattern(uint_reads_cnt_max i, const char *pattern, uint_read_len_max length,
                                                            uint8_t maxMismatches) {
         return sPacker->countSequenceMismatchesVsUnpacked(packedReads.data() + i * (size_t) packedLength, pattern, length, maxMismatches);
