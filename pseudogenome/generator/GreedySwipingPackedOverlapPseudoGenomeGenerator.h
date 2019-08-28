@@ -5,7 +5,7 @@
 #include "AbstractOverlapPseudoGenomeGenerator.h"
 #include "../../readsset/PackedConstantLengthReadsSet.h"
 #include <algorithm>
-#include <list>
+#include <deque>
 
 using namespace PgSAReadsSet;
 
@@ -39,7 +39,7 @@ namespace PgSAIndex {
             vector<uint_reads_cnt> sortedSuffixIdxs;
             vector<uint_reads_cnt> ssiSymbolIdx {vector<uint_reads_cnt>(UCHAR_MAX, 0)};
             vector<uint_reads_cnt> ssiSymbolEnd {vector<uint_reads_cnt>(UCHAR_MAX, 0)};
-            list<uchar> ssiOrder;
+            deque<uchar> ssiOrder;
             void updateSuffixQueue(uchar suffixGroup, uint_read_len suffixOffset);
             
             int compareSuffixes(uchar lSymOrder, uchar rSymOrder, uint_read_len offset);

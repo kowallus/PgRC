@@ -71,7 +71,7 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::updateSuffixQueue(uchar suffixGroup, uint_read_len suffixOffset) {
         if (ssiSymbolIdx[suffixGroup] < ssiSymbolEnd[suffixGroup]) {
-            list<uchar>::reverse_iterator it = ssiOrder.rbegin();
+            deque<uchar>::reverse_iterator it = ssiOrder.rbegin();
             while (true) {
                 if (it == ssiOrder.rend() || compareSuffixes(suffixGroup, *it, suffixOffset) >= 0) {
                     ssiOrder.insert(it.base(), suffixGroup);
@@ -116,7 +116,7 @@ namespace PgSAIndex {
         ssiSymbolEnd[curSymOrder] = sortedSuffixIdxs.size();
         sortedReadsIdxs.resize(sortedReadsLeftCount);
         
-        cout << "Found " << (readsTotal() - this->readsLeft) << " duplicates.\n";
+        cout << "Found " << (readsTotal() - this->readsLeft) << " duplicates (..." << clock_millis() << " msec)" << endl;;
     }
     
     template<typename uint_read_len, typename uint_reads_cnt>
@@ -203,7 +203,7 @@ namespace PgSAIndex {
             ssiSymbolIdx.swap(ssiSymbolIdxLeft);
             ssiSymbolEnd.swap(ssiSymbolEndLeft);
         
-            *logout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap" << endl;
+            *logout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap (..." << clock_millis() << " msec)" << endl;
         }
 
         sortedReadsIdxs.clear();

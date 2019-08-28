@@ -38,7 +38,6 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
-#include <list>
 
 #define _prefetch(x,y) __builtin_prefetch(x,1,(4-y))
 

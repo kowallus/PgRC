@@ -1,5 +1,5 @@
 
-#include <list>
+#include <deque>
 #include "TextMatchers.h"
 
 using namespace PgSAHelpers;
@@ -46,7 +46,7 @@ namespace PgTools {
 
         resMatches.clear();
         uint64_t furthestMatchEndPos = 0;
-        list<TextMatch> currentMatches;
+        deque<TextMatch> currentMatches;
 
         int i = 0;
         uint64_t matchCount = 0;
