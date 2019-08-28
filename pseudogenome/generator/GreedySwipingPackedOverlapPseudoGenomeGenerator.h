@@ -53,7 +53,7 @@ namespace PgSAIndex {
 
             void initAndFindDuplicates();
             
-            virtual void findOverlappingReads(double overlappedReadsCountStopCoef) override;
+            virtual void findOverlappingReads(double overlappedReadsCountStopCoef, bool pgGenerationMode) override;
             
         public:
 

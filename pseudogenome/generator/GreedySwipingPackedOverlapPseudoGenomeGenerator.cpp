@@ -97,9 +97,10 @@ namespace PgSAIndex {
         
         for(typename vector<uint_reads_cnt>::iterator srIt = sortedReadsIdxs.begin(); srIt != sortedReadsIdxs.end();) {
             srIt++;
-            if (srIt != sortedReadsIdxs.end() && compareReads(*(srIt-1),*srIt) == 0) 
-                this->setReadSuccessor(*(srIt-1), *srIt, packedReadsSet->maxReadLength());
-            else {
+            if (srIt != sortedReadsIdxs.end() && compareReads(*(srIt-1),*srIt) == 0) {
+                this->unionOverlappedReads(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
+                this->readsLeft--;
+            } else {
                 sortedSuffixIdxs.push_back(*(srIt-1));
                 uchar firstSymbolOrder = getSymbolOrderFromRead(*(srIt-1), 0);
                 if (curSymOrder != firstSymbolOrder) {
@@ -119,7 +120,8 @@ namespace PgSAIndex {
     }
     
     template<typename uint_read_len, typename uint_reads_cnt>
-    void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::findOverlappingReads(double overlappedReadsCountStopCoef) {
+    void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::findOverlappingReads(
+            double overlappedReadsCountStopCoef, bool pgGenerationMode) {
 
         initAndFindDuplicates();
         *logout << "Start overlapping.\n";
@@ -169,8 +171,10 @@ namespace PgSAIndex {
                             *preIt = preIdx;
                         }
                             
-                        if (cmpRes == 0) 
-                            this->setReadSuccessor(sufIdx, *(preIt++), packedReadsSet->maxReadLength() - i);
+                        if (cmpRes == 0) {
+                            this->unionOverlappedReads(sufIdx, *(preIt++), packedReadsSet->maxReadLength() - i);
+                            this->readsLeft--;
+                        }
                         else if (cmpRes > 0) {
                             sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
                             continue;
