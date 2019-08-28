@@ -137,7 +137,7 @@ namespace PgSAIndex {
         const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
         uint_reads_cnt duplicatesCount = 0;
-        #pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:duplicatesCount)
+        #pragma omp parallel for schedule(guided) reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:duplicatesCount)
         for(uint16_t b = 0; b < blocksCount; b++) {
             sortedReadsCount[b] = sortedReadsBlockPos[b + 1] - sortedReadsBlockPos[b];
             uchar curSymOrder = 0;
@@ -170,7 +170,7 @@ namespace PgSAIndex {
         sortedSuffixIdxs.resize(this->readsLeft, 0);
         mergeSortOfLeftSuffixes(1, sortedSuffixesLeftCount, sortedSuffixIdxs.data(), sortedReadsIdxs.data());
 
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(guided)
         for(uint16_t b = 0; b < blocksCount; b++) {
             if (!sortedReadsCount[b])
                 continue;
@@ -196,7 +196,7 @@ namespace PgSAIndex {
 
         const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         this->sortedSuffixIdxsPtr = sortedSuffixIdxsPtr;
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(guided)
         for(uint16_t b = 0; b < blocksCount; b++) {
             uint16_t prevYoungestBlock = b / 4;
             uint8_t lastPrefixSymbolOrder = b % 4;
@@ -278,7 +278,7 @@ namespace PgSAIndex {
             threadsInIteration = numberOfThreads;
 
         uint_reads_cnt overlapsCount = 0;
-#pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) num_threads(threadsInIteration) \
+#pragma omp parallel for schedule(guided) reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) num_threads(threadsInIteration) \
                         reduction(+:overlapsCount)
         for(uint16_t b = 0; b < blocksCount; b++) {
             uchar curSymOrder = 0;
