@@ -24,6 +24,7 @@ namespace PgSAIndex {
         bool hasPredecessor(uint_reads_cnt incIdx);
         bool hasSuccessor(uint_reads_cnt incIdx);
         void unionOverlappedReads(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
+        void setReadSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
 
         uint_reads_cnt getHead(uint_reads_cnt idx);
         bool isHeadOf(uint_reads_cnt head, uint_reads_cnt idx);
@@ -64,8 +65,6 @@ namespace PgSAIndex {
 
         bool isPseudoGenomeLengthStandardVirtual();
         bool isPseudoGenomeLengthMaximalVirtual();
-
-        void setReadSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght) const;
     };
 
 }

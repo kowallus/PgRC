@@ -88,7 +88,7 @@ namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::setReadSuccessor(
-            uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght) const {
+            uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght) {
         nextRead[curIdx] = nextIdx;
         overlap[curIdx] = overlapLenght;
     }
