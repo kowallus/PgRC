@@ -13,59 +13,58 @@ namespace PgSAIndex {
     template < typename uint_read_len, typename uint_reads_cnt >
     class AbstractOverlapPseudoGenomeGeneratorTemplate: public PseudoGenomeGeneratorBase
     {
-        protected:
+    protected:
 
-            // auxiliary structures
-            uint_reads_cnt* nextRead = 0;
-            uint_read_len* overlap = 0;
-            uint_reads_cnt* headRead = 0;
-            uint_reads_cnt readsLeft;
-            
-            bool hasPredecessor(uint_reads_cnt incIdx);
-            bool hasSuccessor(uint_reads_cnt incIdx);
-            void setReadSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
+        // auxiliary structures
+        uint_reads_cnt* nextRead = 0;
+        uint_read_len* overlap = 0;
+        uint_reads_cnt* headRead = 0;
+        uint_reads_cnt readsLeft;
 
-            uint_reads_cnt getHead(uint_reads_cnt idx);
-            bool isHeadOf(uint_reads_cnt head, uint_reads_cnt idx);
+        bool hasPredecessor(uint_reads_cnt incIdx);
+        bool hasSuccessor(uint_reads_cnt incIdx);
+        void unionOverlappedReads(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
+        void setReadSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
 
-            uint_pg_len_max pseudoGenomeLength;
+        uint_reads_cnt getHead(uint_reads_cnt idx);
+        bool isHeadOf(uint_reads_cnt head, uint_reads_cnt idx);
 
-            virtual uint_read_len readLength(uint_reads_cnt incIdx) = 0;
-            virtual string getReadUpToOverlap(uint_reads_cnt incIdx) = 0;
-            virtual uint_reads_cnt readsTotal() = 0;
+        uint_pg_len_max pseudoGenomeLength;
 
-            virtual ReadsSetProperties* getReadsSetProperties() = 0;
+        virtual uint_read_len readLength(uint_reads_cnt incIdx) = 0;
+        virtual string getReadUpToOverlap(uint_reads_cnt incIdx) = 0;
+        virtual uint_reads_cnt readsTotal() = 0;
 
-            void performOverlapping(double overlappedReadsCountStopCoef = 1);
+        virtual ReadsSetProperties* getReadsSetProperties() = 0;
 
-            template<class GeneratedPseudoGenome>
-            GeneratedPseudoGenome* assemblePseudoGenomeTemplate();
+        void performOverlapping(double overlappedReadsCountStopCoef = 1, bool pgGenerationMode = true);
 
-            virtual void findOverlappingReads(double overlappedReadsCountStopCoef) = 0;
-            
-            uint_pg_len_max countPseudoGenomeLength();
-            uint_reads_cnt countSingles();
-            uint_reads_cnt countComponents();
-            void quick_stats();
+        template<class GeneratedPseudoGenome>
+        GeneratedPseudoGenome* assemblePseudoGenomeTemplate();
 
-            void init();
-            void dispose();
-            
-        public:
+        virtual void findOverlappingReads(double overlappedReadsCountStopCoef, bool pgGenerationMode) = 0;
 
-            AbstractOverlapPseudoGenomeGeneratorTemplate() {}
-            virtual ~AbstractOverlapPseudoGenomeGeneratorTemplate() {}
+        uint_pg_len_max countPseudoGenomeLength();
+        uint_reads_cnt countSingles();
+        uint_reads_cnt countComponents();
+        void quick_stats();
 
-            SeparatedPseudoGenome *generateSeparatedPseudoGenome() override;
+        void init(bool pgGenerationMode = true);
+        void dispose();
 
-            PseudoGenomeBase *generatePseudoGenomeBase() override;
+    public:
 
+        AbstractOverlapPseudoGenomeGeneratorTemplate() {}
+        virtual ~AbstractOverlapPseudoGenomeGeneratorTemplate() {}
+
+        SeparatedPseudoGenome *generateSeparatedPseudoGenome() override;
+
+        PseudoGenomeBase *generatePseudoGenomeBase() override;
 
         const vector<bool> getBothSidesOverlappedReads(double overlappedReadsCountStopCoef) override;
 
-            bool isPseudoGenomeLengthStandardVirtual();
-            bool isPseudoGenomeLengthMaximalVirtual();
-
+        bool isPseudoGenomeLengthStandardVirtual();
+        bool isPseudoGenomeLengthMaximalVirtual();
     };
 
 }

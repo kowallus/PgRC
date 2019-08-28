@@ -81,6 +81,7 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
+    template <bool pgGenerationMode>
     void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::initAndFindDuplicates() {
 
         for(uint_reads_cnt i = 1; i <= packedReadsSet->readsCount(); i++)
@@ -95,9 +96,13 @@ namespace PgSAIndex {
         
         for(typename vector<uint_reads_cnt>::iterator srIt = sortedReadsIdxs.begin(); srIt != sortedReadsIdxs.end();) {
             srIt++;
-            if (srIt != sortedReadsIdxs.end() && compareReads(*(srIt-1),*srIt) == 0) 
-                this->setReadSuccessor(*(srIt-1), *srIt, packedReadsSet->maxReadLength());
-            else {
+            if (srIt != sortedReadsIdxs.end() && compareReads(*(srIt-1),*srIt) == 0) {
+                if (pgGenerationMode)
+                    this->unionOverlappedReads(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
+                else
+                    this->setReadSuccessor(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
+                this->readsLeft--;
+            } else {
                 sortedSuffixIdxs.push_back(*(srIt-1));
                 uchar firstSymbolOrder = getSymbolOrderFromRead(*(srIt-1), 0);
                 if (curSymOrder != firstSymbolOrder) {
@@ -117,86 +122,21 @@ namespace PgSAIndex {
     }
     
     template<typename uint_read_len, typename uint_reads_cnt>
-    void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::findOverlappingReads(double overlappedReadsCountStopCoef) {
-
-        initAndFindDuplicates();
+    void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::findOverlappingReads(
+            double overlappedReadsCountStopCoef, bool pgGenerationMode) {
+        if (pgGenerationMode)
+            initAndFindDuplicates<true>();
+        else
+            initAndFindDuplicates<false>();
         *logout << "Start overlapping.\n";
 
         uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
 
         for(int i = 1 ; i < overlapIterations; i++) {
-            uint_reads_cnt sortedReadsLeftCount = 0;
-            vector<uint_reads_cnt> sortedSuffixLeft;
-            sortedSuffixLeft.reserve(this->readsLeft);
-            vector<uint_reads_cnt> ssiSymbolIdxLeft(UCHAR_MAX, 0);
-            vector<uint_reads_cnt> ssiSymbolEndLeft(UCHAR_MAX, 0);
-            uchar curSymOrder = 0;
-            
-            for(int j = 0; j < getReadsSetProperties()->symbolsCount; j++) 
-                updateSuffixQueue(j, i);
-
-            typename vector<uint_reads_cnt>::iterator preIt = sortedReadsIdxs.begin();
-            while (!ssiOrder.empty() || (preIt != sortedReadsIdxs.end())) {
-                if (ssiOrder.empty()) 
-                    sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
-                else {
-                    uchar j = ssiOrder.front();
-                    uint_reads_cnt sufIdx = sortedSuffixIdxs[ssiSymbolIdx[j]];
-                              
-                    if (preIt != sortedReadsIdxs.end()) {
-                        int cmpRes = -1;
-                        
-                        typename vector<uint_reads_cnt>::iterator curPreIt = preIt;
-                        while (preIt != sortedReadsIdxs.end()) {
-                            if ((cmpRes = compareSuffixWithPrefix(sufIdx, *preIt, i)) != 0)
-                                break;
-                            if ((sufIdx != *preIt) && (!this->isHeadOf(sufIdx, *preIt)))
-                                break;
-                            cmpRes = -1;
-                            preIt++;
-                        }
-                    
-                        if (cmpRes)
-                            preIt = curPreIt;
-                        else {
-                            uint_reads_cnt preIdx = *preIt;
-                            while (preIt > curPreIt) {
-                                *preIt = *(preIt - 1);
-                                preIt--;
-                            }
-                            *preIt = preIdx;
-                        }
-                            
-                        if (cmpRes == 0) 
-                            this->setReadSuccessor(sufIdx, *(preIt++), packedReadsSet->maxReadLength() - i);
-                        else if (cmpRes > 0) {
-                            sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
-                            continue;
-                        } else {
-                            sortedSuffixLeft.push_back(sufIdx);
-                            uchar ithSymbolOrder = getSymbolOrderFromRead(sufIdx, i);
-                            if (curSymOrder != ithSymbolOrder) {
-                                uint_reads_cnt ssiIndex = sortedSuffixLeft.size() - 1;
-                                ssiSymbolEndLeft[curSymOrder] = ssiIndex;
-                                ssiSymbolIdxLeft[ithSymbolOrder] = ssiIndex;
-                                curSymOrder = ithSymbolOrder;
-                            }
-                        }
-                    }
-                    
-                    ssiOrder.pop_front();
-                    ssiSymbolIdx[j]++;
-                    updateSuffixQueue(j, i);
-                }
-                               
-            }
-            
-            ssiSymbolEndLeft[curSymOrder] = sortedSuffixLeft.size();
-            sortedReadsIdxs.resize(sortedReadsLeftCount);
-            sortedSuffixIdxs.swap(sortedSuffixLeft);
-            ssiSymbolIdx.swap(ssiSymbolIdxLeft);
-            ssiSymbolEnd.swap(ssiSymbolEndLeft);
-        
+            if (pgGenerationMode)
+                overlapSortedReadsAndMergeSortSuffixes<true>(i);
+            else
+                overlapSortedReadsAndMergeSortSuffixes<false>(i);
             *logout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap (..." << clock_millis() << " msec)" << endl;
         }
 
@@ -210,10 +150,91 @@ namespace PgSAIndex {
         ssiSymbolEnd.shrink_to_fit();
         ssiOrder.clear();
 
-        *logout << this->countComponents() << " pseudo-genome components\n";
+        if (pgGenerationMode)
+            *logout << this->countComponents() << " pseudo-genome components\n";
         
         cout << "Overlapping done in " << clock_millis() << " msec\n";
         *logout << endl;
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    template<bool pgGenerationMode>
+    void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::
+        overlapSortedReadsAndMergeSortSuffixes(uint_read_len suffixesOffset) {
+        uint_reads_cnt sortedReadsLeftCount = 0;
+        vector<uint_reads_cnt> sortedSuffixLeft;
+        sortedSuffixLeft.reserve(this->readsLeft);
+        vector<uint_reads_cnt> ssiSymbolIdxLeft(UCHAR_MAX, 0);
+        vector<uint_reads_cnt> ssiSymbolEndLeft(UCHAR_MAX, 0);
+        uchar curSymOrder = 0;
+
+        for(int j = 0; j < getReadsSetProperties()->symbolsCount; j++)
+            updateSuffixQueue(j, suffixesOffset);
+
+        typename vector<uint_reads_cnt>::iterator preIt = sortedReadsIdxs.begin();
+        while (!ssiOrder.empty() || (preIt != sortedReadsIdxs.end())) {
+            if (ssiOrder.empty())
+                sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
+            else {
+                uchar j = ssiOrder.front();
+                uint_reads_cnt sufIdx = sortedSuffixIdxs[ssiSymbolIdx[j]];
+
+                if (preIt != sortedReadsIdxs.end()) {
+                    int cmpRes = -1;
+
+                    typename vector<uint_reads_cnt>::iterator curPreIt = preIt;
+                    while (preIt != sortedReadsIdxs.end()) {
+                        if ((cmpRes = compareSuffixWithPrefix(sufIdx, *preIt, suffixesOffset)) != 0)
+                            break;
+                        if ((sufIdx != *preIt) && (!pgGenerationMode || !this->isHeadOf(sufIdx, *preIt)))
+                            break;
+                        cmpRes = -1;
+                        preIt++;
+                    }
+
+                    if (cmpRes)
+                        preIt = curPreIt;
+                    else {
+                        uint_reads_cnt preIdx = *preIt;
+                        while (preIt > curPreIt) {
+                            *preIt = *(preIt - 1);
+                            preIt--;
+                        }
+                        *preIt = preIdx;
+                    }
+
+                    if (cmpRes == 0) {
+                        if (pgGenerationMode)
+                            this->unionOverlappedReads(sufIdx, *(preIt++), packedReadsSet->maxReadLength() - suffixesOffset);
+                        else
+                            this->setReadSuccessor(sufIdx, *(preIt++), packedReadsSet->maxReadLength() - suffixesOffset);
+                        this->readsLeft--;
+                    }
+                    else if (cmpRes > 0) {
+                        sortedReadsIdxs[sortedReadsLeftCount++] = (*(preIt++));
+                        continue;
+                    } else {
+                        sortedSuffixLeft.push_back(sufIdx);
+                        uchar ithSymbolOrder = getSymbolOrderFromRead(sufIdx, suffixesOffset);
+                        if (curSymOrder != ithSymbolOrder) {
+                            uint_reads_cnt ssiIndex = sortedSuffixLeft.size() - 1;
+                            ssiSymbolEndLeft[curSymOrder] = ssiIndex;
+                            ssiSymbolIdxLeft[ithSymbolOrder] = ssiIndex;
+                            curSymOrder = ithSymbolOrder;
+                        }
+                    }
+                }
+
+                ssiOrder.pop_front();
+                ssiSymbolIdx[j]++;
+                updateSuffixQueue(j, suffixesOffset);
+            }
+        }
+        ssiSymbolEndLeft[curSymOrder] = sortedSuffixLeft.size();
+        sortedReadsIdxs.resize(sortedReadsLeftCount);
+        sortedSuffixIdxs.swap(sortedSuffixLeft);
+        ssiSymbolIdx.swap(ssiSymbolIdxLeft);
+        ssiSymbolEnd.swap(ssiSymbolEndLeft);
     }
 
 // FACTORY

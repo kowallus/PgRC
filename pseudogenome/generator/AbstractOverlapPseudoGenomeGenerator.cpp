@@ -1,3 +1,4 @@
+#include <cassert>
 #include "AbstractOverlapPseudoGenomeGenerator.h"
 
 using namespace PgSAReadsSet;
@@ -8,10 +9,11 @@ using namespace PgSAHelpers;
 namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::init() {
+    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::init(bool pgGenerationMode) {
         nextRead = (uint_reads_cnt*) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
-        overlap = (uint_read_len*) calloc(readsTotal() + 1, sizeof(uint_read_len));
-        headRead = (uint_reads_cnt*) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
+        overlap = (uint_read_len *) calloc(readsTotal() + 1, sizeof(uint_read_len));
+        if (pgGenerationMode)
+            headRead = (uint_reads_cnt *) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
         readsLeft = readsTotal();
     }
     
@@ -28,23 +30,22 @@ namespace PgSAIndex {
             double overlappedReadsCountStopCoef) {
 
         clock_checkpoint();
-        init();
-        performOverlapping(overlappedReadsCountStopCoef);
+        init(false);
+        performOverlapping(overlappedReadsCountStopCoef, false);
 
         vector<uint_read_len> prevOverlap(readsTotal() + 1, 0);
         for(uint_reads_cnt i = 1; i <= readsTotal(); i++)
             if (hasSuccessor(i))
                 prevOverlap[nextRead[i]] = overlap[i];
 
-
         uint_reads_cnt resCount = readsTotal();
         vector<bool> res(readsTotal(), true);
         for(uint_reads_cnt i = 1; i <= readsTotal(); i++) {
-            if (hasPredecessor(i) && hasSuccessor(i))
+            if (prevOverlap[i] && hasSuccessor(i))
                 continue;
             if (hasSuccessor(i) && overlap[i] == readLength(i))
                 continue;
-            if (hasPredecessor(i) && prevOverlap[i] == readLength(i))
+            if (prevOverlap[i] == readLength(i))
                 continue;
             res[i-1] = false;
             resCount--;
@@ -58,35 +59,43 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::performOverlapping(double overlappedReadsCountStopCoef) {
+    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::performOverlapping(
+            double overlappedReadsCountStopCoef, bool pgGenerationMode) {
         clock_checkpoint();
-        findOverlappingReads(overlappedReadsCountStopCoef);
-        pseudoGenomeLength = countPseudoGenomeLength();
-        quick_stats();
-
+        findOverlappingReads(overlappedReadsCountStopCoef, pgGenerationMode);
+        if (pgGenerationMode) {
+            pseudoGenomeLength = countPseudoGenomeLength();
+            quick_stats();
+        }
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::setReadSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght) {
-        
+    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::unionOverlappedReads(
+            uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght) {
+        assert(headRead != 0);
         /* validation
         if (prevRead[nextIdx] > 0) 
             cout << curIdx << " cannot have successor " << nextIdx << " since it already success " << prevRead[nextIdx] << " by " << (int) overlap[prevRead[nextIdx]] << " symbols.\n";
         if (nextRead[curIdx] > 0)
             cout << nextIdx << " cannot have predecessor " << curIdx << " since it already precedes " << nextRead[curIdx] << " by " << (int) overlap[curIdx] << " symbols.\n";
         */
-        
-        nextRead[curIdx] = nextIdx;
-        overlap[curIdx] = overlapLenght;
+        setReadSuccessor(curIdx, nextIdx, overlapLenght);
         if (headRead[curIdx] == 0)
             headRead[nextIdx] = curIdx;
         else
             headRead[nextIdx] = headRead[curIdx];
-        readsLeft--;
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::setReadSuccessor(
+            uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght) {
+        nextRead[curIdx] = nextIdx;
+        overlap[curIdx] = overlapLenght;
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
     uint_reads_cnt AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::getHead(uint_reads_cnt idx) {
+        assert(headRead != 0);
         if (headRead[idx] == 0)
             return idx;
 
@@ -159,6 +168,7 @@ namespace PgSAIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
     bool AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::hasPredecessor(uint_reads_cnt incIdx) {
+        assert(headRead != 0);
         return headRead[incIdx];
     }
 
