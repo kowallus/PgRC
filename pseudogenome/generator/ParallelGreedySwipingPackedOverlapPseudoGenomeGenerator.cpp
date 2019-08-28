@@ -206,49 +206,37 @@ namespace PgSAIndex {
         for(uint16_t b = 1; b <= blocksCount; b++)
             sortedSuffixBlockPos[b] = sortedSuffixBlockPos[b - 1] + sortedSuffixesLeftCount[b - 1];
 
-        uint16_t b = 0;
-        threadStartBlock[UINT8_MAX] = 0;
-        for(uint8_t t = 1; t <= numberOfThreads; t++) {
-            uint_reads_cnt threshold = ((double) t / numberOfThreads) * sortedSuffixBlockPos[blocksCount];
-            while (sortedSuffixBlockPos[b] < threshold)
-                b++;
-            threadStartBlock[t] = b;
-        }
-
         const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         this->sortedSuffixIdxsPtr = sortedSuffixIdxsPtr;
-        #pragma omp parallel for
-        for(uint8_t t = 0; t < numberOfThreads; t++)
+        #pragma omp parallel for schedule(guided)
+        for(uint16_t b = 0; b < blocksCount; b++)
         {
-            for (uint16_t b = threadStartBlock[t]; b < threadStartBlock[t + 1]; b++)
-            {
-                uint16_t prevYoungestBlock = b / 4;
-                uint8_t lastPrefixSymbolOrder = b % 4;
-                uint_reads_cnt ssiSymbolIdx[5];
-                uint_reads_cnt ssiSymbolEnd[5];
-                for (uint8_t j = 0; j < symbolsCount; j++) {
-                    ssiSymbolIdx[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
-                    [lastPrefixSymbolOrder];
-                    ssiSymbolEnd[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
-                    [lastPrefixSymbolOrder + 1];
-                }
-                deque<uchar> ssiOrder;
-                for (uint8_t j = 0; j < symbolsCount; j++) {
-                    while (ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
-                           this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0)
-                        ssiSymbolIdx[j]++;
-                    updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
-                }
-                uint_reads_cnt curPos = sortedSuffixBlockPos[b];
-                while (!ssiOrder.empty()) {
-                    uchar j = ssiOrder.front();
-                    uint_reads_cnt sufIdx = sortedSuffixIdxsPtr[ssiSymbolIdx[j]];
-                    sortedSuffixLeftIdxsPtr[curPos++] = sufIdx;
-                    ssiOrder.pop_front();
-                    while (++ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
-                            this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0);
-                    updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
-                }
+            uint16_t prevYoungestBlock = b / 4;
+            uint8_t lastPrefixSymbolOrder = b % 4;
+            uint_reads_cnt ssiSymbolIdx[5];
+            uint_reads_cnt ssiSymbolEnd[5];
+            for (uint8_t j = 0; j < symbolsCount; j++) {
+                ssiSymbolIdx[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
+                [lastPrefixSymbolOrder];
+                ssiSymbolEnd[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
+                [lastPrefixSymbolOrder + 1];
+            }
+            deque<uchar> ssiOrder;
+            for (uint8_t j = 0; j < symbolsCount; j++) {
+                while (ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
+                       this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0)
+                    ssiSymbolIdx[j]++;
+                updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
+            }
+            uint_reads_cnt curPos = sortedSuffixBlockPos[b];
+            while (!ssiOrder.empty()) {
+                uchar j = ssiOrder.front();
+                uint_reads_cnt sufIdx = sortedSuffixIdxsPtr[ssiSymbolIdx[j]];
+                sortedSuffixLeftIdxsPtr[curPos++] = sufIdx;
+                ssiOrder.pop_front();
+                while (++ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
+                        this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0);
+                updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
             }
         }
     }
