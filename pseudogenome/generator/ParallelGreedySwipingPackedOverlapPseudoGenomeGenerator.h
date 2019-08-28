@@ -21,9 +21,6 @@ namespace PgSAIndex {
     {
     private:
 
-        // auxiliary structures
-        uint_reads_cnt dupsTotal;
-
         bool ownReadsSet = false;
         PackedConstantLengthReadsSet* packedReadsSet = 0;
 
@@ -40,6 +37,8 @@ namespace PgSAIndex {
 
         uint_reads_cnt sortedSuffixBlockPlusSymbolPos[MAX_BLOCKS_COUNT + 1][MAX_SYMBOLS_COUNT + 1];
         uint_reads_cnt sortedSuffixBlockPos[MAX_BLOCKS_COUNT + 1];
+
+        uint16_t threadStartBlock[UINT8_MAX] = { 0 };
 
         struct PackedReadsComparator {
             ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>* myGenerator;

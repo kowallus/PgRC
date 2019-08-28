@@ -133,36 +133,48 @@ namespace PgSAIndex {
     void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::initAndFindDuplicates() {
         auto start_t = chrono::steady_clock::now();
         prepareSortedReadsBlocks();
-
+        uint16_t b = 0;
+        threadStartBlock[UINT8_MAX] = 0;
+        for(uint8_t t = 1; t <= numberOfThreads; t++) {
+            uint_reads_cnt threshold = ((double) t / numberOfThreads) * this->readsLeft;
+            while (sortedReadsBlockPos[b] < threshold) {
+                b++;
+            }
+            threadStartBlock[t] = b;
+        }
         const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
         uint_reads_cnt duplicatesCount = 0;
-        #pragma omp parallel for schedule(guided) reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:duplicatesCount)
-        for(uint16_t b = 0; b < blocksCount; b++) {
-            sortedReadsCount[b] = sortedReadsBlockPos[b + 1] - sortedReadsBlockPos[b];
-            uchar curSymOrder = 0;
-            sortedSuffixBlockPlusSymbolPos[b][curSymOrder] = sortedReadsBlockPos[b];
-            if (sortedReadsCount[b]) {
-                uint16_t youngestNextSuffixBlock = (b % (blocksCount / symbolsCount)) * symbolsCount;
-                const auto &blockEnd = sortedReadsIdxs.begin() + sortedReadsBlockPos[b + 1];
-                for (auto srIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[b]; srIt != blockEnd;) {
-                    srIt++;
-                    if (srIt != blockEnd && compareReads(*(srIt - 1), *srIt) == 0) {
-                        if (pgGenerationMode)
-                            this->setDuplicateSuccessor<true>(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
-                        else
-                            this->setDuplicateSuccessor<false>(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
-                        duplicatesCount++;
-                    } else {
-                        uchar nextSuffixSymbolOrder = getSymbolOrderFromRead(*(srIt - 1), blockPrefixLength);
-                        sortedSuffixesLeftCount[youngestNextSuffixBlock + nextSuffixSymbolOrder]++;
-                        while (curSymOrder != nextSuffixSymbolOrder)
-                            sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = (srIt - 1) - sortedReadsIdxs.begin();
+        #pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:duplicatesCount)
+        for(uint8_t t = 0; t < numberOfThreads; t++)
+        {
+            for (uint16_t b = threadStartBlock[t]; b < threadStartBlock[t + 1]; b++)
+            {
+                sortedReadsCount[b] = sortedReadsBlockPos[b + 1] - sortedReadsBlockPos[b];
+                uchar curSymOrder = 0;
+                sortedSuffixBlockPlusSymbolPos[b][curSymOrder] = sortedReadsBlockPos[b];
+                if (sortedReadsCount[b]) {
+                    uint16_t youngestNextSuffixBlock = (b % (blocksCount / symbolsCount)) * symbolsCount;
+                    const auto &blockEnd = sortedReadsIdxs.begin() + sortedReadsBlockPos[b + 1];
+                    for (auto srIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[b]; srIt != blockEnd;) {
+                        srIt++;
+                        if (srIt != blockEnd && compareReads(*(srIt - 1), *srIt) == 0) {
+                            if (pgGenerationMode)
+                                this->setDuplicateSuccessor<true>(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
+                            else
+                                this->setDuplicateSuccessor<false>(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
+                            duplicatesCount++;
+                        } else {
+                            uchar nextSuffixSymbolOrder = getSymbolOrderFromRead(*(srIt - 1), blockPrefixLength);
+                            sortedSuffixesLeftCount[youngestNextSuffixBlock + nextSuffixSymbolOrder]++;
+                            while (curSymOrder != nextSuffixSymbolOrder)
+                                sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = (srIt - 1) - sortedReadsIdxs.begin();
+                        }
                     }
                 }
+                while (curSymOrder < symbolsCount)
+                    sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = sortedReadsBlockPos[b + 1];
             }
-            while (curSymOrder < symbolsCount)
-                sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = sortedReadsBlockPos[b + 1];
         }
         this->readsLeft -= duplicatesCount;
         assert(accumulate(sortedSuffixesLeftCount, sortedSuffixesLeftCount + blocksCount, 0) == this->readsLeft);
@@ -194,36 +206,49 @@ namespace PgSAIndex {
         for(uint16_t b = 1; b <= blocksCount; b++)
             sortedSuffixBlockPos[b] = sortedSuffixBlockPos[b - 1] + sortedSuffixesLeftCount[b - 1];
 
+        uint16_t b = 0;
+        threadStartBlock[UINT8_MAX] = 0;
+        for(uint8_t t = 1; t <= numberOfThreads; t++) {
+            uint_reads_cnt threshold = ((double) t / numberOfThreads) * sortedSuffixBlockPos[blocksCount];
+            while (sortedSuffixBlockPos[b] < threshold)
+                b++;
+            threadStartBlock[t] = b;
+        }
+
         const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         this->sortedSuffixIdxsPtr = sortedSuffixIdxsPtr;
-        #pragma omp parallel for schedule(guided)
-        for(uint16_t b = 0; b < blocksCount; b++) {
-            uint16_t prevYoungestBlock = b / 4;
-            uint8_t lastPrefixSymbolOrder = b % 4;
-            uint_reads_cnt ssiSymbolIdx[5];
-            uint_reads_cnt ssiSymbolEnd[5];
-            for (uint8_t j = 0; j < symbolsCount; j++) {
-                ssiSymbolIdx[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
-                [lastPrefixSymbolOrder];
-                ssiSymbolEnd[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
-                [lastPrefixSymbolOrder + 1];
-            }
-            deque<uchar> ssiOrder;
-            for (uint8_t j = 0; j < symbolsCount; j++) {
-                while (ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
-                       this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0)
-                    ssiSymbolIdx[j]++;
-                updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
-            }
-            uint_reads_cnt curPos = sortedSuffixBlockPos[b];
-            while (!ssiOrder.empty()) {
-                uchar j = ssiOrder.front();
-                uint_reads_cnt sufIdx = sortedSuffixIdxsPtr[ssiSymbolIdx[j]];
-                sortedSuffixLeftIdxsPtr[curPos++] = sufIdx;
-                ssiOrder.pop_front();
-                while (++ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
-                        this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0);
-                updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
+        #pragma omp parallel for
+        for(uint8_t t = 0; t < numberOfThreads; t++)
+        {
+            for (uint16_t b = threadStartBlock[t]; b < threadStartBlock[t + 1]; b++)
+            {
+                uint16_t prevYoungestBlock = b / 4;
+                uint8_t lastPrefixSymbolOrder = b % 4;
+                uint_reads_cnt ssiSymbolIdx[5];
+                uint_reads_cnt ssiSymbolEnd[5];
+                for (uint8_t j = 0; j < symbolsCount; j++) {
+                    ssiSymbolIdx[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
+                    [lastPrefixSymbolOrder];
+                    ssiSymbolEnd[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
+                    [lastPrefixSymbolOrder + 1];
+                }
+                deque<uchar> ssiOrder;
+                for (uint8_t j = 0; j < symbolsCount; j++) {
+                    while (ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
+                           this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0)
+                        ssiSymbolIdx[j]++;
+                    updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
+                }
+                uint_reads_cnt curPos = sortedSuffixBlockPos[b];
+                while (!ssiOrder.empty()) {
+                    uchar j = ssiOrder.front();
+                    uint_reads_cnt sufIdx = sortedSuffixIdxsPtr[ssiSymbolIdx[j]];
+                    sortedSuffixLeftIdxsPtr[curPos++] = sufIdx;
+                    ssiOrder.pop_front();
+                    while (++ssiSymbolIdx[j] < ssiSymbolEnd[j] &&
+                            this->nextRead[sortedSuffixIdxsPtr[ssiSymbolIdx[j]]] != 0);
+                    updateSuffixQueue(j, offset + blockPrefixLength, ssiSymbolIdx, ssiSymbolEnd, ssiOrder);
+                }
             }
         }
     }
@@ -249,7 +274,6 @@ namespace PgSAIndex {
             vector<uint_reads_cnt> sortedSuffixLeft(this->readsLeft, 0);
             mergeSortOfLeftSuffixes(i + 1, sortedSuffixesLeftCount, sortedSuffixLeft.data(), sortedSuffixIdxs.data());
             sortedSuffixIdxs.swap(sortedSuffixLeft);
-            validateSortedSuffixes(i + 1);
 
             *logout << this->readsLeft << " reads left after "
                     << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap (..." << time_millis() << ") msec" << endl;
@@ -277,77 +301,93 @@ namespace PgSAIndex {
         if (!pgGenerationMode || threadsInIteration > numberOfThreads)
             threadsInIteration = numberOfThreads;
 
-        uint_reads_cnt overlapsCount = 0;
-#pragma omp parallel for schedule(guided) reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) num_threads(threadsInIteration) \
-                        reduction(+:overlapsCount)
-        for(uint16_t b = 0; b < blocksCount; b++) {
-            uchar curSymOrder = 0;
-            sortedSuffixBlockPlusSymbolPos[b][curSymOrder] = sortedSuffixBlockPos[b];
-            uint16_t youngestNextSuffixBlock = (b % (blocksCount / symbolsCount)) * symbolsCount;
-            auto preIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[b];
-            auto sufIt = sortedSuffixIdxs.begin() + sortedSuffixBlockPos[b];
-            const auto &preEnd = preIt + sortedReadsCount[b];
-            const auto &sufEnd = sortedSuffixIdxs.begin() + sortedSuffixBlockPos[b + 1];
-            sortedReadsCount[b] = 0;
-            while (sufIt != sufEnd || preIt != preEnd) {
-                if (sufIt == sufEnd)
-                    sortedReadsIdxs[sortedReadsBlockPos[b] + sortedReadsCount[b]++] = (*(preIt++));
-                else {
-                    int cmpRes = -1;
-                    auto curPreIt = preIt;
-                    while (preIt != preEnd) {
-                        if ((cmpRes = compareSuffixWithPrefix(*sufIt, *preIt, suffixesOffset)) != 0)
-                            break;
-                        if ((*sufIt != *preIt) && (!pgGenerationMode || !this->isHeadOf(*sufIt, *preIt)))
-                            break;
-                        cmpRes = -1;
-                        preIt++;
-                    }
-
-                    if (cmpRes)
-                        preIt = curPreIt;
-                    else {
-                        uint_reads_cnt preIdx = *preIt;
-                        while (preIt > curPreIt) {
-                            *preIt = *(preIt - 1);
-                            preIt--;
-                        }
-                        *preIt = preIdx;
-                    }
-
-                    if (cmpRes == 0) {
-                        if (pgGenerationMode) {
-                            bool cycleCheck = false;
-#pragma omp critical
-                            {
-                                if (!this->isHeadOf(*sufIt, *preIt)) {
-                                    this->unionOverlappedReads(*sufIt, *preIt,
-                                                               packedReadsSet->maxReadLength() - suffixesOffset);
-                                } else
-                                    cycleCheck = true;
-                            }
-                            if (cycleCheck)
-                                continue;
-                        } else
-                            this->setReadSuccessor(*sufIt, *preIt,
-                                               packedReadsSet->maxReadLength() - suffixesOffset);
-                        overlapsCount++;
-                        preIt++;
-                    } else if (cmpRes > 0) {
-                        sortedReadsIdxs[sortedReadsBlockPos[b] + sortedReadsCount[b]++] = (*(preIt++));
-                        continue;
-                    } else {
-                        uchar nextSuffixSymbolOrder = getSymbolOrderFromRead(*sufIt, suffixesOffset +
-                                                                                     blockPrefixLength);
-                        sortedSuffixesLeftCount[youngestNextSuffixBlock + nextSuffixSymbolOrder]++;
-                        while (curSymOrder != nextSuffixSymbolOrder)
-                            sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = sufIt - sortedSuffixIdxs.begin();
-                    }
-                    sufIt++;
-                }
+        uint16_t b = 0;
+        uint_reads_cnt readsAndSuffixesCount = 0;
+        threadStartBlock[UINT8_MAX] = 0;
+        for(uint8_t t = 1; t <= threadsInIteration; t++) {
+            uint_reads_cnt threshold = ((double) t / numberOfThreads) * this->readsLeft * 2;
+            while (readsAndSuffixesCount < threshold) {
+                readsAndSuffixesCount += sortedReadsCount[b] + sortedSuffixBlockPos[b + 1] - sortedSuffixBlockPos[b];
+                b++;
             }
-            while (curSymOrder < symbolsCount)
-                sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = sortedSuffixBlockPos[b + 1];
+            threadStartBlock[t] = b;
+        }
+
+        uint_reads_cnt overlapsCount = 0;
+#pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) num_threads(threadsInIteration) \
+                        reduction(+:overlapsCount)
+        for(uint8_t t = 0; t < threadsInIteration; t++)
+        {
+            for (uint16_t b = threadStartBlock[t]; b < threadStartBlock[t + 1]; b++)
+            {
+                uchar curSymOrder = 0;
+                sortedSuffixBlockPlusSymbolPos[b][curSymOrder] = sortedSuffixBlockPos[b];
+                uint16_t youngestNextSuffixBlock = (b % (blocksCount / symbolsCount)) * symbolsCount;
+                auto preIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[b];
+                auto sufIt = sortedSuffixIdxs.begin() + sortedSuffixBlockPos[b];
+                const auto &preEnd = preIt + sortedReadsCount[b];
+                const auto &sufEnd = sortedSuffixIdxs.begin() + sortedSuffixBlockPos[b + 1];
+                sortedReadsCount[b] = 0;
+                while (sufIt != sufEnd || preIt != preEnd) {
+                    if (sufIt == sufEnd)
+                        sortedReadsIdxs[sortedReadsBlockPos[b] + sortedReadsCount[b]++] = (*(preIt++));
+                    else {
+                        int cmpRes = -1;
+                        auto curPreIt = preIt;
+                        while (preIt != preEnd) {
+                            if ((cmpRes = compareSuffixWithPrefix(*sufIt, *preIt, suffixesOffset)) != 0)
+                                break;
+                            if ((*sufIt != *preIt) && (!pgGenerationMode || !this->isHeadOf(*sufIt, *preIt)))
+                                break;
+                            cmpRes = -1;
+                            preIt++;
+                        }
+
+                        if (cmpRes)
+                            preIt = curPreIt;
+                        else {
+                            uint_reads_cnt preIdx = *preIt;
+                            while (preIt > curPreIt) {
+                                *preIt = *(preIt - 1);
+                                preIt--;
+                            }
+                            *preIt = preIdx;
+                        }
+
+                        if (cmpRes == 0) {
+                            if (pgGenerationMode) {
+                                bool cycleCheck = false;
+#pragma omp critical
+                                {
+                                    if (!this->isHeadOf(*sufIt, *preIt)) {
+                                        this->unionOverlappedReads(*sufIt, *preIt,
+                                                                   packedReadsSet->maxReadLength() - suffixesOffset);
+                                    } else
+                                        cycleCheck = true;
+                                }
+                                if (cycleCheck)
+                                    continue;
+                            } else
+                                this->setReadSuccessor(*sufIt, *preIt,
+                                                       packedReadsSet->maxReadLength() - suffixesOffset);
+                            overlapsCount++;
+                            preIt++;
+                        } else if (cmpRes > 0) {
+                            sortedReadsIdxs[sortedReadsBlockPos[b] + sortedReadsCount[b]++] = (*(preIt++));
+                            continue;
+                        } else {
+                            uchar nextSuffixSymbolOrder = getSymbolOrderFromRead(*sufIt, suffixesOffset +
+                                                                                         blockPrefixLength);
+                            sortedSuffixesLeftCount[youngestNextSuffixBlock + nextSuffixSymbolOrder]++;
+                            while (curSymOrder != nextSuffixSymbolOrder)
+                                sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = sufIt - sortedSuffixIdxs.begin();
+                        }
+                        sufIt++;
+                    }
+                }
+                while (curSymOrder < symbolsCount)
+                    sortedSuffixBlockPlusSymbolPos[b][++curSymOrder] = sortedSuffixBlockPos[b + 1];
+            }
         }
         this->readsLeft -= overlapsCount;
         assert(accumulate(sortedSuffixesLeftCount, sortedSuffixesLeftCount + blocksCount, 0) == this->readsLeft);
