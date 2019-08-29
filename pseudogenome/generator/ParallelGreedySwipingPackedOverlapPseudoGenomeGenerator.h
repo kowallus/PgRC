@@ -6,11 +6,10 @@
 #include "../../readsset/PackedConstantLengthReadsSet.h"
 #include <algorithm>
 #include <deque>
-#include <functional>
 
 #define MAX_BLOCK_PREFIX_LENGTH 4
 #define MAX_SYMBOLS_COUNT 5
-#define MAX_BLOCKS_COUNT 625 // MAX_BLOCK_PREFIX_LENGTH * |"ACGTN"|
+#define MAX_BLOCKS_COUNT 625 // MAX_SYMBOLS_COUNT^MAX_BLOCK_PREFIX_LENGTH
 
 using namespace PgSAReadsSet;
 
@@ -86,13 +85,13 @@ namespace PgSAIndex {
         template<bool pgGenerationMode>
         void initAndFindDuplicates();
         void prepareSortedReadsBlocks();
-        void mergeSortOfLeftSuffixes(uint8_t offset, const uint_reads_cnt *sortedSuffixesLeftCount,
+        void mergeSortOfLeftSuffixes(uint_read_len offset, const uint_reads_cnt *sortedSuffixesLeftCount,
                 uint_reads_cnt *sortedSuffixLeftIdxsPtr, const uint_reads_cnt *sortedSuffixIdxsPtr);
 
         template<bool pgGenerationMode>
         void overlapSortedReadsAndSuffixes(uint_read_len suffixesOffset, uint_reads_cnt *sortedSuffixesLeftCount);
 
-        void validateSortedSuffixes(uint8_t offset) const;
+        void validateSortedSuffixes(uint_read_len offset) const;
 
         void findOverlappingReads(double overlappedReadsCountStopCoef, bool pgGenerationMode) override;
 

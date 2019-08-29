@@ -194,13 +194,11 @@ namespace PgSAIndex {
             sortedReadsCount[b] = i - sortedReadsBlockPos[b];
         }
         assert(accumulate(sortedReadsCount, sortedReadsCount + blocksCount, 0) == this->readsLeft);
-
-        cout << "Init phase finished in " << time_millis(start_t) << " msec." << endl;
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
     void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::mergeSortOfLeftSuffixes(
-            uint8_t offset, const uint_reads_cnt *sortedSuffixesLeftCount, uint_reads_cnt *sortedSuffixLeftIdxsPtr,
+            uint_read_len offset, const uint_reads_cnt *sortedSuffixesLeftCount, uint_reads_cnt *sortedSuffixLeftIdxsPtr,
             const uint_reads_cnt *sortedSuffixIdxsPtr) {
         sortedSuffixBlockPos[0] = 0;
         for(uint16_t b = 1; b <= blocksCount; b++)
@@ -211,10 +209,10 @@ namespace PgSAIndex {
         #pragma omp parallel for schedule(guided)
         for(uint16_t b = 0; b < blocksCount; b++)
         {
-            uint16_t prevYoungestBlock = b / 4;
-            uint8_t lastPrefixSymbolOrder = b % 4;
-            uint_reads_cnt ssiSymbolIdx[5];
-            uint_reads_cnt ssiSymbolEnd[5];
+            uint16_t prevYoungestBlock = b / symbolsCount;
+            uint8_t lastPrefixSymbolOrder = b % symbolsCount;
+            uint_reads_cnt ssiSymbolIdx[MAX_SYMBOLS_COUNT];
+            uint_reads_cnt ssiSymbolEnd[MAX_SYMBOLS_COUNT];
             for (uint8_t j = 0; j < symbolsCount; j++) {
                 ssiSymbolIdx[j] = sortedSuffixBlockPlusSymbolPos[prevYoungestBlock + (blocksCount / symbolsCount) * j]
                 [lastPrefixSymbolOrder];
@@ -252,6 +250,8 @@ namespace PgSAIndex {
         *logout << "Start overlapping.\n";
 
         uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
+        if (overlapIterations > packedReadsSet->maxReadLength() - blockPrefixLength)
+            overlapIterations = packedReadsSet->maxReadLength() - blockPrefixLength;
         for (int i = 1; i < overlapIterations; i++) {
 
             uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
@@ -293,7 +293,7 @@ namespace PgSAIndex {
         uint_reads_cnt readsAndSuffixesCount = 0;
         threadStartBlock[UINT8_MAX] = 0;
         for(uint8_t t = 1; t <= threadsInIteration; t++) {
-            uint_reads_cnt threshold = ((double) t / numberOfThreads) * this->readsLeft * 2;
+            uint_reads_cnt threshold = ((double) t / threadsInIteration) * this->readsLeft * 2;
             while (readsAndSuffixesCount < threshold) {
                 readsAndSuffixesCount += sortedReadsCount[b] + sortedSuffixBlockPos[b + 1] - sortedSuffixBlockPos[b];
                 b++;
@@ -382,7 +382,7 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::validateSortedSuffixes(uint8_t offset) const {
+    void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::validateSortedSuffixes(uint_read_len offset) const {
         for(uint_reads_cnt i = 1; i < this->readsLeft; i++) {
             uint_reads_cnt readA = sortedSuffixIdxs[i - 1] - 1;
             uint_reads_cnt readB = sortedSuffixIdxs[i] - 1;

@@ -326,7 +326,7 @@ namespace PgTools {
     void PgRCManager::runHQPgGeneration() {
         cout << "HQ ";
         divReadsSets->getHqReadsSet()->printout();
-        hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+        hqPg = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getHqReadsSet());
         divReadsSets->disposeHqReadsSet();
         IndexesMapping* hq2IndexesMapping = divReadsSets->generateHqReadsIndexesMapping();
@@ -407,7 +407,7 @@ namespace PgTools {
     void PgRCManager::runLQPgGeneration() {
         cout << "LQ ";
         divReadsSets->getLqReadsSet()->printout();
-        lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+        lqPg = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getLqReadsSet());
         lqPg->applyIndexesMapping(divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->disposeLqReadsSet();
@@ -426,7 +426,7 @@ namespace PgTools {
     void PgRCManager::runNPgGeneration() {
         cout << "N ";
         divReadsSets->getNReadsSet()->printout();
-        nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+        nPg = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
                 divReadsSets->getNReadsSet());
         nPg->applyIndexesMapping(divReadsSets->getNReadsIndexesMapping());
         divReadsSets->disposeNReadsSet();
