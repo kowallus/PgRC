@@ -48,6 +48,8 @@ namespace PgSAIndex {
 
         virtual ReadsSetProperties* getReadsSetProperties() override;
 
+        bool isGenerationCyclesAware(bool pgGenerationMode) { return pgGenerationMode; };
+
         template<bool pgGenerationMode>
         void initAndFindDuplicates();
         template<bool pgGenerationMode>

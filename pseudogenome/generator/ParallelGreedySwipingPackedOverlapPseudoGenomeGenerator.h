@@ -10,6 +10,7 @@
 #define MAX_BLOCK_PREFIX_LENGTH 4
 #define MAX_SYMBOLS_COUNT 5
 #define MAX_BLOCKS_COUNT 625 // MAX_SYMBOLS_COUNT^MAX_BLOCK_PREFIX_LENGTH
+#define PARALLEL_PG_GENERATION_READS_COUNT_THRESHOLD 50000
 
 using namespace PgSAReadsSet;
 
@@ -82,6 +83,8 @@ namespace PgSAIndex {
 
         virtual ReadsSetProperties* getReadsSetProperties() override;
 
+        bool isGenerationCyclesAware(bool pgGenerationMode) { return false; };
+
         template<bool pgGenerationMode>
         void initAndFindDuplicates();
         void prepareSortedReadsBlocks();
@@ -95,6 +98,8 @@ namespace PgSAIndex {
 
         void findOverlappingReads(double overlappedReadsCountStopCoef, bool pgGenerationMode) override;
 
+        void removeCyclesAndPrepareComponents();
+
     protected:
         template<bool pgGenerationMode>
         void setDuplicateSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
@@ -106,6 +111,7 @@ namespace PgSAIndex {
 
         bool isPseudoGenomeLengthStandardVirtual();
         bool isPseudoGenomeLengthMaximalVirtual();
+
     };
 
     class ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory: public PseudoGenomeGeneratorFactory

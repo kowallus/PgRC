@@ -129,7 +129,7 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    template<bool pgGenerationMode>
+    template<bool avoidCyclesMode>
     void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::initAndFindDuplicates() {
         auto start_t = chrono::steady_clock::now();
         prepareSortedReadsBlocks();
@@ -159,7 +159,7 @@ namespace PgSAIndex {
                     for (auto srIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[b]; srIt != blockEnd;) {
                         srIt++;
                         if (srIt != blockEnd && compareReads(*(srIt - 1), *srIt) == 0) {
-                            if (pgGenerationMode)
+                            if (avoidCyclesMode)
                                 this->setDuplicateSuccessor<true>(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
                             else
                                 this->setDuplicateSuccessor<false>(*(srIt - 1), *srIt, packedReadsSet->maxReadLength());
@@ -243,10 +243,7 @@ namespace PgSAIndex {
     void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::findOverlappingReads(
             double overlappedReadsCountStopCoef, bool pgGenerationMode) {
 
-        if (pgGenerationMode)
-            initAndFindDuplicates<true>();
-        else
-            initAndFindDuplicates<false>();
+        initAndFindDuplicates<false>();
         *logout << "Start overlapping.\n";
 
         uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
@@ -255,10 +252,7 @@ namespace PgSAIndex {
         for (int i = 1; i < overlapIterations; i++) {
 
             uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
-            if (pgGenerationMode)
-                overlapSortedReadsAndSuffixes<true>(i, sortedSuffixesLeftCount);
-            else
-                overlapSortedReadsAndSuffixes<false>(i, sortedSuffixesLeftCount);
+            overlapSortedReadsAndSuffixes<false>(i, sortedSuffixesLeftCount);
             vector<uint_reads_cnt> sortedSuffixLeft(this->readsLeft, 0);
             mergeSortOfLeftSuffixes(i + 1, sortedSuffixesLeftCount, sortedSuffixLeft.data(), sortedSuffixIdxs.data());
             sortedSuffixIdxs.swap(sortedSuffixLeft);
@@ -272,21 +266,23 @@ namespace PgSAIndex {
         sortedSuffixIdxs.clear();
         sortedSuffixIdxs.shrink_to_fit();
 
-        if (pgGenerationMode)
-            *logout << this->countComponents() << " pseudo-genome components\n";
+        if (pgGenerationMode) {
+            removeCyclesAndPrepareComponents();
+            *logout << this->countComponents() << " pseudo-genome components" << endl;
+        }
 
-        cout << "Overlapping done in " << time_millis() << " msec\n";
+        cout << "Overlapping done in " << time_millis() << " msec" << endl;
         *logout << endl;
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>
-    template<bool pgGenerationMode>
+    template<bool avoidCyclesMode>
     void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::
             overlapSortedReadsAndSuffixes(uint_read_len suffixesOffset, uint_reads_cnt *sortedSuffixesLeftCount) {
         const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
 
         uint8_t threadsInIteration = suffixesOffset<25?2:(suffixesOffset<40?4:numberOfThreads);
-        if (!pgGenerationMode || threadsInIteration > numberOfThreads)
+        if (!avoidCyclesMode || threadsInIteration > numberOfThreads)
             threadsInIteration = numberOfThreads;
 
         uint16_t b = 0;
@@ -325,7 +321,7 @@ namespace PgSAIndex {
                         while (preIt != preEnd) {
                             if ((cmpRes = compareSuffixWithPrefix(*sufIt, *preIt, suffixesOffset)) != 0)
                                 break;
-                            if ((*sufIt != *preIt) && (!pgGenerationMode || !this->isHeadOf(*sufIt, *preIt)))
+                            if ((*sufIt != *preIt) && (!avoidCyclesMode || !this->isHeadOf(*sufIt, *preIt)))
                                 break;
                             cmpRes = -1;
                             preIt++;
@@ -343,20 +339,21 @@ namespace PgSAIndex {
                         }
 
                         if (cmpRes == 0) {
-                            if (pgGenerationMode) {
+                            if (avoidCyclesMode) {
                                 bool cycleCheck = false;
 #pragma omp critical
                                 {
-                                    if (!this->isHeadOf(*sufIt, *preIt)) {
-                                        this->unionOverlappedReads(*sufIt, *preIt,
-                                                                   packedReadsSet->maxReadLength() - suffixesOffset);
-                                    } else
-                                        cycleCheck = true;
+                                    if (!(cycleCheck = this->isHeadOf(*sufIt, *preIt))) {
+                                        if (this->headRead[*sufIt] == 0)
+                                            this->headRead[*preIt] = *sufIt;
+                                        else
+                                            this->headRead[*preIt] = this->headRead[*sufIt];
+                                    }
                                 }
                                 if (cycleCheck)
                                     continue;
-                            } else
-                                this->setReadSuccessor(*sufIt, *preIt,
+                            }
+                            this->setReadSuccessor(*sufIt, *preIt,
                                                        packedReadsSet->maxReadLength() - suffixesOffset);
                             overlapsCount++;
                             preIt++;
@@ -393,6 +390,41 @@ namespace PgSAIndex {
                 exit(0);
             }
         }
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::removeCyclesAndPrepareComponents() {
+        this->headRead = (uint_reads_cnt *) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
+        uint_reads_cnt cyclesCount = 0;
+        uint_reads_cnt overlapLost = 0;
+        uint_reads_cnt nextIdx;
+        for(uint_reads_cnt curIdx = 1; curIdx <= this->readsTotal(); curIdx++) {
+            if (nextIdx = this->nextRead[curIdx]) {
+                if (this->isHeadOf(curIdx, nextIdx)) {
+                    cyclesCount++;
+                    uint_read_len minOverlap = this->overlap[nextIdx];
+                    uint_reads_cnt minOverlapIdx = nextIdx;
+                    while ((nextIdx = this->nextRead[nextIdx]) != curIdx) {
+                        if (minOverlap > this->overlap[nextIdx]) {
+                            uint_read_len minOverlap = this->overlap[nextIdx];
+                            uint_reads_cnt minOverlapIdx = nextIdx;
+                        }
+                    }
+                    overlapLost += minOverlap;
+                    uint_reads_cnt headIdx = this->nextRead[minOverlapIdx];
+                    this->nextRead[minOverlapIdx] = 0;
+                    nextIdx = headIdx;
+                    while ((nextIdx = this->nextRead[nextIdx]))
+                        this->headRead[nextIdx] = headIdx;
+                } else {
+                    if (this->headRead[curIdx] == 0)
+                        this->headRead[nextIdx] = curIdx;
+                    else
+                        this->headRead[nextIdx] = this->headRead[curIdx];
+                }
+            }
+        }
+        *logout << "Removed " << cyclesCount << " cycles (lost " << overlapLost << " symbols)" << endl;
     }
 
 // FACTORY

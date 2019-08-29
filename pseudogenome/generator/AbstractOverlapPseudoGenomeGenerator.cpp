@@ -12,7 +12,7 @@ namespace PgSAIndex {
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::init(bool pgGenerationMode) {
         nextRead = (uint_reads_cnt*) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
         overlap = (uint_read_len *) calloc(readsTotal() + 1, sizeof(uint_read_len));
-        if (pgGenerationMode)
+        if (isGenerationCyclesAware(pgGenerationMode))
             headRead = (uint_reads_cnt *) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
         readsLeft = readsTotal();
     }

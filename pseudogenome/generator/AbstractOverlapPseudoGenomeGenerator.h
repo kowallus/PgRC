@@ -21,6 +21,8 @@ namespace PgSAIndex {
         uint_reads_cnt* headRead = 0;
         uint_reads_cnt readsLeft;
 
+        virtual bool isGenerationCyclesAware(bool pgGenerationMode) = 0;
+
         bool hasPredecessor(uint_reads_cnt incIdx);
         bool hasSuccessor(uint_reads_cnt incIdx);
         void unionOverlappedReads(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);
