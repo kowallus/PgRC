@@ -98,8 +98,6 @@ namespace PgSAIndex {
 
         void findOverlappingReads(double overlappedReadsCountStopCoef, bool pgGenerationMode) override;
 
-        void removeCyclesAndPrepareComponents();
-
     protected:
         template<bool pgGenerationMode>
         void setDuplicateSuccessor(uint_reads_cnt curIdx, uint_reads_cnt nextIdx, uint_read_len overlapLenght);

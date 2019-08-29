@@ -13,6 +13,7 @@ namespace PgSAIndex {
     template < typename uint_read_len, typename uint_reads_cnt >
     class AbstractOverlapPseudoGenomeGeneratorTemplate: public PseudoGenomeGeneratorBase
     {
+
     protected:
 
         // auxiliary structures
@@ -20,8 +21,6 @@ namespace PgSAIndex {
         uint_read_len* overlap = 0;
         uint_reads_cnt* headRead = 0;
         uint_reads_cnt readsLeft;
-
-        virtual bool isGenerationCyclesAware(bool pgGenerationMode) = 0;
 
         bool hasPredecessor(uint_reads_cnt incIdx);
         bool hasSuccessor(uint_reads_cnt incIdx);
@@ -53,6 +52,9 @@ namespace PgSAIndex {
 
         void init(bool pgGenerationMode = true);
         void dispose();
+
+        virtual bool isGenerationCyclesAware(bool pgGenerationMode) = 0;
+        void removeCyclesAndPrepareComponents();
 
     public:
 
