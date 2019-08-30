@@ -12,8 +12,9 @@ void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>
         if (nextIdx = this->nextRead[curIdx]) {
             if (this->isHeadOf(curIdx, nextIdx)) {
                 cyclesCount++;
-                uint_read_len minOverlap = this->overlap[nextIdx];
-                uint_reads_cnt minOverlapIdx = nextIdx;
+                uint_read_len minOverlap = this->overlap[curIdx];
+                uint_reads_cnt minOverlapIdx = curIdx;
+                nextIdx = curIdx;
                 while ((nextIdx = this->nextRead[nextIdx]) != curIdx) {
                     if (minOverlap > this->overlap[nextIdx]) {
                         uint_read_len minOverlap = this->overlap[nextIdx];
@@ -24,6 +25,7 @@ void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>
                 uint_reads_cnt headIdx = this->nextRead[minOverlapIdx];
                 this->nextRead[minOverlapIdx] = 0;
                 nextIdx = headIdx;
+                this->headRead[headIdx] = 0;
                 while ((nextIdx = this->nextRead[nextIdx]))
                     this->headRead[nextIdx] = headIdx;
             } else {
