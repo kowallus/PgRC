@@ -15,7 +15,8 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::ParallelGreedySwipingPackedOverlapGeneratorTemplate(
             PackedConstantLengthReadsSet* orgReadsSet, bool ownReadsSet):
-        packedReadsSet(orgReadsSet), ownReadsSet(ownReadsSet)
+        packedReadsSet(orgReadsSet), symbolsCount(orgReadsSet->getReadsSetProperties()->symbolsCount),
+        ownReadsSet(ownReadsSet)
     {
         if (!orgReadsSet->isReadLengthConstant())
             cout << "Unsupported: variable length reads :(";
@@ -109,7 +110,6 @@ namespace PgSAIndex {
         PackedReadsComparator comparePacked = PackedReadsComparator(this);
         __gnu_parallel::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
 
-        const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         blocksCount = pow(symbolsCount, blockPrefixLength);
         #pragma omp parallel for
         for (uint16_t b = 0; b < blocksCount; b++) {
@@ -142,7 +142,6 @@ namespace PgSAIndex {
             }
             threadStartBlock[t] = b;
         }
-        const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
         uint_reads_cnt duplicatesCount = 0;
         #pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:duplicatesCount)
@@ -204,7 +203,6 @@ namespace PgSAIndex {
         for(uint16_t b = 1; b <= blocksCount; b++)
             sortedSuffixBlockPos[b] = sortedSuffixBlockPos[b - 1] + sortedSuffixesLeftCount[b - 1];
 
-        const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
         this->sortedSuffixIdxsPtr = sortedSuffixIdxsPtr;
         #pragma omp parallel for schedule(guided)
         for(uint16_t b = 0; b < blocksCount; b++)
@@ -247,15 +245,19 @@ namespace PgSAIndex {
         *logout << "Start overlapping.\n";
 
         uint_read_len overlapIterations = packedReadsSet->maxReadLength() * overlappedReadsCountStopCoef;
-        if (overlapIterations > packedReadsSet->maxReadLength() - blockPrefixLength)
-            overlapIterations = packedReadsSet->maxReadLength() - blockPrefixLength;
+        uint16_t curBlocksCount = blocksCount;
         for (int i = 1; i < overlapIterations; i++) {
-
-            uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
-            overlapSortedReadsAndSuffixes<false>(i, sortedSuffixesLeftCount);
-            vector<uint_reads_cnt> sortedSuffixLeft(this->readsLeft, 0);
-            mergeSortOfLeftSuffixes(i + 1, sortedSuffixesLeftCount, sortedSuffixLeft.data(), sortedSuffixIdxs.data());
-            sortedSuffixIdxs.swap(sortedSuffixLeft);
+            if (i < packedReadsSet->maxReadLength() - blockPrefixLength) {
+                uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = {0};
+                overlapSortedReadsAndSuffixes<false>(i, sortedSuffixesLeftCount);
+                vector<uint_reads_cnt> sortedSuffixLeft(this->readsLeft, 0);
+                mergeSortOfLeftSuffixes(i + 1, sortedSuffixesLeftCount, sortedSuffixLeft.data(),
+                                        sortedSuffixIdxs.data());
+                sortedSuffixIdxs.swap(sortedSuffixLeft);
+            } else {
+                blockPrefixOverlapSortedReadsAndSuffixesWithAfterSuffixMerge<false>(i, curBlocksCount);
+                curBlocksCount /= symbolsCount;
+            }
 
             *logout << this->readsLeft << " reads left after "
                     << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap (..." << time_millis() << ") msec" << endl;
@@ -279,8 +281,6 @@ namespace PgSAIndex {
     template<bool avoidCyclesMode>
     void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::
             overlapSortedReadsAndSuffixes(uint_read_len suffixesOffset, uint_reads_cnt *sortedSuffixesLeftCount) {
-        const uint_symbols_cnt symbolsCount = packedReadsSet->getReadsSetProperties()->symbolsCount;
-
         uint8_t threadsInIteration = suffixesOffset<25?2:(suffixesOffset<40?4:numberOfThreads);
         if (!avoidCyclesMode || threadsInIteration > numberOfThreads)
             threadsInIteration = numberOfThreads;
@@ -376,6 +376,117 @@ namespace PgSAIndex {
         }
         this->readsLeft -= overlapsCount;
         assert(accumulate(sortedSuffixesLeftCount, sortedSuffixesLeftCount + blocksCount, 0) == this->readsLeft);
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    template<bool avoidCyclesMode>
+    void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::
+    blockPrefixOverlapSortedReadsAndSuffixesWithAfterSuffixMerge(uint_read_len suffixesOffset, uint16_t curBlocksCount) {
+        uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = {0};
+        uint_reads_cnt overlapsCount = 0;
+#pragma omp parallel for schedule(guided) reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:overlapsCount)
+        for (uint16_t b = 0; b < curBlocksCount; b++)
+        {
+            uint16_t nextSuffixBlock = (b % (curBlocksCount / symbolsCount));
+            auto preIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[b];
+            auto sufIt = sortedSuffixIdxs.begin() + sortedSuffixBlockPos[b];
+            const auto &preEnd = preIt + sortedReadsCount[b];
+            const auto &sufEnd = sortedSuffixIdxs.begin() + sortedSuffixBlockPos[b + 1];
+            sortedReadsCount[b] = 0;
+            while (sufIt != sufEnd || preIt != preEnd) {
+                if (sufIt == sufEnd)
+                    sortedReadsIdxs[sortedReadsBlockPos[b] + sortedReadsCount[b]++] = (*(preIt++));
+                else {
+                    int cmpRes = -1;
+                    auto curPreIt = preIt;
+                    while (preIt != preEnd) {
+                        cmpRes = 0;
+                        if ((*sufIt != *preIt) && (!avoidCyclesMode || !this->isHeadOf(*sufIt, *preIt)))
+                            break;
+                        cmpRes = -1;
+                        preIt++;
+                    }
+
+                    if (cmpRes)
+                        preIt = curPreIt;
+                    else {
+                        uint_reads_cnt preIdx = *preIt;
+                        while (preIt > curPreIt) {
+                            *preIt = *(preIt - 1);
+                            preIt--;
+                        }
+                        *preIt = preIdx;
+                    }
+
+                    if (cmpRes == 0) {
+                        if (avoidCyclesMode) {
+                            bool cycleCheck = false;
+#pragma omp critical
+                            {
+                                if (!(cycleCheck = this->isHeadOf(*sufIt, *preIt))) {
+                                    if (this->headRead[*sufIt] == 0)
+                                        this->headRead[*preIt] = *sufIt;
+                                    else
+                                        this->headRead[*preIt] = this->headRead[*sufIt];
+                                }
+                            }
+                            if (cycleCheck)
+                                continue;
+                        }
+                        this->setReadSuccessor(*sufIt, *preIt,
+                                               packedReadsSet->maxReadLength() - suffixesOffset);
+                        overlapsCount++;
+                        preIt++;
+                    } else {
+                        sortedSuffixesLeftCount[nextSuffixBlock]++;
+                    }
+                    sufIt++;
+                }
+            }
+        }
+        this->readsLeft -= overlapsCount;
+        assert(accumulate(sortedSuffixesLeftCount, sortedSuffixesLeftCount + (curBlocksCount / symbolsCount), 0) == this->readsLeft);
+
+        if (curBlocksCount > symbolsCount) {
+#pragma omp parallel for schedule(guided)
+            for (uint16_t b = 0; b < curBlocksCount / symbolsCount; b++) {
+                const uint16_t rootBlock = b * symbolsCount;
+                auto srIt = sortedReadsIdxs.begin() + sortedReadsBlockPos[rootBlock] + sortedReadsCount[rootBlock];
+                for (uint8_t b2 = 1; b2 < symbolsCount; b2++) {
+                    auto it = sortedReadsIdxs.begin() + sortedReadsBlockPos[rootBlock + b2];
+                    const auto &endIt = it + sortedReadsCount[rootBlock + b2];
+                    while (it != endIt)
+                        *(srIt++) = *(it++);
+                }
+                sortedReadsCount[rootBlock] = srIt - (sortedReadsIdxs.begin() + sortedReadsBlockPos[rootBlock]);
+            }
+            for (uint16_t b = 1; b < curBlocksCount / symbolsCount; b++) {
+                const uint16_t prevBlock = b * symbolsCount;
+                sortedReadsBlockPos[b] = sortedReadsBlockPos[prevBlock];
+                sortedReadsCount[b] = sortedReadsCount[prevBlock];
+            }
+            for(uint16_t b = 0; b <= curBlocksCount; b++)
+                sortedSuffixBlockPlusSymbolPos[b][0] = sortedSuffixBlockPos[b];
+            sortedSuffixBlockPos[0] = 0;
+            for(uint16_t b = 1; b <= curBlocksCount / symbolsCount; b++)
+                sortedSuffixBlockPos[b] = sortedSuffixBlockPos[b - 1] + sortedSuffixesLeftCount[b - 1];
+
+            vector<uint_reads_cnt> sortedSuffixLeft(this->readsLeft, 0);
+#pragma omp parallel for schedule(guided)
+            for (uint16_t b = 0; b < curBlocksCount / symbolsCount; b++) {
+                auto leftIt = sortedSuffixLeft.begin() + sortedSuffixBlockPos[b];
+                for (uint16_t b2 = b; b2 < curBlocksCount; b2 += (curBlocksCount / symbolsCount)) {
+                    auto it = sortedSuffixIdxs.begin() + sortedSuffixBlockPlusSymbolPos[b2][0];
+                    const auto &endIt = sortedSuffixIdxs.begin() + sortedSuffixBlockPlusSymbolPos[b2 + 1][0];
+                    while (it != endIt) {
+                        if (this->nextRead[*it] == 0)
+                            *(leftIt++) = *it;
+                        it++;
+                    }
+                }
+            }
+            sortedSuffixIdxs.swap(sortedSuffixLeft);
+        }
     }
 
     template<typename uint_read_len, typename uint_reads_cnt>

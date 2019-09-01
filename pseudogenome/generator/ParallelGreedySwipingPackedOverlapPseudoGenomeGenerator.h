@@ -23,6 +23,7 @@ namespace PgSAIndex {
 
         bool ownReadsSet = false;
         PackedConstantLengthReadsSet* packedReadsSet = 0;
+        const uint_symbols_cnt symbolsCount;
 
         vector<uint_reads_cnt> sortedReadsIdxs;
         vector<uint_reads_cnt> sortedSuffixIdxs;
@@ -93,6 +94,9 @@ namespace PgSAIndex {
 
         template<bool pgGenerationMode>
         void overlapSortedReadsAndSuffixes(uint_read_len suffixesOffset, uint_reads_cnt *sortedSuffixesLeftCount);
+        template<bool pgGenerationMode>
+        void blockPrefixOverlapSortedReadsAndSuffixesWithAfterSuffixMerge(uint_read_len suffixesOffset,
+                                                                          uint16_t curBlocksCount);
 
         void validateSortedSuffixes(uint_read_len offset) const;
 
