@@ -24,6 +24,7 @@ void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>
                 overlapLost += minOverlap;
                 uint_reads_cnt headIdx = this->nextRead[minOverlapIdx];
                 this->nextRead[minOverlapIdx] = 0;
+                this->overlap[minOverlapIdx] = 0;
                 nextIdx = headIdx;
                 this->headRead[headIdx] = 0;
                 while ((nextIdx = this->nextRead[nextIdx]))
