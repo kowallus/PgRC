@@ -239,32 +239,55 @@ unsigned long long int PgSAHelpers::powuint(unsigned long long int base, int exp
         else return base * tmp * tmp;
 }
 
-uint8_t PgSAHelpers::symbol2value(char symbol) {
-    switch (symbol) {
-        case 'A': return 0;
-        case 'C': return 1;
-        case 'G': return 2;
-        case 'T': return 3;
-        case 'N': return 4;
+struct LUT
+{
+    char complementsLut[256];
+    char sym2val[256];
+    char val2sym[5];
+
+    LUT() {
+        memset(complementsLut, 0, 256);
+        complementsLut['A'] = 'T'; complementsLut['a'] = 'T';
+        complementsLut['C'] = 'G'; complementsLut['c'] = 'G';
+        complementsLut['G'] = 'C'; complementsLut['g'] = 'C';
+        complementsLut['T'] = 'A'; complementsLut['t'] = 'A';
+        complementsLut['N'] = 'N'; complementsLut['n'] = 'N';
+        complementsLut['U'] = 'A'; complementsLut['u'] = 'A';
+        complementsLut['Y'] = 'R'; complementsLut['y'] = 'R';
+        complementsLut['R'] = 'Y'; complementsLut['r'] = 'Y';
+        complementsLut['K'] = 'M'; complementsLut['k'] = 'M';
+        complementsLut['M'] = 'K'; complementsLut['m'] = 'K';
+        complementsLut['B'] = 'V'; complementsLut['b'] = 'V';
+        complementsLut['D'] = 'H'; complementsLut['d'] = 'H';
+        complementsLut['H'] = 'D'; complementsLut['h'] = 'D';
+        complementsLut['V'] = 'B'; complementsLut['v'] = 'B';
+        val2sym[0] = 'A';
+        val2sym[1] = 'C';
+        val2sym[2] = 'G';
+        val2sym[3] = 'T';
+        val2sym[4] = 'N';
+        memset(sym2val, -1, 256);
+        for(char i = 0; i < 5; i++)
+            sym2val[val2sym[i]] = i;
     }
-    return -1;
+} instance;
+
+char* complementsLUT = instance.complementsLut;
+char* sym2val = instance.sym2val;
+char* val2sym = instance.val2sym;
+
+uint8_t PgSAHelpers::symbol2value(char symbol) {
+    return sym2val[symbol];
 }
 
 char PgSAHelpers::value2symbol(uint8_t value) {
-    switch (value) {
-        case 0: return 'A';
-        case 1: return 'C';
-        case 2: return 'G';
-        case 3: return 'T';
-        case 4: return 'N';
-    }
-    return '?';
+    return val2sym[value];
 }
 
 uint8_t PgSAHelpers::mismatch2code(char actual, char mismatch) {
     uint8_t actualValue = symbol2value(actual);
     uint8_t mismatchValue = symbol2value(mismatch);
-    return mismatchValue > actualValue?(mismatchValue - 1):mismatchValue;
+    return mismatchValue - (mismatchValue > actualValue?1:0);
 }
 
 char PgSAHelpers::code2mismatch(char actual, uint8_t code) {
@@ -272,45 +295,20 @@ char PgSAHelpers::code2mismatch(char actual, uint8_t code) {
     return value2symbol(code < actualValue?code:(code+1));
 }
 
-struct ComplementLUT
-{
-    char lut[256];
-
-    ComplementLUT() {
-        memset(lut, 0, 256);
-        lut['A'] = 'T'; lut['a'] = 'T';
-        lut['C'] = 'G'; lut['c'] = 'G';
-        lut['G'] = 'C'; lut['g'] = 'C';
-        lut['T'] = 'A'; lut['t'] = 'A';
-        lut['N'] = 'N'; lut['n'] = 'N';
-        lut['U'] = 'A'; lut['u'] = 'A';
-        lut['Y'] = 'R'; lut['y'] = 'R';
-        lut['R'] = 'Y'; lut['r'] = 'Y';
-        lut['K'] = 'M'; lut['k'] = 'M';
-        lut['M'] = 'K'; lut['m'] = 'K';
-        lut['B'] = 'V'; lut['b'] = 'V';
-        lut['D'] = 'H'; lut['d'] = 'H';
-        lut['H'] = 'D'; lut['h'] = 'D';
-        lut['V'] = 'B'; lut['v'] = 'B';
-    }
-} instance;
-
-char* complLUT = instance.lut;
-
 char PgSAHelpers::reverseComplement(char symbol) {
-    return complLUT[symbol];
+    return complementsLUT[symbol];
 }
 
 void PgSAHelpers::reverseComplementInPlace(char* start, const std::size_t N) {
     char* left = start - 1;
     char* right = start + N;
     while (--right > ++left) {
-        char tmp = complLUT[*left];
-        *left = complLUT[*right];
+        char tmp = complementsLUT[*left];
+        *left = complementsLUT[*right];
         *right = tmp;
     }
     if (left == right)
-        *left = complLUT[*left];
+        *left = complementsLUT[*left];
 }
 
 string PgSAHelpers::reverseComplement(string kmer) {
@@ -319,7 +317,7 @@ string PgSAHelpers::reverseComplement(string kmer) {
     revcomp.resize(kmer_length);
     size_t j = kmer_length;
     for(size_t i = 0; i < kmer_length; i++)
-        revcomp[--j] = complLUT[kmer[i]];
+        revcomp[--j] = complementsLUT[kmer[i]];
     return revcomp;
 }
 

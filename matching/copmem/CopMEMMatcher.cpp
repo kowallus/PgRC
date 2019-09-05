@@ -395,6 +395,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
 
     MyUINT2 posArray[2];
 
+    const uint_read_len_max N2trim8 = (N2 / sizeof(uint64_t)) * sizeof(uint64_t);
     uint_read_len_max k2positionsCount = (N2 + 1 - K) / k2;
 
     uint64_t falseMatchCountLimit = k2positionsCount * AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT;
@@ -422,27 +423,23 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
                 continue;
             const char* curr1 = start1 + sampledPositions[j];
 
-            if (memcmp(curr1, curr2, K) != 0) {
-                currentFalseMatchCount++;
-                continue;
-            }
+            uint64_t temp1, temp2;
             uint8_t res = 0;
             const char* patternPtr = start2;
+            const char* patGuardPtr = start2 + N2trim8;
             const char* textPtr = curr1 - positionShift;
-            while (patternPtr != curr2) {
-                if (*patternPtr++ != *textPtr++) {
-                    if (res++ >= maxMismatches) {
-                        currentFalseMatchCount++;
-                        break;
-                    }
-                }
+            while(patGuardPtr != patternPtr && res <= maxMismatches) {
+                memcpy(&temp1, patternPtr, sizeof(uint64_t));
+                memcpy(&temp2, textPtr, sizeof(uint64_t));
+                uint64_t temp3 = ((temp1 ^ temp2) + 0x7F7F7F7F7F7F7F7F) & 0x8080808080808080;
+                res += __builtin_popcountll(temp3);
+                patternPtr += sizeof(uint64_t);
+                textPtr += sizeof(uint64_t);
             }
             if (res > maxMismatches) {
                 currentFalseMatchCount++;
                 continue;
             }
-            patternPtr += K;
-            textPtr += K;
             while (patternPtr != start2 + N2) {
                 if (*patternPtr++ != *textPtr++) {
                     if (res++ >= maxMismatches) {
