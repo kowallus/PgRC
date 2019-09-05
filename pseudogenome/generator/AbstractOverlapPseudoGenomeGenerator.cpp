@@ -1,6 +1,44 @@
 #include <cassert>
 #include "AbstractOverlapPseudoGenomeGenerator.h"
 
+template<typename uint_read_len, typename uint_reads_cnt>
+void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::removeCyclesAndPrepareComponents() {
+    this->headRead = (uint_reads_cnt *) calloc(this->readsTotal() + 1, sizeof(uint_reads_cnt));
+    uint_reads_cnt cyclesCount = 0;
+    uint_reads_cnt overlapLost = 0;
+    uint_reads_cnt nextIdx;
+    for(uint_reads_cnt curIdx = 1; curIdx <= this->readsTotal(); curIdx++) {
+        if (nextIdx = this->nextRead[curIdx]) {
+            if (this->isHeadOf(curIdx, nextIdx)) {
+                cyclesCount++;
+                uint_read_len minOverlap = this->overlap[curIdx];
+                uint_reads_cnt minOverlapIdx = curIdx;
+                nextIdx = curIdx;
+                while ((nextIdx = this->nextRead[nextIdx]) != curIdx) {
+                    if (minOverlap > this->overlap[nextIdx]) {
+                        uint_read_len minOverlap = this->overlap[nextIdx];
+                        uint_reads_cnt minOverlapIdx = nextIdx;
+                    }
+                }
+                overlapLost += minOverlap;
+                uint_reads_cnt headIdx = this->nextRead[minOverlapIdx];
+                this->nextRead[minOverlapIdx] = 0;
+                this->overlap[minOverlapIdx] = 0;
+                nextIdx = headIdx;
+                this->headRead[headIdx] = 0;
+                while ((nextIdx = this->nextRead[nextIdx]))
+                    this->headRead[nextIdx] = headIdx;
+            } else {
+                if (this->headRead[curIdx] == 0)
+                    this->headRead[nextIdx] = curIdx;
+                else
+                    this->headRead[nextIdx] = this->headRead[curIdx];
+            }
+        }
+    }
+    *logout << "Removed " << cyclesCount << " cycles (lost " << overlapLost << " symbols)" << endl;
+}
+
 using namespace PgSAReadsSet;
 using namespace PgSAHelpers;
 
@@ -12,7 +50,7 @@ namespace PgSAIndex {
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::init(bool pgGenerationMode) {
         nextRead = (uint_reads_cnt*) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
         overlap = (uint_read_len *) calloc(readsTotal() + 1, sizeof(uint_read_len));
-        if (pgGenerationMode)
+        if (isGenerationCyclesAware(pgGenerationMode))
             headRead = (uint_reads_cnt *) calloc(readsTotal() + 1, sizeof(uint_reads_cnt));
         readsLeft = readsTotal();
     }
