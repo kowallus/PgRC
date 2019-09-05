@@ -416,7 +416,6 @@ namespace PgTools {
         CopMEMMatcher* copMEMMatcher = new CopMEMMatcher(pgPtr, pgLength, partLength);
         *logout << "... checkpoint " << clock_millis() << " msec. " << endl;
         uint_reads_cnt_std count = 0;
-        #pragma omp parallel for reduction(+:count)
         for(uint_reads_cnt_max matchReadIndex = 0; matchReadIndex < readsCount; matchReadIndex++) {
             char_pg currentReadPtr[UINT8_MAX];
             if (readMismatchesCount[matchReadIndex] <= minMismatches)
