@@ -1,5 +1,7 @@
 #include "SymbolsPackingFacility.h"
 
+#include <cassert>
+
 namespace PgSAIndex {
 
     static const vector<char> binaryCodes { 0, 1 };
@@ -192,9 +194,9 @@ namespace PgSAIndex {
         string res;
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
-        res.append(reverseValue(sequence[i++]), reminder, this->symbolsPerElement - reminder);
+        res.append(reverse[sequence[i++]], reminder, this->symbolsPerElement - reminder);
         while (res.size() < length)
-            res.append(reverseValue(sequence[i++]));
+            res.append(reverse[sequence[i++]], symbolsPerElement);
         res.resize(length);
         return res;
     }
@@ -204,9 +206,9 @@ namespace PgSAIndex {
         res.clear();
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
-        res.append(reverseValue(sequence[i++]), reminder, this->symbolsPerElement - reminder);
+        res.append(reverse[sequence[i++]], reminder, this->symbolsPerElement - reminder);
         while (res.size() < length - symbolsPerElement)
-            res.append(reverseValue(sequence[i++]));
+            res.append(reverse[sequence[i++]], symbolsPerElement);
         uint_element value = sequence[i];
         for (uchar j = 0; res.size() < length; j++)
             res.push_back(reverse[value][j]);
@@ -214,19 +216,24 @@ namespace PgSAIndex {
 
     template<typename uint_element>
     inline void SymbolsPackingFacility<uint_element>::reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, char_pg* destPtr) {
-
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
 
         char_pg* ptr = destPtr;
-        while (true) {
-            uint_element value = sequence[i++];
-            for (uchar j = reminder; j < symbolsPerElement; j++) {
+        const char_pg* endPtr = destPtr + length;
+        uint_element value = sequence[i++];
+        for (uchar j = reminder; j < symbolsPerElement; j++) {
+            *ptr++ = reverse[value][j];
+            if (ptr == endPtr)
+                return;
+        }
+        while(true) {
+            value = sequence[i++];
+            for (uchar j = 0; j < symbolsPerElement; j++) {
                 *ptr++ = reverse[value][j];
-                if ((uint_max) (ptr - destPtr) == length)
+                if (ptr == endPtr)
                     return;
             }
-            reminder = 0;
         }
    }
 
