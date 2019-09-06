@@ -3,6 +3,8 @@
 #include "../TemplateUserGenerator.h"
 #include "../SeparatedPseudoGenomeBase.h"
 
+#include <parallel/algorithm>
+
 namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix,
@@ -444,7 +446,7 @@ namespace PgTools {
                 basePairPos.push_back(orgIdx2PgPos[i]);
                 bppRank.push_back(i >> 1);
             }
-            std::stable_sort(bppRank.begin(), bppRank.end(),
+            __gnu_parallel::stable_sort(bppRank.begin(), bppRank.end(),
                     [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                         { return basePairPos[idx1] < basePairPos[idx2]; });
             *logout << "... reordering bases checkpoint: " << time_millis() << " msec. " << endl;
@@ -553,7 +555,7 @@ namespace PgTools {
             bppRank.reserve(pairsCount);
             for (uint_reads_cnt_std p = 0; p < pairsCount; p++)
                 bppRank.push_back(p);
-            std::stable_sort(bppRank.begin(), bppRank.end(),
+            __gnu_parallel::stable_sort(bppRank.begin(), bppRank.end(),
                              [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                              { return pgPos[idx1] < pgPos[idx2]; });
 

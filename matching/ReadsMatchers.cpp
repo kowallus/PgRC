@@ -6,6 +6,8 @@
 #include "../pseudogenome/readslist/SeparatedExtendedReadsList.h"
 #include <omp.h>
 
+#include <parallel/algorithm>
+
 namespace PgTools {
 
     uint8_t countMismatches(const char *pattern, const char *text, uint64_t length, uint8_t maxMismatches) {
@@ -534,7 +536,7 @@ namespace PgTools {
             if (readMatchPos[i] != NOT_MATCHED_POSITION)
                 idxs[counter++] = i;
 
-        std::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
+        __gnu_parallel::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
         initEntryUpdating();
