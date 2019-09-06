@@ -28,11 +28,16 @@ namespace PgSAIndex {
             delete(this->packedReadsSet);
     }
     
-        template<typename uint_read_len, typename uint_reads_cnt>
+    template<typename uint_read_len, typename uint_reads_cnt>
     string ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::getReadUpToOverlap(uint_reads_cnt incIdx) {
         return packedReadsSet->getReadPrefix(incIdx - 1, this->overlap[incIdx]);
     }
-    
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    void ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::getReadSuffix(char *destPtr, uint_reads_cnt incIdx, uint_read_len suffixPos) {
+        packedReadsSet->getReadSuffix(destPtr, incIdx - 1, suffixPos);
+    }
+
     template<typename uint_read_len, typename uint_reads_cnt>
     uint_read_len ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::readLength(uint_reads_cnt incIdx) {
         return packedReadsSet->readLength(incIdx - 1);

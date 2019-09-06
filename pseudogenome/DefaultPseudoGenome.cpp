@@ -188,8 +188,18 @@ namespace PgSAIndex {
     }
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class GeneratedReadsListClass>
-    void GeneratedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, GeneratedReadsListClass>::append(const string& read, uint_read_len length, uint_read_len overlap, uint_reads_cnt orgIdx) {
+    void GeneratedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, GeneratedReadsListClass>::append(uint_read_len_max length, uint_read_len_max overlap,
+                                                uint_reads_cnt_max orgIdx) {
+        genReadsList->add(pos, length, orgIdx);
+    }
 
+    template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class GeneratedReadsListClass>
+    char_pg* GeneratedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, GeneratedReadsListClass>::getSequencePtr() const {
+        return this->sequence;
+    }
+
+    template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class GeneratedReadsListClass>
+    void GeneratedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, GeneratedReadsListClass>::append(const string& read, uint_read_len length, uint_read_len overlap, uint_reads_cnt orgIdx) {
         genReadsList->add(pos, length, orgIdx);
 
         uint_read_len len = length - overlap;

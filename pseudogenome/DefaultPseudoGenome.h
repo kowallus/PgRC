@@ -90,12 +90,14 @@ namespace PgSAIndex {
             uint_max getTableLength();;
             
         public:
+            char_pg *getSequencePtr() const;
 
             GeneratedPseudoGenome(uint_pg_len sequenceLength, ReadsSetProperties* properties);
 
             ~GeneratedPseudoGenome();
 
             void append(const string& read, uint_read_len length, uint_read_len overlap, uint_reads_cnt orgIdx);
+            void append(uint_read_len_max length, uint_read_len_max overlap, uint_reads_cnt_max orgIdx);
 
             void validate();
             

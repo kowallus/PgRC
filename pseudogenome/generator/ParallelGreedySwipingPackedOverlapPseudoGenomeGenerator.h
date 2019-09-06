@@ -80,6 +80,7 @@ namespace PgSAIndex {
 
         virtual uint_read_len readLength(uint_reads_cnt incIdx) override;
         virtual string getReadUpToOverlap(uint_reads_cnt incIdx) override;
+        virtual void getReadSuffix(char *destPtr, uint_reads_cnt incIdx, uint_read_len suffixPos) override;
         virtual uint_reads_cnt readsTotal() override;
 
         virtual ReadsSetProperties* getReadsSetProperties() override;

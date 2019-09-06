@@ -190,12 +190,25 @@ namespace PgSAIndex {
         GeneratedPseudoGenome* genPG =
                 new GeneratedPseudoGenome(this->pseudoGenomeLength, getReadsSetProperties());
 
+        char* seq = genPG->getSequencePtr();
+        uint_read_len readLength = this->getReadsSetProperties()->maxReadLength;
+        uint_read_len prefixDoneLength = 0;
+
         for (uint_reads_cnt i = 1; i <= readsTotal(); i++) {
             uint_reads_cnt idx = i;
             if (!hasPredecessor(idx))
                 do {
-                    genPG->append(getReadUpToOverlap(idx), readLength(idx), overlap[idx], idx - 1);
+                    genPG->append(readLength, overlap[idx], idx - 1);
+                    const uint_read_len shiftLength = readLength - overlap[idx];
+                    if (prefixDoneLength < shiftLength) {
+                        getReadSuffix(seq, idx, prefixDoneLength);
+                        seq += readLength - prefixDoneLength;
+                        prefixDoneLength = overlap[idx];
+                    } else {
+                        prefixDoneLength -= shiftLength;
+                    }
                     idx = nextRead[idx];
+
                 } while (idx != 0);
         }
 
