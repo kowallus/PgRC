@@ -132,7 +132,7 @@ namespace PgSAIndex {
         uint_element value = 0;
         for (uchar j = 0; j < length; j++) {
             validateSymbol((uchar) symbols[j]);
-            value = multiplyBySmallInteger(value, symbolsCount) + symbolOrder[(uchar) symbols[j]];
+            value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
         }
 
         return value;
@@ -169,7 +169,7 @@ namespace PgSAIndex {
     uint_element SymbolsPackingFacility<uint_element>::packSuffixSymbols(const char_pg* symbols, const uint_max length) {
         uint_element value = 0;
         for (uchar j = 0; j < symbolsPerElement; j++) {
-            value = multiplyBySmallInteger(value, symbolsCount);
+            value *= symbolsCount;
             if (j < length) {
                 validateSymbol((uchar) symbols[j]);
                 value += symbolOrder[(uchar) symbols[j]];
@@ -183,7 +183,7 @@ namespace PgSAIndex {
         uint_element value = 0;
         for (uchar j = 0; j < symbolsPerElement; j++) {
             validateSymbol((uchar) symbols[j]);
-            value = multiplyBySmallInteger(value, symbolsCount) + symbolOrder[(uchar) symbols[j]];
+            value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
         }
 
         return value;
