@@ -427,7 +427,7 @@ uint64_t CopMEMMatcher::processApproxMatchQueryTight(HashBuffer<MyUINT1, MyUINT2
             const char* patternPtr = start2;
             const char* patGuardPtr = start2 + N2trim8;
             const char* textPtr = curr1 - positionShift;
-            while(patGuardPtr != patternPtr && res <= maxMismatches) {
+            while(res <= maxMismatches && patGuardPtr != patternPtr) {
                 memcpy(&temp1, patternPtr, sizeof(uint64_t));
                 memcpy(&temp2, textPtr, sizeof(uint64_t));
                 uint64_t temp3 = ((temp1 ^ temp2) + 0x7F7F7F7F7F7F7F7F) & 0x8080808080808080;
