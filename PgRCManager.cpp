@@ -29,7 +29,7 @@ namespace PgTools {
 
     string getTimeInSec(chrono::steady_clock::time_point end_t, chrono::steady_clock::time_point begin_t, int decimalPlaces) {
         chrono::nanoseconds time_span = chrono::duration_cast<chrono::nanoseconds>(end_t - begin_t);
-        return toString((double)time_span.count() / 1000000.0, decimalPlaces); }
+        return toString((double)time_span.count() / 1000000000.0, decimalPlaces); }
 
     void PgRCManager::initCompressionParameters() {
         setPreMatchingMode('c');
@@ -478,14 +478,14 @@ namespace PgTools {
         bool hasHeader = (bool) std::ifstream(outputfile);
         fstream fout(outputfile, ios::out | ios::binary | ios::app);
         if (!hasHeader)
-            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%]\tm\tM\tp\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\torder[s]\tpgSeq-s[s]" << endl;
+            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%]\tm\tM\tp\tt\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\torder[s]\tpgSeq-s[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgRCFileName << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
-
         if (preReadsExactMatchingChars > 0)
             fout << (char) tolower(preMatchingMode) << ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string("")) << (int) preReadsExactMatchingChars;
-        fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
+        fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t";
+        fout << targetPgMatchLength << "\t" << numberOfThreads << "\t";
         fout << pgRCSize << "\t";
         fout << getTimeInSec(chrono::steady_clock::now(), start_t, 2) << "\t";
         fout << getTimeInSec(div_t, start_t, 2) << "\t";
