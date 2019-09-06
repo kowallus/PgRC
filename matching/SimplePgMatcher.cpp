@@ -93,6 +93,7 @@ namespace PgTools {
         textMatches.erase( unique( textMatches.begin(), textMatches.end() ), textMatches.end() );
         *logout << "Unique exact matches: " << textMatches.size() << endl;
 
+        char* destPtr = (char*) destPg.data();
         uint_pg_len_max pos = 0;
         uint_pg_len_max nPos = 0;
         uint_pg_len_max totalDestOverlap = 0;
@@ -118,7 +119,7 @@ namespace PgTools {
             }
             totalMatched += match.length;
             uint64_t length = match.posDestText - pos;
-            destPg.replace(nPos, length, destPg, pos, length);
+            memcpy(destPtr + nPos, destPtr + pos, length);
             nPos += length;
             destPg[nPos++] = MATCH_MARK;
             if (isPgLengthStd)
@@ -129,7 +130,7 @@ namespace PgTools {
             pos = match.endPosDestText();
         }
         uint64_t length = destPg.length() - pos;
-        destPg.replace(nPos, length, destPg, pos, length);
+        memcpy(destPtr + nPos, destPtr + pos, length);
         nPos += length;
         destPg.resize(nPos);
 
@@ -139,7 +140,7 @@ namespace PgTools {
         resPgMapLen = pgMapLenDest.str();
         pgMapLenDest.clear();
 
-        *logout << "Preparing output time: " << time_millis(post_start) << endl;
+        *logout << "Preparing output time: " << time_millis(post_start) << " msec." << endl;
         cout << "Final size of Pg: " << nPos << " (removed: " <<
              getTotalMatchStat(totalMatched) << "; " << totalDestOverlap << " chars in overlapped dest symbol)" << endl;
     }

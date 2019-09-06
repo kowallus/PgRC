@@ -91,7 +91,24 @@ namespace PgSAHelpers {
         cout << "Unsupported denominator " << divisor << "!\n";
         return 0;
     }
-    
+
+    template<typename uint>
+    inline uint multiplyBySmallInteger(const uint value, const unsigned char smallInteger) {
+        switch (smallInteger) {
+            case 0: return 0;
+            case 1: return value * 1;
+            case 2: return value * 2;
+            case 3: return value * 3;
+            case 4: return value * 4;
+            case 5: return value * 5;
+            case 6: return value * 6;
+            case 7: return value * 7;
+            case 8: return value * 8;
+        };
+        cout << "Unsupported multiplied " << smallInteger << "!\n";
+        return 0;
+    }
+
     template<typename uint>
     inline uint moduloBySmallInteger(const uint dividend, const unsigned char divisor, const uint resultOfDivision) {
         return dividend - resultOfDivision * divisor;

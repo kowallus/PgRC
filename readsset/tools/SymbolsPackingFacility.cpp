@@ -132,7 +132,7 @@ namespace PgSAIndex {
         uint_element value = 0;
         for (uchar j = 0; j < length; j++) {
             validateSymbol((uchar) symbols[j]);
-            value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
+            value = multiplyBySmallInteger(value, symbolsCount) + symbolOrder[(uchar) symbols[j]];
         }
 
         return value;
@@ -169,7 +169,7 @@ namespace PgSAIndex {
     uint_element SymbolsPackingFacility<uint_element>::packSuffixSymbols(const char_pg* symbols, const uint_max length) {
         uint_element value = 0;
         for (uchar j = 0; j < symbolsPerElement; j++) {
-            value *= symbolsCount;
+            value = multiplyBySmallInteger(value, symbolsCount);
             if (j < length) {
                 validateSymbol((uchar) symbols[j]);
                 value += symbolOrder[(uchar) symbols[j]];
@@ -183,7 +183,7 @@ namespace PgSAIndex {
         uint_element value = 0;
         for (uchar j = 0; j < symbolsPerElement; j++) {
             validateSymbol((uchar) symbols[j]);
-            value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
+            value = multiplyBySmallInteger(value, symbolsCount) + symbolOrder[(uchar) symbols[j]];
         }
 
         return value;
@@ -264,19 +264,17 @@ namespace PgSAIndex {
     inline int SymbolsPackingFacility<uint_element>::compareSequences(uint_element* lSeq, uint_element* rSeq, const uint_max length) {
         uint_max i = length;
         while (i >= symbolsPerElement) {
-            if (*lSeq > *rSeq)
-                return 1;
-            if (*lSeq++ < *rSeq++)
-                return -1;
+            int cmp = (int) *lSeq++ - *rSeq++;
+            if (cmp)
+                return cmp;
             i -= symbolsPerElement;
         } 
         
         int j = 0;
         while (i--) {
-            if (reverse[*lSeq][j] > reverse[*rSeq][j])
-                return 1;
-            if (reverse[*lSeq][j] < reverse[*rSeq][j])
-                return -1;
+            int cmp = (int) reverse[*lSeq][j] - reverse[*rSeq][j];
+            if (cmp)
+                return cmp;
             j++;
         }
         
@@ -291,10 +289,9 @@ namespace PgSAIndex {
         lSeq += i;
         rSeq += i;
         for (uchar j = reminder; j < symbolsPerElement; j++) {
-            if (reverse[*lSeq][j] > reverse[*rSeq][j])
-                return 1;
-            if (reverse[*lSeq][j] < reverse[*rSeq][j])
-                return -1;
+            int cmp = (int) reverse[*lSeq][j] - reverse[*rSeq][j];
+            if (cmp)
+                return cmp;
             if (--length == 0)
                 return 0;
         }
@@ -314,10 +311,9 @@ namespace PgSAIndex {
         uchar sufIdx = reminder;
         uchar preIdx = 0;
         while (true) {
-            if (reverse[*sufSeq][sufIdx] > reverse[*preSeq][preIdx])
-                return 1;
-            if (reverse[*sufSeq][sufIdx] < reverse[*preSeq][preIdx])
-                return -1;
+            int cmp = (int) reverse[*sufSeq][sufIdx] - reverse[*preSeq][preIdx];
+            if (cmp)
+                return cmp;
             if (--length == 0)
                 return 0;
             if (++preIdx == symbolsPerElement) {
@@ -336,20 +332,18 @@ namespace PgSAIndex {
         uint_max i = length;
         while (i >= symbolsPerElement) {
             uint_ps_element_min pSeq = packSymbols(pattern);
-            if (*seq > pSeq)
-                return 1;
-            if (*seq++ < pSeq)
-                return -1;
+            int cmp = (int) *seq++ - pSeq;
+            if (cmp)
+                return cmp;
             pattern += symbolsPerElement;
             i -= symbolsPerElement;
         }
 
         int j = 0;
         while (i--) {
-            if (reverse[*seq][j] > *pattern)
-                return 1;
-            if (reverse[*seq][j] < *pattern++)
-                return -1;
+            int cmp = (int) reverse[*seq][j] - *pattern++;
+            if (cmp)
+                return cmp;
             j++;
         }
 
