@@ -195,10 +195,4 @@ namespace PgSAIndex {
     template class PackedPseudoGenome<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std, uint_ps_element_min, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std>::Type>;
     template class PackedPseudoGenome<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max, uint_ps_element_min, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max>::Type>;
 
-    template class PackedPseudoGenome<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std, uint_ps_element_std, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std>::Type>;
-    template class PackedPseudoGenome<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max, uint_ps_element_std, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max>::Type>;
-    template class PackedPseudoGenome<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std, uint_ps_element_std, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std>::Type>;
-    template class PackedPseudoGenome<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max, uint_ps_element_std, typename ListOfConstantLengthReadsTypeTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max>::Type>;
-    
-    
 }

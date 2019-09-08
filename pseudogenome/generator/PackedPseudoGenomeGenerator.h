@@ -66,10 +66,6 @@ namespace PgSAIndex {
                         typedef PackedPseudoGenomeOfConstantLengthReadsType <uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_min> PackedPseudoGenomeClass;
                         return new PackedPseudoGenomeClass(pg, symbolsPerElement);
                     }
-                    if(SymbolsPackingFacility<uint_ps_element_std>::isCompatibile(symbolsPerElement, symbolsCount)) {
-                        typedef PackedPseudoGenomeOfConstantLengthReadsType <uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_std> PackedPseudoGenomeClass;
-                        return new PackedPseudoGenomeClass(pg, symbolsPerElement);
-                    }
                 }
                 cout << "ERROR: wrong source PGSATYPE " << pgb->getTypeID();
                 return 0;

@@ -12,19 +12,14 @@ namespace PgSAIndex {
     static const vector<char> acgtnSymbols { 'A', 'C', 'G', 'N', 'T' };
 
     template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::BinaryPacker(binaryCodes);
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTPacker(acgtSymbols, true);
     template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::TrenaryPacker(trenaryCodes);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::QuaternaryPacker(quaternaryCodes);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTPacker(acgtSymbols);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTNPacker(acgtnSymbols);
+    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTNPacker(acgtnSymbols, true);
 
     template<typename uint_element>
-    SymbolsPackingFacility<uint_element>::SymbolsPackingFacility(const vector<char> symbolsList):
+    SymbolsPackingFacility<uint_element>::SymbolsPackingFacility(const vector<char> symbolsList, bool isGloballyManaged):
          symbolsCount(symbolsList.size()),
+         globallyManaged(isGloballyManaged),
          symbolsPerElement(SymbolsPackingFacility<uint_element>::maxSymbolsPerElement(symbolsCount)) {
         uint_max combinationCount = powuint(symbolsCount, symbolsPerElement);
         maxValue = combinationCount - 1;
@@ -42,7 +37,7 @@ namespace PgSAIndex {
         for (uint_symbols_cnt i = 0; i < symbolsCount; i++)
             symbolOrder[(unsigned char) symbolsList[(unsigned char) i]] = i;
 
-        buildReverseAndClearIndexes();
+        buildReversePackAndClearIndexes();
     }
 
     template<typename uint_element>
@@ -63,7 +58,7 @@ namespace PgSAIndex {
         std::copy(std::begin(readsSetProperties->symbolsList), std::end(readsSetProperties->symbolsList), std::begin(symbolsList));
         std::copy(std::begin(readsSetProperties->symbolOrder), std::end(readsSetProperties->symbolOrder), std::begin(symbolOrder));
 
-        buildReverseAndClearIndexes();
+        buildReversePackAndClearIndexes();
     }
 
     template<typename uint_element>
@@ -72,10 +67,11 @@ namespace PgSAIndex {
         delete[]reverseFlat;
         delete[]clear;
         delete[]clearFlat;
+        delete[]packLUT;
     }
 
     template<typename uint_element>
-    void SymbolsPackingFacility<uint_element>::buildReverseAndClearIndexes() {
+    void SymbolsPackingFacility<uint_element>::buildReversePackAndClearIndexes() {
         char_pg* rPtr = reverseFlat;
         uint_element* cPtr = clearFlat;
         for (uint_max i = 0; i <= maxValue; i++) {
@@ -102,6 +98,13 @@ namespace PgSAIndex {
         }
         delete[]currentClear;
         delete[]sequence;
+
+        packLUT = new uint_element[PACK_LUT_SIZE];
+        for (uint_max i = 0; i <= maxValue; i++) {
+            uint32_t temp = 0;
+            memcpy(&temp, reverse[i], symbolsPerElement);
+            packLUT[temp & PACK_MASK] = i;
+        }
     }
 
     template<typename uint_element>
@@ -180,13 +183,9 @@ namespace PgSAIndex {
 
     template<typename uint_element>
     uint_element SymbolsPackingFacility<uint_element>::packSymbols(const char_pg* symbols) {
-        uint_element value = 0;
-        for (uchar j = 0; j < symbolsPerElement; j++) {
-            validateSymbol((uchar) symbols[j]);
-            value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
-        }
-
-        return value;
+        uint32_t temp = 0;
+        memcpy(&temp, symbols, symbolsPerElement);
+        return packLUT[temp & PACK_MASK];
     }
 
     template<typename uint_element>
@@ -397,6 +396,17 @@ namespace PgSAIndex {
         }
     }
 
+    template<typename uint_element>
+    SymbolsPackingFacility<uint_element> *
+    SymbolsPackingFacility<uint_element>::getInstance(ReadsSetProperties *properties, uchar symbolsPerElement) {
+        if (symbolsPerElement == 3 &&
+            strcmp(SymbolsPackingFacility<uint_element>::ACGTNPacker.symbolsList, properties->symbolsList))
+            return &SymbolsPackingFacility<uint_element>::ACGTNPacker;
+        if (symbolsPerElement == 4 &&
+            strcmp(SymbolsPackingFacility<uint_element>::ACGTPacker.symbolsList, properties->symbolsList))
+            return &SymbolsPackingFacility<uint_element>::ACGTPacker;
+        return new SymbolsPackingFacility<uint_element>(properties, symbolsPerElement);
+    }
+
     template class SymbolsPackingFacility<uint_ps_element_min>;
-    template class SymbolsPackingFacility<uint_ps_element_std>;
 }

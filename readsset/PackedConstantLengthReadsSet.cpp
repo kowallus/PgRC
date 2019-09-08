@@ -17,7 +17,7 @@ namespace PgSAReadsSet {
 
         uchar symbolsPerElement = SymbolsPackingFacility<uint_ps_element_min>::maxSymbolsPerElement(
                 properties->symbolsCount);
-        sPacker = new SymbolsPackingFacility<uint_ps_element_min>(properties, symbolsPerElement);
+        sPacker = SymbolsPackingFacility<uint_ps_element_min>::getInstance(properties, symbolsPerElement);
 
         packedLength = (properties->maxReadLength + symbolsPerElement - 1) / symbolsPerElement;
     }
@@ -85,7 +85,8 @@ namespace PgSAReadsSet {
     }
 
     PackedConstantLengthReadsSet::~PackedConstantLengthReadsSet() {
-        delete sPacker;
+        if (!sPacker->isGloballyManaged())
+            delete sPacker;
     }
 
     int PackedConstantLengthReadsSet::comparePackedReads(uint_reads_cnt_max lIdx, uint_reads_cnt_max rIdx){

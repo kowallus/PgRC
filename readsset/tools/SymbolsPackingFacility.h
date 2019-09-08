@@ -15,17 +15,22 @@
 using namespace PgSAHelpers;
 
 namespace PgSAIndex {
-    
+
     template<typename uint_element>
     class SymbolsPackingFacility {
         private:
-            
+
+            const static uint32_t PACK_LUT_SIZE = 1 << 27;
+            const static uint32_t PACK_MASK = PACK_LUT_SIZE - 1;
+
             uint_max maxValue;
             const uint_symbols_cnt symbolsCount;
             const uchar symbolsPerElement;
             
             char symbolsList[UCHAR_MAX] = {};
             int symbolOrder[UCHAR_MAX] = {};
+
+            uint_element* packLUT = 0;
 
             // for a given value reverse[value][pos] returns character at the given position
             char_pg** reverse;
@@ -34,17 +39,21 @@ namespace PgSAIndex {
             // for a given value clear[value][prefixLenght] returns value of first prefixLength symbols followed by 0 symbols.
             uint_element** clear;
             uint_element* clearFlat;
-            
-            void buildReverseAndClearIndexes();
+
+            const bool globallyManaged = false;
+
+            void buildReversePackAndClearIndexes();
 
             inline void validateSymbol(uchar symbol);
 
         public:
             SymbolsPackingFacility(ReadsSetProperties* readsSetProperties, uchar symbolsPerElement);
-            SymbolsPackingFacility(const vector<char> symbolsList);
+            SymbolsPackingFacility(const vector<char> symbolsList, bool isGloballyManaged = false);
             
             ~SymbolsPackingFacility();
-            
+
+            bool isGloballyManaged() { return globallyManaged; };
+
             uint_element getMaxValue();
             
             // value should be not greater then maxValue
@@ -59,7 +68,7 @@ namespace PgSAIndex {
             void reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, char_pg* destPtr);
           
             // sequence should consist of at least symbolsPerElement symbols; result should be not greater then maxValue
-            uint_element packSymbols(const char_pg* symbols);
+            inline uint_element packSymbols(const char_pg* symbols);
             
             // result should be not greater then maxValue
             uint_element packSuffixSymbols(const char_pg* symbols, const uint_max length);
@@ -85,9 +94,9 @@ namespace PgSAIndex {
             uint8_t countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq, const char *pattern, uint_read_len_max length,
                                               uint8_t maxMismatches);
 
-            static SymbolsPackingFacility<uint_element> BinaryPacker, TrenaryPacker, QuaternaryPacker,
-                ACGTPacker, ACGTNPacker;
+            static SymbolsPackingFacility<uint_element> ACGTPacker, ACGTNPacker;
 
+            static SymbolsPackingFacility <uint_element> *getInstance(ReadsSetProperties *properties, uchar symbolsPerElement);
     };
     
 }
