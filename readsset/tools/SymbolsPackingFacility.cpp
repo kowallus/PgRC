@@ -10,74 +10,63 @@ namespace PgSAIndex {
 
     static const vector<char> acgtSymbols { 'A', 'C', 'G', 'T' };
     static const vector<char> acgtnSymbols { 'A', 'C', 'G', 'N', 'T' };
-
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::BinaryPacker(binaryCodes);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::TrenaryPacker(trenaryCodes);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::QuaternaryPacker(quaternaryCodes);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTPacker(acgtSymbols);
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element> SymbolsPackingFacility<uint_element>::ACGTNPacker(acgtnSymbols);
-
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element>::SymbolsPackingFacility(const vector<char> symbolsList):
+    
+    SymbolsPackingFacility SymbolsPackingFacility::ACGTPacker(acgtSymbols, true);
+    SymbolsPackingFacility SymbolsPackingFacility::ACGTNPacker(acgtnSymbols, true);
+    
+    SymbolsPackingFacility::SymbolsPackingFacility(const vector<char> symbolsList, bool isGloballyManaged):
          symbolsCount(symbolsList.size()),
-         symbolsPerElement(SymbolsPackingFacility<uint_element>::maxSymbolsPerElement(symbolsCount)) {
+         globallyManaged(isGloballyManaged),
+         symbolsPerElement(SymbolsPackingFacility::maxSymbolsPerElement(symbolsCount)) {
         uint_max combinationCount = powuint(symbolsCount, symbolsPerElement);
         maxValue = combinationCount - 1;
-        if (maxValue > (int) (uint_element) - 1)
-            cout << "ERROR in symbols packaging: max value for type: " << (int) (uint_element) - 1 << " while max " << " \n";
+        if (maxValue > (int) (uint8_t) - 1)
+            cout << "ERROR in symbols packaging: max value for type: " << (int) (uint8_t) - 1 << " while max " << " \n";
 
         reverse = new char_pg*[combinationCount];
         reverseFlat = new char_pg[combinationCount * symbolsPerElement];
 
-        clear = new uint_element*[combinationCount];
-        clearFlat = new uint_element[combinationCount * symbolsPerElement];
+        clear = new uint8_t*[combinationCount];
+        clearFlat = new uint8_t[combinationCount * symbolsPerElement];
 
         std::copy(symbolsList.begin(), symbolsList.end(), std::begin(this->symbolsList));
         memset(symbolOrder, -1, UCHAR_MAX);
         for (uint_symbols_cnt i = 0; i < symbolsCount; i++)
             symbolOrder[(unsigned char) symbolsList[(unsigned char) i]] = i;
 
-        buildReverseAndClearIndexes();
+        buildReversePackAndClearIndexes();
     }
 
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element>::SymbolsPackingFacility(ReadsSetProperties* readsSetProperties, uchar symbolsPerElement)
+    SymbolsPackingFacility::SymbolsPackingFacility(ReadsSetProperties* readsSetProperties, uchar symbolsPerElement)
     : symbolsCount(readsSetProperties->symbolsCount),
     symbolsPerElement(symbolsPerElement) {
         uint_max combinationCount = powuint(symbolsCount, symbolsPerElement);
         maxValue = combinationCount - 1;
-        if (maxValue > (int) (uint_element) - 1)
-            cout << "ERROR in symbols packaging: max value for type: " << (int) (uint_element) - 1 << " while max " << " \n";
+        if (maxValue > (int) (uint8_t) - 1)
+            cout << "ERROR in symbols packaging: max value for type: " << (int) (uint8_t) - 1 << " while max " << " \n";
 
         reverse = new char_pg*[combinationCount];
         reverseFlat = new char_pg[combinationCount * symbolsPerElement];
 
-        clear = new uint_element*[combinationCount];
-        clearFlat = new uint_element[combinationCount * symbolsPerElement];
+        clear = new uint8_t*[combinationCount];
+        clearFlat = new uint8_t[combinationCount * symbolsPerElement];
 
         std::copy(std::begin(readsSetProperties->symbolsList), std::end(readsSetProperties->symbolsList), std::begin(symbolsList));
         std::copy(std::begin(readsSetProperties->symbolOrder), std::end(readsSetProperties->symbolOrder), std::begin(symbolOrder));
 
-        buildReverseAndClearIndexes();
+        buildReversePackAndClearIndexes();
     }
 
-    template<typename uint_element>
-    SymbolsPackingFacility<uint_element>::~SymbolsPackingFacility() {
+    SymbolsPackingFacility::~SymbolsPackingFacility() {
         delete[]reverse;
         delete[]reverseFlat;
         delete[]clear;
         delete[]clearFlat;
     }
 
-    template<typename uint_element>
-    void SymbolsPackingFacility<uint_element>::buildReverseAndClearIndexes() {
+    void SymbolsPackingFacility::buildReversePackAndClearIndexes() {
         char_pg* rPtr = reverseFlat;
-        uint_element* cPtr = clearFlat;
+        uint8_t* cPtr = clearFlat;
         for (uint_max i = 0; i <= maxValue; i++) {
             reverse[i] = rPtr;
             rPtr += symbolsPerElement;
@@ -85,7 +74,7 @@ namespace PgSAIndex {
             cPtr += symbolsPerElement;
         }
 
-        uint_element* currentClear = new uint_element[symbolsPerElement]();
+        uint8_t* currentClear = new uint8_t[symbolsPerElement]();
         uint_symbols_cnt* sequence = new uint_symbols_cnt[symbolsPerElement]();
         for (uint_max i = 0; i <= maxValue; i++) {
             for (uchar j = 0; j < symbolsPerElement; j++) {
@@ -102,34 +91,43 @@ namespace PgSAIndex {
         }
         delete[]currentClear;
         delete[]sequence;
+
+        symbolsPerLUT1 = symbolsPerElement - SYMBOLS_PER_LUT_0;
+        for (uint_max i = 0; i <= maxValue; i++) {
+            uint16_t temp = 0;
+            if (reverse[i][SYMBOLS_PER_LUT_0] == symbolsList[0]
+                && (symbolsPerLUT1 == 1 || reverse[i][SYMBOLS_PER_LUT_0 + 1] == symbolsList[0])) {
+                memcpy(&temp, reverse[i], SYMBOLS_PER_LUT_0);
+                packLUT[0][temp & PACK_MASK] = i;
+            }
+            if (reverse[i][0] == symbolsList[0] && reverse[i][1] == symbolsList[0]) {
+                memcpy(&temp, reverse[i] + SYMBOLS_PER_LUT_0, symbolsPerLUT1);
+                packLUT[1][temp & PACK_MASK] = i;
+            }
+        }
     }
 
-    template<typename uint_element>
-    uint_element SymbolsPackingFacility<uint_element>::clearSuffix(const uint_element value, uchar prefixLength) {
+    uint8_t SymbolsPackingFacility::clearSuffix(const uint8_t value, uchar prefixLength) {
         return clear[value][prefixLength];
     }
 
-    template<typename uint_element>
-    uint_element SymbolsPackingFacility<uint_element>::getMaxValue() {
+    uint8_t SymbolsPackingFacility::getMaxValue() {
         return maxValue;
     }
 
-    template<typename uint_element>
-    bool SymbolsPackingFacility<uint_element>::isCompatibile(uchar symbolsPerElement, uchar symbolsCount) {
-        return powuint(symbolsCount, symbolsPerElement) - 1 <= (uint_element) - 1;
+    bool SymbolsPackingFacility::isCompatibile(uchar symbolsPerElement, uchar symbolsCount) {
+        return powuint(symbolsCount, symbolsPerElement) - 1 <= (uint8_t) - 1;
     }
 
-    template<typename uint_element>
-    uchar SymbolsPackingFacility<uint_element>::maxSymbolsPerElement(uchar symbolsCount) {
+    uchar SymbolsPackingFacility::maxSymbolsPerElement(uchar symbolsCount) {
         for (int i = 0; i < UCHAR_MAX; i++)
-            if (!SymbolsPackingFacility<uint_element>::isCompatibile(i + 1, symbolsCount))
+            if (!SymbolsPackingFacility::isCompatibile(i + 1, symbolsCount))
                 return i;
         return UCHAR_MAX;
     }
 
-    template<typename uint_element>
-    uint_element SymbolsPackingFacility<uint_element>::packPrefixSymbols(const char_pg* symbols, const uint_max length) {
-        uint_element value = 0;
+    uint8_t SymbolsPackingFacility::packPrefixSymbols(const char_pg* symbols, const uint_max length) {
+        uint8_t value = 0;
         for (uchar j = 0; j < length; j++) {
             validateSymbol((uchar) symbols[j]);
             value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
@@ -138,8 +136,7 @@ namespace PgSAIndex {
         return value;
     }
 
-    template<typename uint_element>
-    uint_max SymbolsPackingFacility<uint_element>::packSequence(const char_pg* source, const uint_max length, uint_element* dest) {
+    uint_max SymbolsPackingFacility::packSequence(const char_pg* source, const uint_max length, uint8_t* dest) {
         uint_max i = 0;
 
         const char_pg* guard = source + length - symbolsPerElement;
@@ -156,18 +153,16 @@ namespace PgSAIndex {
         return i;
     }
 
-    template<typename uint_element>
-    string SymbolsPackingFacility<uint_element>::packSequence(const char_pg *source, const uint_max length) {
-        size_t packedLength = (length + symbolsPerElement - 1) / symbolsPerElement * sizeof(uint_element);
+    string SymbolsPackingFacility::packSequence(const char_pg *source, const uint_max length) {
+        size_t packedLength = (length + symbolsPerElement - 1) / symbolsPerElement * sizeof(uint8_t);
         string tmp;
         tmp.resize(packedLength);
-        this->packSequence(source, length, (uint_element*) tmp.data());
+        this->packSequence(source, length, (uint8_t*) tmp.data());
         return tmp;
     }
 
-    template<typename uint_element>
-    uint_element SymbolsPackingFacility<uint_element>::packSuffixSymbols(const char_pg* symbols, const uint_max length) {
-        uint_element value = 0;
+    uint8_t SymbolsPackingFacility::packSuffixSymbols(const char_pg* symbols, const uint_max length) {
+        uint8_t value = 0;
         for (uchar j = 0; j < symbolsPerElement; j++) {
             value *= symbolsCount;
             if (j < length) {
@@ -178,19 +173,14 @@ namespace PgSAIndex {
         return value;
     }
 
-    template<typename uint_element>
-    uint_element SymbolsPackingFacility<uint_element>::packSymbols(const char_pg* symbols) {
-        uint_element value = 0;
-        for (uchar j = 0; j < symbolsPerElement; j++) {
-            validateSymbol((uchar) symbols[j]);
-            value = value * symbolsCount + symbolOrder[(uchar) symbols[j]];
-        }
-
-        return value;
+    uint8_t SymbolsPackingFacility::packSymbols(const char_pg* symbols) {
+        uint16_t temp0 = 0, temp1 = 0;
+        memcpy(&temp0, symbols, SYMBOLS_PER_LUT_0);
+        memcpy(&temp1, symbols + SYMBOLS_PER_LUT_0, symbolsPerLUT1);
+        return packLUT[0][temp0 & PACK_MASK] + packLUT[1][temp1 & PACK_MASK];
     }
 
-    template<typename uint_element>
-    inline const string SymbolsPackingFacility<uint_element>::reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length) {
+    const string SymbolsPackingFacility::reverseSequence(const uint8_t* sequence, const uint_max pos, const uint_max length) {
         string res;
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
@@ -201,27 +191,25 @@ namespace PgSAIndex {
         return res;
     }
 
-    template<typename uint_element>
-    inline void SymbolsPackingFacility<uint_element>::reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, string &res) {
+    void SymbolsPackingFacility::reverseSequence(const uint8_t* sequence, const uint_max pos, const uint_max length, string &res) {
         res.clear();
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
         res.append(reverse[sequence[i++]], reminder, this->symbolsPerElement - reminder);
         while (res.size() < length - symbolsPerElement)
             res.append(reverse[sequence[i++]], symbolsPerElement);
-        uint_element value = sequence[i];
+        uint8_t value = sequence[i];
         for (uchar j = 0; res.size() < length; j++)
             res.push_back(reverse[value][j]);
     }
 
-    template<typename uint_element>
-    inline void SymbolsPackingFacility<uint_element>::reverseSequence(const uint_element* sequence, const uint_max pos, const uint_max length, char_pg* destPtr) {
+    void SymbolsPackingFacility::reverseSequence(const uint8_t* sequence, const uint_max pos, const uint_max length, char_pg* destPtr) {
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
 
         char_pg* ptr = destPtr;
         const char_pg* endPtr = destPtr + length;
-        uint_element value = sequence[i++];
+        uint8_t value = sequence[i++];
         for (uchar j = reminder; j < symbolsPerElement; j++) {
             *ptr++ = reverse[value][j];
             if (ptr == endPtr)
@@ -237,22 +225,19 @@ namespace PgSAIndex {
         }
    }
 
-    template<typename uint_element>
-    inline char_pg SymbolsPackingFacility<uint_element>::reverseValue(uint_element value, uchar position) {
+    char_pg SymbolsPackingFacility::reverseValue(uint8_t value, uchar position) {
         return reverse[value][position];
     }
 
-    template<typename uint_element>
-    inline char_pg SymbolsPackingFacility<uint_element>::reverseValue(uint_element* sequence, uint_read_len_max pos) {
+    char_pg SymbolsPackingFacility::reverseValue(uint8_t* sequence, uint_read_len_max pos) {
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger<uint_max>(pos, this->symbolsPerElement, i);
 
-        uint_element value = sequence[i++];
+        uint8_t value = sequence[i++];
         return reverse[value][reminder];
     }
 
-    template<typename uint_element>
-    inline string SymbolsPackingFacility<uint_element>::reverseValue(uint_element value) {
+    string SymbolsPackingFacility::reverseValue(uint8_t value) {
         string res;
         res.resize(symbolsPerElement);
         for (uchar j = 0; j < symbolsPerElement; j++)
@@ -260,8 +245,7 @@ namespace PgSAIndex {
         return res;
     }
 
-    template<typename uint_element>
-    inline int SymbolsPackingFacility<uint_element>::compareSequences(uint_element* lSeq, uint_element* rSeq, const uint_max length) {
+    int SymbolsPackingFacility::compareSequences(uint8_t* lSeq, uint8_t* rSeq, const uint_max length) {
         uint_max i = length;
         while (i >= symbolsPerElement) {
             int cmp = (int) *lSeq++ - *rSeq++;
@@ -281,8 +265,7 @@ namespace PgSAIndex {
         return 0;
     }
 
-    template<typename uint_element>
-    inline int SymbolsPackingFacility<uint_element>::compareSequences(uint_element* lSeq, uint_element* rSeq, uint_max pos, uint_max length) {
+    int SymbolsPackingFacility::compareSequences(uint8_t* lSeq, uint8_t* rSeq, uint_max pos, uint_max length) {
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
 
@@ -299,8 +282,7 @@ namespace PgSAIndex {
         return compareSequences(lSeq + 1, rSeq + 1, length);
     }
 
-    template<typename uint_element>
-    inline int SymbolsPackingFacility<uint_element>::compareSuffixWithPrefix(uint_element* sufSeq, uint_element* preSeq, uint_max sufPos, uint_max length) {
+    int SymbolsPackingFacility::compareSuffixWithPrefix(uint8_t* sufSeq, uint8_t* preSeq, uint_max sufPos, uint_max length) {
         uint_max i = divideBySmallInteger(sufPos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(sufPos, this->symbolsPerElement, i);
         
@@ -325,8 +307,7 @@ namespace PgSAIndex {
         }
     }
 
-    template<typename uint_element>
-    int SymbolsPackingFacility<uint_element>::compareSequenceWithUnpacked(uint_ps_element_min *seq,
+    int SymbolsPackingFacility::compareSequenceWithUnpacked(uint_ps_element_min *seq,
                                                                           const char *pattern,
                                                                           uint_read_len_max length) {
         uint_max i = length;
@@ -350,8 +331,7 @@ namespace PgSAIndex {
         return 0;
     }
 
-    template<typename uint_element>
-    uint8_t SymbolsPackingFacility<uint_element>::countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq,
+    uint8_t SymbolsPackingFacility::countSequenceMismatchesVsUnpacked(uint_ps_element_min *seq,
                                                                                     const char *pattern,
                                                                                     uint_read_len_max length,
                                                                                     uint8_t maxMismatches) {
@@ -383,14 +363,21 @@ namespace PgSAIndex {
         return res;
     }
 
-    template<typename uint_element>
-    void SymbolsPackingFacility<uint_element>::validateSymbol(uchar symbol) {
+    void SymbolsPackingFacility::validateSymbol(uchar symbol) {
         if (symbolOrder[symbol] == -1) {
             fprintf(stdout, "Unexpected symbol '%c'. Packer supports: %s.\n", symbol, symbolsList);
             exit(EXIT_FAILURE);
         }
     }
 
-    template class SymbolsPackingFacility<uint_ps_element_min>;
-    template class SymbolsPackingFacility<uint_ps_element_std>;
+    SymbolsPackingFacility *
+    SymbolsPackingFacility::getInstance(ReadsSetProperties *properties, uchar symbolsPerElement) {
+        if (symbolsPerElement == 3 &&
+            strcmp(SymbolsPackingFacility::ACGTNPacker.symbolsList, properties->symbolsList))
+            return &SymbolsPackingFacility::ACGTNPacker;
+        if (symbolsPerElement == 4 &&
+            strcmp(SymbolsPackingFacility::ACGTPacker.symbolsList, properties->symbolsList))
+            return &SymbolsPackingFacility::ACGTPacker;
+        return new SymbolsPackingFacility(properties, symbolsPerElement);
+    }
 }

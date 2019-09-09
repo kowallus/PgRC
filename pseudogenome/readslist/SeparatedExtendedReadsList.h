@@ -122,7 +122,7 @@ namespace PgTools {
 
         void initSrcs();
 
-        void decompressSrc(istream *&src, istream &pgrcIn, SymbolsPackingFacility<uint8_t> *symPacker = 0);
+        void decompressSrc(istream *&src, istream &pgrcIn, SymbolsPackingFacility *symPacker = 0);
 
         void decompressMisRevOffSrc(istream &pgrcIn, bool trasposeMode = false);
 

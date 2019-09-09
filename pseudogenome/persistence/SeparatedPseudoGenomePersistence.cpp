@@ -727,7 +727,7 @@ namespace PgTools {
     void SeparatedPseudoGenomeOutputBuilder::compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type,
                                                           uint8_t coder_level, int coder_param,
                                                           double estimated_compression,
-                                                          SymbolsPackingFacility<uint8_t>* symPacker) {
+                                                          SymbolsPackingFacility* symPacker) {
         if (onTheFlyMode() || !dest) {
             fprintf(stderr, "Error during compression: an input stream missing.\n");
             exit(EXIT_FAILURE);

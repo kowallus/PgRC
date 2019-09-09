@@ -69,7 +69,7 @@ namespace PgTools {
 
     template <int maxMismatches>
     void SeparatedExtendedReadsListIterator<maxMismatches>::decompressSrc(istream *&src, istream &pgrcIn,
-                                                                          SymbolsPackingFacility<uint8_t> *symPacker) {
+                                                                          SymbolsPackingFacility *symPacker) {
         uint64_t resLength = 0;
         if (symPacker)
             PgSAHelpers::readValue<uint64_t>(pgrcIn, resLength, false);

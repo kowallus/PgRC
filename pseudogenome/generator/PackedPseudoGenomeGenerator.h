@@ -62,12 +62,8 @@ namespace PgSAIndex {
                 if (pgb->isReadLengthConstant()) {
                     typedef DefaultPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len> DefaultPseudoGenomeClass;
                     DefaultPseudoGenomeClass* pg = DefaultPseudoGenomeClass::castBase(pgb);
-                    if(SymbolsPackingFacility<uint_ps_element_min>::isCompatibile(symbolsPerElement, symbolsCount)) {
+                    if(SymbolsPackingFacility::isCompatibile(symbolsPerElement, symbolsCount)) {
                         typedef PackedPseudoGenomeOfConstantLengthReadsType <uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_min> PackedPseudoGenomeClass;
-                        return new PackedPseudoGenomeClass(pg, symbolsPerElement);
-                    }
-                    if(SymbolsPackingFacility<uint_ps_element_std>::isCompatibile(symbolsPerElement, symbolsCount)) {
-                        typedef PackedPseudoGenomeOfConstantLengthReadsType <uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_std> PackedPseudoGenomeClass;
                         return new PackedPseudoGenomeClass(pg, symbolsPerElement);
                     }
                 }

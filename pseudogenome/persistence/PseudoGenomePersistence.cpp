@@ -80,8 +80,6 @@ namespace PgSAIndex {
             if (pgh.isReadLengthConstant()) {
                 if (ppghe.isPgElementMinimal())
                     return new PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_min>(pgh.getPseudoGenomeLength(), src);
-                if (ppghe.isPgElementStandard())
-                    return new PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_std>(pgh.getPseudoGenomeLength(), src);
             }
         }
         

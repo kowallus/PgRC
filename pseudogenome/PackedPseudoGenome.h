@@ -19,7 +19,7 @@ namespace PgSAIndex {
         private:
             uint_pg_element* sequence;
             
-            SymbolsPackingFacility<uint_pg_element>* sPacker;
+            SymbolsPackingFacility* sPacker;
             
             ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>* readsList = 0;
 
@@ -69,7 +69,7 @@ namespace PgSAIndex {
             const string getPartImpl(const uint_pg_len posIdx, const uint_pg_len length);
             const uint_pg_len getLengthImpl();
             
-            SymbolsPackingFacility<uint_pg_element>* getSymbolsPacker();
+            SymbolsPackingFacility* getSymbolsPacker();
 
             uint_read_len maxReadLengthVirtual();
             uint_reads_cnt readsCountVirtual();

@@ -19,7 +19,7 @@ namespace PgSAReadsSet {
 
         public:
 
-            SymbolsPackingFacility<uint_ps_element_min>* sPacker;
+            SymbolsPackingFacility* sPacker;
 
             PackedConstantLengthReadsSet(uint_read_len_max readLength, const char* symbolsList, uint8_t symbolsCount);
             virtual ~PackedConstantLengthReadsSet();

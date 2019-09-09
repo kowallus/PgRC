@@ -70,10 +70,6 @@ namespace PgSAIndex {
                     auto pseudoGenome = (PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_min> *) ppgb;
                     return new PseudoGenomeUserClass<uint_read_len, uint_reads_cnt, uint_pg_len, PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_min>>(pseudoGenome);
                 }
-                if (ppgb->isPgElementStandard()) {
-                    auto pseudoGenome = (PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_std> *) ppgb;
-                    return new PseudoGenomeUserClass<uint_read_len, uint_reads_cnt, uint_pg_len, PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_std>>(pseudoGenome);
-                }
             }
         }
         cout << "ERROR: unsupported PGTYPE " << pgb->getTypeID() << " with " << (pgb->isReadLengthConstant()?"constant":"variable") << " read length\n";
@@ -121,8 +117,6 @@ namespace PgSAIndex {
             if (pgb->isReadLengthConstant()) {
                 if (ppgb->isPgElementMinimal())
                     readsList = ((PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_min> *) ppgb)->getReadsList();
-                if (ppgb->isPgElementStandard())
-                    readsList = ((PackedPseudoGenomeOfConstantLengthReadsType<uint_read_len, uint_reads_cnt, uint_pg_len, uint_ps_element_std> *) ppgb)->getReadsList();
             }
         }
 
