@@ -15,9 +15,9 @@ namespace PgSAReadsSet {
         properties->readsCount = 0;
         properties->allReadsLength = 0;
 
-        uchar symbolsPerElement = SymbolsPackingFacility<uint_ps_element_min>::maxSymbolsPerElement(
+        uchar symbolsPerElement = SymbolsPackingFacility::maxSymbolsPerElement(
                 properties->symbolsCount);
-        sPacker = SymbolsPackingFacility<uint_ps_element_min>::getInstance(properties, symbolsPerElement);
+        sPacker = SymbolsPackingFacility::getInstance(properties, symbolsPerElement);
 
         packedLength = (properties->maxReadLength + symbolsPerElement - 1) / symbolsPerElement;
     }

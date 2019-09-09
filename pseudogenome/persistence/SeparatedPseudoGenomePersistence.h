@@ -97,7 +97,7 @@ namespace PgTools {
         void freeDests();
 
         void compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type, uint8_t coder_level, int coder_param = -1,
-                          double estimated_compression = 1, SymbolsPackingFacility<uint8_t>* symPacker = 0);
+                          double estimated_compression = 1, SymbolsPackingFacility* symPacker = 0);
         void compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level, bool transposeMode = false);
         void destToFile(ostream *dest, const string &fileName);
     public:
