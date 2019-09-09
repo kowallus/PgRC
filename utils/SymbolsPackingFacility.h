@@ -1,9 +1,9 @@
 #ifndef SYMBOLSPACKINGFACILITY_H
 #define	SYMBOLSPACKINGFACILITY_H
 
-#include "../../utils/helper.h"
-#include "../../pgsaconfig.h"
-#include "../ReadsSetBase.h"
+#include "helper.h"
+#include "../pgsaconfig.h"
+#include "../readsset/ReadsSetBase.h"
 
 using namespace PgSAHelpers;
 

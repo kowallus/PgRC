@@ -19,8 +19,8 @@ set(HELPER_FILES
 set(READSSET_FILES
         ${HELPER_FILES}
         readsset/tools
-        readsset/tools/SymbolsPackingFacility.cpp
-        readsset/tools/SymbolsPackingFacility.h
+        utils/SymbolsPackingFacility.cpp
+        utils/SymbolsPackingFacility.h
         readsset/DefaultReadsSet.cpp
         readsset/DefaultReadsSet.h
         readsset/iterator
