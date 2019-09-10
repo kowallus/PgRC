@@ -7,6 +7,7 @@
 #include "../lzma/LzmaEnc.h"
 #include "../lzma/Ppmd7.h"
 #include "LzmaLib.h"
+#include "../utils/VarLenDNACoder.h"
 
 /*
 RAM requirements for LZMA:
@@ -376,6 +377,10 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
             res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
                     estimated_compression);
             break;
+        case VARLEN_DNA_CODER:
+            res = PgSAHelpers::VarLenDNACoder::Compress(dest, destLen,
+                                                        (const unsigned char *) src, srcLen, coder_param);
+            break;
         case LZMA2_CODER:
         default:
             fprintf(stderr, "Unsupported coder type: %d.\n", coder_type);
@@ -412,6 +417,10 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint
         res = PpmdUncompress((unsigned char*) dest, &outLen,
                              (unsigned char*) src, &srcLen);
     break;
+    case VARLEN_DNA_CODER:
+        res = PgSAHelpers::VarLenDNACoder::Uncompress((unsigned char*) dest, &outLen,
+                                                      (unsigned char*) src, &srcLen);
+        break;
     case LZMA2_CODER:
     default:
     fprintf(stderr, "Unsupported coder type: %d.\n", coder_type);

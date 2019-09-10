@@ -62,7 +62,7 @@ namespace PgTools {
         return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPgLength, 1)+ "%)";
     }
 
-    static const char MATCH_MARK = 128;
+    static const char MATCH_MARK = '%';
 
     void SimplePgMatcher::markAndRemoveExactMatches(
             bool destPgIsSrcPg, string &destPg, string &resPgMapOff, string& resPgMapLen,
@@ -214,7 +214,18 @@ namespace PgTools {
         comboPgSeq.append(nPgSequence);
         nPgSequence.clear();
         nPgSequence.shrink_to_fit();
-
+        *logout << "Var-len encoding joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
+        size_t compLen = 0;
+        char* compSeq = Compress(compLen, comboPgSeq.data(), comboPgSeq.size(), VARLEN_DNA_CODER, coder_level, 0, 1);
+        string valPgSeq;
+        valPgSeq.resize(comboPgSeq.size());
+        size_t valSeq = comboPgSeq.size();
+        Uncompress((char*) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
+        cout << (valPgSeq == comboPgSeq?"OK :)":"Bad coding :(") << endl;
+        size_t lzmaLen = 0;
+        char* lzmaSeq = Compress(lzmaLen, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t, 1);
+        delete[] lzmaSeq;
+        delete[] compSeq;
         *logout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
         writeCompressed(pgrcOut, comboPgSeq.data(), comboPgSeq.size(), LZMA_CODER, coder_level,
                 PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);

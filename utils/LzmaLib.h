@@ -17,6 +17,8 @@ using namespace std;
 const static uint8_t LZMA_CODER = 1;
 const static uint8_t LZMA2_CODER = 2;
 const static uint8_t PPMD7_CODER = 3;
+const static uint8_t VARLEN_DNA_CODER = 11;
+
 
 const static int PGRC_DATAPERIODCODE_8_t = 0;
 const static int PGRC_DATAPERIODCODE_16_t = 1;

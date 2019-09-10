@@ -44,7 +44,7 @@ set(LZMA_FILES
         lzma/Ppmd7.h lzma/Ppmd7.c
         lzma/Ppmd7Enc.c lzma/Ppmd7Dec.c
         lzma/Threads.h lzma/Threads.c
-        )
+        utils/VarLenDNACoder.cpp utils/VarLenDNACoder.h)
 
 set(PG_FILES
         ${READSSET_FILES}
