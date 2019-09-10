@@ -223,7 +223,7 @@ namespace PgTools {
         Uncompress((char*) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
         cout << (valPgSeq == comboPgSeq?"OK :)":"Bad coding :(") << endl;
         size_t lzmaLen = 0;
-        char* lzmaSeq = Compress(lzmaLen, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t, 1);
+        char* lzmaSeq = Compress(lzmaLen, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_VAR_LEN_DNA);
         delete[] lzmaSeq;
         delete[] compSeq;
         *logout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";

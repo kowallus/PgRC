@@ -6,6 +6,7 @@
 
 #include "../lzma/7zTypes.h"
 #include "helper.h"
+#include "VarLenDNACoder.h"
 #include <vector>
 
 using namespace std;
@@ -32,6 +33,7 @@ const static uint8_t PGRC_CODER_LEVEL_MAX = 3;
 
 const static double COMPRESSION_ESTIMATION_UINT8_BITMAP = 0.125;
 const static double COMPRESSION_ESTIMATION_BASIC_DNA = 0.250;
+const static double COMPRESSION_ESTIMATION_VAR_LEN_DNA = 0.83;
 const static double COMPRESSION_ESTIMATION_MIS_CNT = 0.5;
 const static double COMPRESSION_ESTIMATION_MIS_SYM = 0.250;
 

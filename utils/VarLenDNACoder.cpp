@@ -90,13 +90,14 @@ int PgSAHelpers::VarLenDNACoder::decode(unsigned char *dest, size_t expDestLen, 
     uint8_t* destPtr = dest;
     for (size_t i = 0; i < srcLen; i++) {
         uint8_t code = src[i];
-        strcpy((char*) destPtr, codeBook[code]);
-        destPtr += strlen(codeBook[code]);
+        char* ptr = codeBook[code];
+        while(*ptr)
+            *(destPtr++) = *(ptr++);
     }
     size_t destLen = destPtr - dest;
     if (expDestLen != destLen) {
         fprintf(stderr, "Unexpected decoded length: %d (expected %d).\n", destLen, expDestLen);
-//        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
     return 0;
 }
@@ -105,12 +106,12 @@ int
 PgSAHelpers::VarLenDNACoder::Compress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,
                                       int coder_param) {
     size_t headerSize = VAR_LEN_PROPS_SIZE;
-    size_t maxDestSize = VAR_LEN_PROPS_SIZE + MAX_CODEBOOK_SIZE + (srcLen + srcLen / 3) * COMPRESSION_ESTIMATION_VAR_LEN_DNA + 128;
+    size_t maxDestSize = VAR_LEN_PROPS_SIZE + MAX_CODEBOOK_SIZE + (srcLen + srcLen / 3) * COMPRESSION_ESTIMATION + 128;
     try {
         dest = new unsigned char[maxDestSize];
     } catch (const std::bad_alloc& e) {
         cout << "WARNING: Allocation failed: " << e.what() << endl;
-        maxDestSize -= srcLen / 3 * COMPRESSION_ESTIMATION_VAR_LEN_DNA;
+        maxDestSize -= srcLen / 3 * COMPRESSION_ESTIMATION;
         dest = new unsigned char[maxDestSize];
     }
     VarLenDNACoder* coder;
