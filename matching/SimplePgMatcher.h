@@ -58,6 +58,8 @@ namespace PgTools {
 
         static void writeMatchingResult(const string &pgPrefix,
                 const string &pgMapped, const string &pgMapOff, const string& pgMapLen);
+
+        static char MATCH_MARK;
     };
 }
 

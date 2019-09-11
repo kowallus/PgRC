@@ -62,7 +62,7 @@ namespace PgTools {
         return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPgLength, 1)+ "%)";
     }
 
-    static const char MATCH_MARK = '%';
+    char SimplePgMatcher::MATCH_MARK = '%';
 
     void SimplePgMatcher::markAndRemoveExactMatches(
             bool destPgIsSrcPg, string &destPg, string &resPgMapOff, string& resPgMapLen,

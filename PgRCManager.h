@@ -23,6 +23,11 @@ namespace PgTools {
     static const char PGRC_ORD_PE_MODE = 3;
     static const char PGRC_MIN_PE_MODE = 4;
 
+    static const char PGRC_VERSION_MODE = '#';
+    static const char PGRC_VERSION_MAJOR = 1;
+    static const char PGRC_VERSION_MINOR = 1;
+    static const char PGRC_VERSION_REVISON = 0;
+
     class PgRCManager {
     private:
         static const int MIN_CHARS_PER_PGMATCH = 20;
@@ -105,6 +110,10 @@ namespace PgTools {
         string mappedLqDivisionFile;
 
         // Decompression chain variables
+        char pgrcVersionMajor = 1;
+        char pgrcVersionMinor = 0;
+        char pgrcVersionRevision = 0;
+
         uint_reads_cnt_max hqReadsCount;
         uint_reads_cnt_max lqReadsCount;
         uint_reads_cnt_max nonNPgReadsCount;

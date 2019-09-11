@@ -72,6 +72,10 @@ namespace PgTools {
             fprintf(stderr, "Warning: file %s already exists\n", pgRCFileName.data());
         pgrcOut = fstream(pgRCFileName + TEMPORARY_FILE_SUFFIX, ios::out | ios::binary | ios::trunc);
         pgrcOut.write(PGRC_HEADER, strlen(PGRC_HEADER));
+        pgrcOut.put(PGRC_VERSION_MODE);
+        pgrcOut.put(PGRC_VERSION_MAJOR);
+        pgrcOut.put(PGRC_VERSION_MINOR);
+        pgrcOut.put(PGRC_VERSION_REVISON);
         const char pgrc_mode = singleReadsMode ? PGRC_SE_MODE :
                                (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):
                      (ignorePairOrderInformation?PGRC_MIN_PE_MODE:PGRC_PE_MODE));
@@ -520,6 +524,20 @@ namespace PgTools {
                 }
             }
             pgrc_mode = pgrcIn.get();
+            if (pgrc_mode == PGRC_VERSION_MODE) {
+                pgrcVersionMajor = pgrcIn.get();
+                pgrcVersionMinor = pgrcIn.get();
+                pgrcVersionRevision = pgrcIn.get();
+                if (pgrcVersionMajor > PGRC_VERSION_MAJOR || (pgrcVersionMajor == PGRC_VERSION_MAJOR &&
+                    pgrcVersionMinor > PGRC_VERSION_MINOR)) {
+                    fprintf(stderr, "ERROR: Archive is packed with a newer PgRC version %d.%d.\n",
+                            (int) pgrcVersionMajor, (int) pgrcVersionMinor);
+                    exit(EXIT_FAILURE);
+                }
+                compressionLevel = pgrcIn.get();
+                pgrc_mode = pgrcIn.get();
+            } else
+                SimplePgMatcher::MATCH_MARK = 128;
             if (pgrc_mode < PGRC_SE_MODE || pgrc_mode > PGRC_MIN_PE_MODE) {
                 fprintf(stderr, "Unsupported decompression mode: %d.\n", pgrc_mode);
                 exit(EXIT_FAILURE);
