@@ -35,6 +35,19 @@ PgSAHelpers::VarLenDNACoder::~VarLenDNACoder() {
 }
 
 void
+PgSAHelpers::VarLenDNACoder::writeBook(unsigned char *dest, size_t &destLen) {
+    uint8_t* destPtr = dest;
+    for (size_t i = 0; i < MAX_NUMBER_OF_CODES; i++) {
+        char* ptr = codeBook[i];
+        while(*ptr)
+            *(destPtr++) = *(ptr++);
+        *(destPtr++) = '\n';
+    }
+    *(destPtr - 1) = 0;
+    destLen = destPtr - dest;
+}
+
+void
 PgSAHelpers::VarLenDNACoder::encode(unsigned char *dest, size_t &destLen, const unsigned char *src, size_t srcLen) {
     assert(MAX_CODE_LENGTH == 4);
     destLen = 0;
@@ -102,6 +115,10 @@ int PgSAHelpers::VarLenDNACoder::decode(unsigned char *dest, size_t expDestLen, 
     return 0;
 }
 
+int PgSAHelpers::VarLenDNACoder::getCoderParam(uint8_t coder_mode_param, uint8_t coder_value_param)  {
+    return coder_mode_param * 256 + coder_value_param;
+};
+
 int
 PgSAHelpers::VarLenDNACoder::Compress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,
                                       int coder_param) {
@@ -115,15 +132,21 @@ PgSAHelpers::VarLenDNACoder::Compress(unsigned char *&dest, size_t &destLen, con
         dest = new unsigned char[maxDestSize];
     }
     VarLenDNACoder* coder;
-    dest[0] = coder_param;
-    switch (coder_param) {
-        case DEFAULT_CODER_PARAM:
-            coder = new VarLenDNACoder(PgSAHelpers::VarLenDNACoder::DEFAULT_CODES);
+    uint8_t coder_mode_param = coder_param / 256;
+    uint8_t coder_value_param = coder_param % 256;
+    dest[0] = coder_mode_param;
+    dest[1] = coder_value_param;
+    switch (dest[0]) {
+        case STATIC_CODES_CODER_PARAM:
+            dest[1] = AG_EXTENDED_CODES_ID;
+            coder = new VarLenDNACoder(AG_EXTENDED_CODES);
             break;
         default:
             fprintf(stderr, "Unsupported %d PgRC var-len coder parameter.\n", coder_param);
             exit(EXIT_FAILURE);
     }
+    coder->writeBook(dest + headerSize, destLen);
+    headerSize += destLen;
     coder->encode(dest + headerSize, destLen, src, srcLen);
     delete(coder);
     destLen += headerSize;
@@ -133,24 +156,34 @@ PgSAHelpers::VarLenDNACoder::Compress(unsigned char *&dest, size_t &destLen, con
     return SZ_OK;
 }
 
+string PgSAHelpers::VarLenDNACoder::readBook(unsigned char *src) {
+    return string((char*) src);
+}
+
 int PgSAHelpers::VarLenDNACoder::Uncompress(unsigned char *dest, size_t *destLen, unsigned char *src, size_t *srcLen) {
     int coder_param = src[0];
     size_t headerSize = VAR_LEN_PROPS_SIZE;
     VarLenDNACoder* coder;
     switch (coder_param) {
-        case DEFAULT_CODER_PARAM:
-            coder = new VarLenDNACoder(PgSAHelpers::VarLenDNACoder::DEFAULT_CODES);
+        case STATIC_CODES_CODER_PARAM:
+        case DYNAMIC_CODES_CODER_PARAM:
+            {
+                string codeBook = readBook(src + headerSize);
+                coder = new VarLenDNACoder(codeBook);
+                headerSize += codeBook.length() + 1;
+            }
             break;
         default:
             fprintf(stderr, "Unsupported %d PgRC var-len coder parameter.\n", coder_param);
             exit(EXIT_FAILURE);
     }
+
     int res = coder->decode(dest, *destLen, src + headerSize, (*srcLen) - headerSize);
     delete(coder);
     return res;
 }
 
-const string PgSAHelpers::VarLenDNACoder::DEFAULT_CODES =
+const string PgSAHelpers::VarLenDNACoder::AG_EXTENDED_CODES =
         "A\nAAA\nAAAA\nGAAA\nCAA\nACAA\nGCAA\nGAA\nAGAA\nGGAA\nTAA\nATAA\nGTAA\nACA\nAACA\nGACA\nCCA\nACCA\nGCCA\nGCA\n"
         "AGCA\nGGCA\nTCA\nATCA\nGTCA\nAGA\nAAGA\nGAGA\nCGA\nACGA\nGCGA\nGGA\nAGGA\nGGGA\nTGA\nATGA\nGTGA\nATA\nAATA\n"
         "GATA\nCTA\nACTA\nGCTA\nGTA\nAGTA\nGGTA\nTTA\nATTA\nGTTA\nTG%\nT%\nAT%\nCT%\nGT%\nTT%\n"

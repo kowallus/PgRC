@@ -29,6 +29,9 @@ namespace PgTools {
 
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
+        static void compressPgSequence(ostream &pgrcOut, string &pgSequence, uint8_t coder_level,
+                bool noNPgSequence, bool testAndValidation = false);
+
     public:
         SimplePgMatcher(const string& srcPg, uint32_t targetMatchLength,
                 uint32_t minMatchLength = UINT32_MAX);

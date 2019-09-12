@@ -214,21 +214,7 @@ namespace PgTools {
         comboPgSeq.append(nPgSequence);
         nPgSequence.clear();
         nPgSequence.shrink_to_fit();
-        *logout << "Var-len encoding joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
-        size_t compLen = 0;
-        char* compSeq = Compress(compLen, comboPgSeq.data(), comboPgSeq.size(), VARLEN_DNA_CODER, coder_level, 0, 1);
-        string valPgSeq;
-        valPgSeq.resize(comboPgSeq.size());
-        size_t valSeq = comboPgSeq.size();
-        Uncompress((char*) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
-        cout << (valPgSeq == comboPgSeq?"OK :)":"Bad coding :(") << endl;
-        size_t lzmaLen = 0;
-        char* lzmaSeq = Compress(lzmaLen, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_VAR_LEN_DNA);
-        delete[] lzmaSeq;
-        delete[] compSeq;
-        *logout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
-        writeCompressed(pgrcOut, comboPgSeq.data(), comboPgSeq.size(), LZMA_CODER, coder_level,
-                PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
+        compressPgSequence(pgrcOut, comboPgSeq, coder_level, nPgSequence.empty());
         *logout << "Good sequence mapping - offsets... ";
         double estimated_pg_offset_ratio = simpleUintCompressionEstimate(refSequenceLength, isPgLengthStd?UINT32_MAX:UINT64_MAX);
         const int pgrc_pg_offset_dataperiodcode = isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
@@ -251,6 +237,30 @@ namespace PgTools {
             writeCompressed(pgrcOut, nPgMapLen.data(), nPgMapLen.size(), LZMA_CODER, coder_level,
                             PGRC_DATAPERIODCODE_8_t);
         }
+    }
+
+    void SimplePgMatcher::compressPgSequence(ostream &pgrcOut, string &pgSequence, uint8_t coder_level,
+                                             bool noNPgSequence, bool testAndValidation) {
+        *logout << "Var-len encoding joined mapped sequences (good&bad" << (noNPgSequence ? "" : "&N") << ")... ";
+        size_t compLen = 0;
+        char* compSeq = Compress(compLen, pgSequence.data(), pgSequence.size(), VARLEN_DNA_CODER, coder_level, 0, 1);
+        if (testAndValidation) {
+            cout << "\n*** Var-len coding validation and additional tests..." << endl;
+            string valPgSeq;
+            valPgSeq.resize(pgSequence.size());
+            size_t valSeq = pgSequence.size();
+            Uncompress((char *) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
+            cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
+            writeCompressed(null_stream, pgSequence.data(), pgSequence.length(), LZMA_CODER, coder_level,
+                              PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
+            cout << "***\n" << endl;
+        }
+        pgSequence.clear();
+        pgSequence.shrink_to_fit();
+        *logout << "Joined var-len encoded mapped sequences (good&bad" << (noNPgSequence?"":"&N") << ")... ";
+        writeCompressed(pgrcOut, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t,
+                        COMPRESSION_ESTIMATION_VAR_LEN_DNA);
+        delete[] compSeq;
     }
 
     void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen, string &hqPgSequence, string &lqPgSequence,

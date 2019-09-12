@@ -20,8 +20,6 @@ int main(int argc, char *argv[])
     bool decompressMode = false;
 
 #ifndef DEVELOPER_BUILD
-    NullBuffer null_buffer;
-    std::ostream null_stream(&null_buffer);
     logout = &null_stream;
 #endif
 

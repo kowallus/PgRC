@@ -362,6 +362,7 @@ MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, const unsigned ch
     return Res;
 }
 
+using namespace PgSAHelpers;
 
 char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
                int coder_param, double estimated_compression) {
@@ -378,8 +379,9 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
                     estimated_compression);
             break;
         case VARLEN_DNA_CODER:
-            res = PgSAHelpers::VarLenDNACoder::Compress(dest, destLen,
-                                                        (const unsigned char *) src, srcLen, coder_param);
+            res = VarLenDNACoder::Compress(dest, destLen, (const unsigned char *) src, srcLen,
+                    VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM,
+                                                  VarLenDNACoder::AG_EXTENDED_CODES_ID));
             break;
         case LZMA2_CODER:
         default:
