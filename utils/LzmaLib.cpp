@@ -379,9 +379,7 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
                     estimated_compression);
             break;
         case VARLEN_DNA_CODER:
-            res = VarLenDNACoder::Compress(dest, destLen, (const unsigned char *) src, srcLen,
-                    VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM,
-                                                  VarLenDNACoder::AG_EXTENDED_CODES_ID));
+            res = VarLenDNACoder::Compress(dest, destLen, (const unsigned char *) src, srcLen, coder_param);
             break;
         case LZMA2_CODER:
         default:
@@ -457,6 +455,25 @@ void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uin
         double estimated_compression) {
     writeCompressed(dest, srcStr.data(), srcStr.length(), coder_type, coder_level, coder_param, estimated_compression);
 }
+
+char* componentCompress(ostream &dest, size_t &compLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
+                        int coder_param, double estimated_compression) {
+    char* component = Compress(compLen, src, srcLen, coder_type, coder_level, coder_param, estimated_compression);
+    writeCompoundCompressionHeader(dest, srcLen, compLen, coder_type);
+    return component;
+}
+
+void writeCompoundCompressionHeader(ostream &dest, size_t srcLen, size_t compLen, uint8_t coder_type) {
+    PgSAHelpers::writeValue<uint64_t>(dest, srcLen, false);
+    if (srcLen == 0) {
+        *PgSAHelpers::logout << "skipped compression (0 bytes)." << endl;
+        return;
+    }
+    PgSAHelpers::writeValue<uint64_t>(dest, compLen, false);
+    PgSAHelpers::writeValue<uint8_t>(dest, COMPOUND_CODER_TYPE, false);
+    PgSAHelpers::writeValue<uint8_t>(dest, coder_type, false);
+}
+
 void readCompressed(istream &src, string& dest) {
     size_t destLen = 0;
     size_t srcLen = 0;
@@ -467,9 +484,17 @@ void readCompressed(istream &src, string& dest) {
         return;
     PgSAHelpers::readValue<uint64_t>(src, srcLen, false);
     PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
-    const char* srcArray = (const char*) PgSAHelpers::readArray(src, srcLen);
-    Uncompress((char*) dest.data(), destLen, srcArray, srcLen, coder_type);
-    delete(srcArray);
+    if (coder_type == COMPOUND_CODER_TYPE) {
+        PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
+        string component;
+        readCompressed(src, component);
+        assert(srcLen == component.length());
+        Uncompress((char *) dest.data(), destLen, component.data(), srcLen, coder_type);
+    } else {
+        const char *srcArray = (const char *) PgSAHelpers::readArray(src, srcLen);
+        Uncompress((char *) dest.data(), destLen, srcArray, srcLen, coder_type);
+        delete (srcArray);
+    }
 }
 
 double simpleUintCompressionEstimate(uint64_t dataMaxValue, uint64_t typeMaxValue) {
