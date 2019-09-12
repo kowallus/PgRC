@@ -4,6 +4,10 @@
 #include <cstring>
 
 PgSAHelpers::VarLenDNACoder::VarLenDNACoder(const string &codes) {
+    initUsing(codes);
+}
+
+void PgSAHelpers::VarLenDNACoder::initUsing(const string &codes) {
     int sPos = 0;
     int pos = 0;
     int counter = 0;
@@ -138,8 +142,7 @@ PgSAHelpers::VarLenDNACoder::Compress(unsigned char *&dest, size_t &destLen, con
     dest[1] = coder_value_param;
     switch (dest[0]) {
         case STATIC_CODES_CODER_PARAM:
-            dest[1] = AG_EXTENDED_CODES_ID;
-            coder = new VarLenDNACoder(AG_EXTENDED_CODES);
+            coder = new VarLenDNACoder(coder_value_param);
             break;
         default:
             fprintf(stderr, "Unsupported %d PgRC var-len coder parameter.\n", coder_param);
@@ -183,23 +186,56 @@ int PgSAHelpers::VarLenDNACoder::Uncompress(unsigned char *dest, size_t *destLen
     return res;
 }
 
+PgSAHelpers::VarLenDNACoder::VarLenDNACoder(uint8_t staticCodeBookID) {
+    switch(staticCodeBookID) {
+        case AG_EXTENDED_CODES_ID:
+            initUsing(AG_EXTENDED_CODES);
+            break;
+        case SYNC_ON_A_CODES_ID:
+            initUsing(SYNC_ON_A_CODES);
+            break;
+        default:
+            fprintf(stderr, "Unknown var-len coder static codebook id: %d.\n", staticCodeBookID);
+            exit(EXIT_FAILURE);
+    }
+}
+
 const string PgSAHelpers::VarLenDNACoder::AG_EXTENDED_CODES =
         "A\nAAA\nAAAA\nGAAA\nCAA\nACAA\nGCAA\nGAA\nAGAA\nGGAA\nTAA\nATAA\nGTAA\nACA\nAACA\nGACA\nCCA\nACCA\nGCCA\nGCA\n"
         "AGCA\nGGCA\nTCA\nATCA\nGTCA\nAGA\nAAGA\nGAGA\nCGA\nACGA\nGCGA\nGGA\nAGGA\nGGGA\nTGA\nATGA\nGTGA\nATA\nAATA\n"
         "GATA\nCTA\nACTA\nGCTA\nGTA\nAGTA\nGGTA\nTTA\nATTA\nGTTA\nTG%\nT%\nAT%\nCT%\nGT%\nTT%\n"
-        "\n\n\n\n\n\n\n\n\n"
+        "N\nAN\nAAN\nCAN\nGAN\nNAN\nTAN\n"
+        "\n\n"
         "C\nAAC\nAAAC\nGAAC\nCAC\nACAC\nGCAC\nGAC\nAGAC\nGGAC\nTAC\nATAC\nGTAC\nACC\nAACC\nGACC\nCCC\nACCC\nGCCC\nGCC\n"
         "AGCC\nGGCC\nTCC\nATCC\nGTCC\nAGC\nAAGC\nGAGC\nCGC\nACGC\nGCGC\nGGC\nAGGC\nGGGC\nTGC\nATGC\nGTGC\nATC\nAATC\n"
         "GATC\nCTC\nACTC\nGCTC\nGTC\nAGTC\nGGTC\nTTC\nATTC\nGTTC\n"
-        "N\nAN\nCN\nGN\nTN\nNN\n\n\n\n\n\n\n\n\n\n"
+        "CN\nACN\nCCN\nGCN\nNCN\nTCN\nGN\nAGN\nCGN\nGGN\nNGN\nTGN\n"
+        "\n\n\n"
         "G\nAAG\nAAAG\nGAAG\nCAG\nACAG\nGCAG\nGAG\nAGAG\nGGAG\nTAG\nATAG\nGTAG\nACG\nAACG\nGACG\nCCG\nACCG\nGCCG\nGCG\n"
         "AGCG\nGGCG\nTCG\nATCG\nGTCG\nAGG\nAAGG\nGAGG\nCGG\nACGG\nGCGG\nGGG\nAGGG\nGGGG\nTGG\nATGG\nGTGG\nATG\nAATG\n"
-        "GATG\nCTG\nACTG\nGCTG\nGTG\nAGTG\nGGTG\nTTG\nATTG\nGTTG\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "GATG\nCTG\nACTG\nGCTG\nGTG\nAGTG\nGGTG\nTTG\nATTG\nGTTG\n"
+        "TN\nATN\nCTN\nGTN\nNTN\nTTN\nNN\n"
+        "\n\n\n\n\n\n\n\n"
         "T\nAAT\nAAAT\nGAAT\nCAT\nACAT\nGCAT\nGAT\nAGAT\nGGAT\nTAT\nATAT\nGTAT\nACT\nAACT\nGACT\nCCT\nACCT\nGCCT\nGCT\n"
         "AGCT\nGGCT\nTCT\nATCT\nGTCT\nAGT\nAAGT\nGAGT\nCGT\nACGT\nGCGT\nGGT\nAGGT\nGGGT\nTGT\nATGT\nGTGT\nATT\nAATT\n"
         "GATT\nCTT\nACTT\nGCTT\nGTT\nAGTT\nGGTT\nTTT\nATTT\nGTTT\n"
         "%\nA%\nAA%\nCA%\nGA%\nTA%\nC%\nAC%\nCC%\nGC%\nTC%\nG%\nAG%\nCG%\nGG%";
 
-
-
+const string PgSAHelpers::VarLenDNACoder::SYNC_ON_A_CODES =
+        "A\nAA\nAAA\nAAAA\nACAA\nAGAA\nATAA\nACA\nAACA\nACCA\nAGCA\nATCA\nAGA\nAAGA\nACGA\nAGGA\nATGA\nATA\nAATA\nACTA\n"
+        "AGTA\nATTA\n"
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "C\nAC\nAAC\nAAAC\nACAC\nAGAC\nATAC\nCC\nACC\nAACC\nCCC\nACCC\nGCC\nAGCC\nTCC\nATCC\nGC\nAGC\nAAGC\nCGC\nACGC\n"
+        "GGC\nAGGC\nTGC\nATGC\nTC\nATC\nAATC\nCTC\nACTC\nGTC\nAGTC\nTTC\nATTC\n"
+        "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+        "G\nAG\nAAG\nAAAG\nACAG\nAGAG\nATAG\nCG\nACG\nAACG\nCCG\nACCG\nGCG\nAGCG\nTCG\nATCG\nGG\nAGG\nAAGG\nCGG\nACGG\n"
+        "GGG\nAGGG\nTGG\nATGG\nTG\nATG\nAATG\nCTG\nACTG\nGTG\nAGTG\nTTG\nATTG\n"
+        "N\nAN\nAAN\nCAN\nGAN\nNAN\nTAN\n"
+        "CN\nACN\nCCN\nGCN\nNCN\nTCN\nGN\nAGN\nCGN\nGGN\nNGN\nTGN\n"
+        "TN\nATN\nCTN\nGTN\nNTN\nTTN\nNN\n"
+        "\n\n\n\n"
+        "T\nAT\nAAT\nAAAT\nACAT\nAGAT\nATAT\nCT\nACT\n"
+        "AACT\nCCT\nACCT\nGCT\nAGCT\nTCT\nATCT\nGT\nAGT\nAAGT\nCGT\nACGT\nGGT\nAGGT\nTGT\nATGT\nTT\nATT\nAATT\nCTT\n"
+        "ACTT\nGTT\nAGTT\nTTT\nATTT\n"
+        "%\nA%\nAA%\nCA%\nGA%\nTA%\nC%\nAC%\nCC%\nGC%\nTC%\nG%\nAG%\nCG%\nGG%";
 

@@ -244,7 +244,8 @@ namespace PgTools {
         *logout << "Var-len encoding joined mapped sequences (good&bad" << (noNPgSequence ? "" : "&N") << ")... ";
         size_t compLen = 0;
         char *compSeq = componentCompress(pgrcOut, compLen, pgSequence.data(), pgSequence.size(), VARLEN_DNA_CODER, coder_level,
-                                          VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM, VarLenDNACoder::AG_EXTENDED_CODES_ID), 1);
+                                          VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM,
+                                                  VarLenDNACoder::AG_EXTENDED_CODES_ID), 1);
         if (testAndValidation) {
             cout << "\n*** Var-len coding validation and additional tests..." << endl;
             string valPgSeq;
@@ -254,7 +255,18 @@ namespace PgTools {
             cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
             writeCompressed(null_stream, pgSequence.data(), pgSequence.length(), LZMA_CODER, coder_level,
                             PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
+            cout << "SYNC_ON_A_CODES CODEBOOK..." << endl;
+            size_t compLen = 0;
+            char *compSeq = componentCompress(pgrcOut, compLen, pgSequence.data(), pgSequence.size(), VARLEN_DNA_CODER, coder_level,
+                                              VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM,
+                                                                            VarLenDNACoder::SYNC_ON_A_CODES_ID), 1);
+            Uncompress((char *) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
+            cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
+            writeCompressed(null_stream, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t,
+                            COMPRESSION_ESTIMATION_VAR_LEN_DNA);
+            delete[] compSeq;
             cout << "***\n" << endl;
+
         }
         pgSequence.clear();
         pgSequence.shrink_to_fit();

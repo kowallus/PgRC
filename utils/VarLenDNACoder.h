@@ -21,9 +21,13 @@ namespace PgSAHelpers {
         char codeBook[MAX_NUMBER_OF_CODES][MAX_CODE_LENGTH + 1] = {};
 
         const static string AG_EXTENDED_CODES;
+        const static string SYNC_ON_A_CODES;
+
+        void initUsing(const string &codes);
 
     public:
         VarLenDNACoder(const string &codes);
+        VarLenDNACoder(uint8_t staticCodeBookID);
         ~VarLenDNACoder();
 
         static int Compress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,
@@ -40,6 +44,7 @@ namespace PgSAHelpers {
         const static int STATIC_CODES_CODER_PARAM = 0;
         const static int DYNAMIC_CODES_CODER_PARAM = 1;
         const static uint8_t AG_EXTENDED_CODES_ID = 0;
+        const static uint8_t SYNC_ON_A_CODES_ID = 1;
 
         constexpr static double COMPRESSION_ESTIMATION = 0.3;
     };
