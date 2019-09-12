@@ -22,6 +22,8 @@ public:
     int overflow(int c) { return c; }
 };
 
+extern std::ostream null_stream;
+
 namespace PgSAHelpers {
 
     extern int numberOfThreads;

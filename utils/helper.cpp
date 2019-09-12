@@ -6,6 +6,9 @@ std::ostream *PgSAHelpers::logout = &std::cout;
 
 int PgSAHelpers::numberOfThreads = 8;
 
+NullBuffer null_buffer;
+std::ostream null_stream(&null_buffer);
+
 // TIME
 
 clock_t checkpoint;

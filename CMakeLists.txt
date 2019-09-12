@@ -19,8 +19,8 @@ set(HELPER_FILES
 set(READSSET_FILES
         ${HELPER_FILES}
         readsset/tools
-        readsset/tools/SymbolsPackingFacility.cpp
-        readsset/tools/SymbolsPackingFacility.h
+        utils/SymbolsPackingFacility.cpp
+        utils/SymbolsPackingFacility.h
         readsset/DefaultReadsSet.cpp
         readsset/DefaultReadsSet.h
         readsset/iterator
@@ -44,7 +44,7 @@ set(LZMA_FILES
         lzma/Ppmd7.h lzma/Ppmd7.c
         lzma/Ppmd7Enc.c lzma/Ppmd7Dec.c
         lzma/Threads.h lzma/Threads.c
-        )
+        utils/VarLenDNACoder.cpp utils/VarLenDNACoder.h)
 
 set(PG_FILES
         ${READSSET_FILES}
