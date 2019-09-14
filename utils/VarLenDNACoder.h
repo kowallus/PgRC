@@ -22,6 +22,7 @@ namespace PgSAHelpers {
 
         const static string AG_EXTENDED_CODES;
         const static string SYNC_ON_A_CODES;
+        const static string AG_SHORT_EXTENDED_CODES;
 
         void initUsing(const string &codes);
 
@@ -43,8 +44,12 @@ namespace PgSAHelpers {
 
         const static int STATIC_CODES_CODER_PARAM = 0;
         const static int DYNAMIC_CODES_CODER_PARAM = 1;
-        const static uint8_t AG_EXTENDED_CODES_ID = 0;
-        const static uint8_t SYNC_ON_A_CODES_ID = 1;
+        enum CODEBOOK_ID {
+            AG_EXTENDED_CODES_ID,
+            SYNC_ON_A_CODES_ID,
+            AG_SHORT_EXTENDED_CODES_ID,
+            VARLEN_CODEBOOKS_COUNT
+        };
 
         constexpr static double COMPRESSION_ESTIMATION = 0.3;
     };
@@ -52,3 +57,4 @@ namespace PgSAHelpers {
 }
 
 #endif //PGTOOLS_VARLENDNACODER_H
+

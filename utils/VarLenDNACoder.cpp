@@ -194,6 +194,9 @@ PgSAHelpers::VarLenDNACoder::VarLenDNACoder(uint8_t staticCodeBookID) {
         case SYNC_ON_A_CODES_ID:
             initUsing(SYNC_ON_A_CODES);
             break;
+        case AG_SHORT_EXTENDED_CODES_ID:
+            initUsing(AG_SHORT_EXTENDED_CODES);
+            break;
         default:
             fprintf(stderr, "Unknown var-len coder static codebook id: %d.\n", staticCodeBookID);
             exit(EXIT_FAILURE);
@@ -239,3 +242,19 @@ const string PgSAHelpers::VarLenDNACoder::SYNC_ON_A_CODES =
         "ACTT\nGTT\nAGTT\nTTT\nATTT\n"
         "%\nA%\nAA%\nCA%\nGA%\nTA%\nC%\nAC%\nCC%\nGC%\nTC%\nG%\nAG%\nCG%\nGG%";
 
+const string PgSAHelpers::VarLenDNACoder::AG_SHORT_EXTENDED_CODES =
+        "A\nAA\n\n\nAAA\n\n\n\n\n\nGAA\n\n\nCA\n\n\nACA\n\n\n\n\n\nGCA\n\n\nGA\n\n\nAGA\n\n\n\n\n\nGGA\n\n\nTA\n\n\n"
+        "ATA\n\n\n\n\n\nGTA\n\n\nTG%\nT%\nAT%\nCT%\nGT%\nTT%\n"
+        "N\nAN\nAAN\nCAN\nGAN\nNAN\nTAN\n"
+        "\n\n"
+        "C\nAC\n\n\nAAC\n\n\n\n\n\nGAC\n\n\nCC\n\n\nACC\n\n\n\n\n\nGCC\n\n\nGC\n\n\nAGC\n\n\n\n\n\nGGC\n\n\nTC\n\n\n"
+        "ATC\n\n\n\n\n\nGTC\n"
+        "CN\nACN\nCCN\nGCN\nNCN\nTCN\nGN\nAGN\nCGN\nGGN\nNGN\nTGN\n"
+        "\n\n\n\n\n"
+        "G\nAG\n\n\nAAG\n\n\n\n\n\nGAG\n\n\nCG\n\n\nACG\n\n\n\n\n"
+        "\nGCG\n\n\nGG\n\n\nAGG\n\n\n\n\n\nGGG\n\n\nTG\n\n\nATG\n\n\n\n\n\nGTG\n"
+        "TN\nATN\nCTN\nGTN\nNTN\nTTN\nNN\n"
+        "\n\n\n\n\n\n\n\n\n\n"
+        "T\nAT\n\n\nAAT\n\n\n\n\n\nGAT\n\n\nCT\n\n\nACT\n\n\n\n\n\nGCT\n\n\nGT\n\n\nAGT\n\n\n\n\n\nGGT\n\n\nTT\n\n\n"
+        "ATT\n\n\n\n\n\nGTT\n\n\n"
+        "%\nA%\nAA%\nCA%\nGA%\nTA%\nC%\nAC%\nCC%\nGC%\nTC%\nG%\nAG%\nCG%\nGG%";
