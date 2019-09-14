@@ -383,6 +383,7 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
             break;
         case VARLEN_DNA_CODER:
             res = VarLenDNACoder::Compress(dest, destLen, (const unsigned char *) src, srcLen, coder_param);
+            estimated_compression = VarLenDNACoder::COMPRESSION_ESTIMATION;
             break;
         case LZMA2_CODER:
         default:

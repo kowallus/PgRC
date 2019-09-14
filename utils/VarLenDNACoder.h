@@ -51,7 +51,7 @@ namespace PgSAHelpers {
             VARLEN_CODEBOOKS_COUNT
         };
 
-        constexpr static double COMPRESSION_ESTIMATION = 0.3;
+        constexpr static double COMPRESSION_ESTIMATION = 0.4;
     };
 
 }
