@@ -65,7 +65,7 @@ namespace PgTools {
         void matchConstantLengthReads();
 
         static const string OFFSETS_SUFFIX;
-        static const string SUFFIXES_SUFFIX;
+        static const string DUMP_SUFFIX;
         static const string MISSED_READS_SUFFIX;
 
         void writeMatchesInfo(const string &outPrefix);
@@ -89,7 +89,7 @@ namespace PgTools {
     protected:
         void initMatching();
         void executeMatching(bool revCompMode = false);
-        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
+        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest);
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
                 SeparatedPseudoGenome *sPg) override;
@@ -115,7 +115,7 @@ namespace PgTools {
         vector<uint8_t> readMismatchesCount;
         uint_reads_cnt_max matchedCountPerMismatches[NOT_MATCHED_COUNT + 1] = {};
 
-        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest);
+        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest);
         void printApproxMatchingStats();
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(

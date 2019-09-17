@@ -135,21 +135,19 @@ namespace PgTools {
             fprintf(stderr, "cannot write to missed reads file %s\n", missedReadsFile.c_str());
             exit(EXIT_FAILURE);
         }
-
-        string suffixesFile = outPrefix + SUFFIXES_SUFFIX;
-        std::ofstream suffixesDest;
-        if (matchPrefixLength != DISABLED_PREFIX_MODE) {
-            suffixesDest.open(suffixesFile, std::ios::out | std::ios::binary);
-            if (suffixesDest.fail()) {
-                fprintf(stderr, "cannot write to suffixes file %s\n", suffixesFile.c_str());
-                exit(EXIT_FAILURE);
-            }
+        string dumpFile = outPrefix + DUMP_SUFFIX;
+        std::ofstream dumpDest;
+        dumpDest.open(dumpFile, std::ios::out | std::ios::binary);
+        if (dumpDest.fail()) {
+            fprintf(stderr, "cannot write to dump file %s\n", dumpFile.c_str());
+            exit(EXIT_FAILURE);
         }
 
-        writeMatchesInfo(offsetsDest, missedReadsDest, suffixesDest);
+        writeMatchesInfo(offsetsDest, missedReadsDest, dumpDest);
 
         offsetsDest.close();
         missedReadsDest.close();
+        dumpDest.close();
     }
     void DefaultReadsMatcher::matchConstantLengthReads() {
         initMatching();
@@ -443,10 +441,10 @@ namespace PgTools {
     }
 
     const string DefaultReadsMatcher::OFFSETS_SUFFIX = "_matched_offsets.txt";
-    const string DefaultReadsMatcher::SUFFIXES_SUFFIX = "_matched_suffixes.txt";
+    const string DefaultReadsMatcher::DUMP_SUFFIX = "_matches_info.txt";
     const string DefaultReadsMatcher::MISSED_READS_SUFFIX = "_missed.txt";
 
-    void DefaultReadsExactMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
+    void DefaultReadsExactMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest) {
         clock_checkpoint();
 
         for (uint_reads_cnt_max i = 0; i < readMatchPos.size(); i++) {
@@ -455,14 +453,14 @@ namespace PgTools {
             else {
                 offsetsDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"") << "\n";
                 if (matchingLength < readLength)
-                    suffixesDest << readsSet->getRead(i).substr(matchingLength);
+                    dumpDest << readsSet->getRead(i).substr(matchingLength);
             }
         }
 
         cout << "... writing info dump files completed in  " << clock_millis() << " msec. " << endl;
     }
 
-    void AbstractReadsApproxMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) {
+    void AbstractReadsApproxMatcher::writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest) {
         clock_checkpoint();
 
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
@@ -474,8 +472,17 @@ namespace PgTools {
                 const string read = readMatchRC[i]?reverseComplement(readsSet->getRead(i)):readsSet->getRead(i);
                 reportMismatches(read.data(), pgPtr + readMatchPos[i], matchingLength, offsetsDest);
                 offsetsDest << "\n";
-                if (matchingLength < readLength)
-                    suffixesDest << readsSet->getRead(i).substr(matchingLength);
+                if (matchingLength < readLength) {
+                    dumpDest << readsSet->getRead(i).substr(matchingLength);
+                } else {
+                    dumpDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"") << endl;
+                    dumpDest << read << endl;
+                    const string pgPart(pgPtr + readMatchPos[i], read.length());
+                    dumpDest << pgPart << endl;
+                    for(int i = 0; i < read.length(); i++)
+                        dumpDest.put(read[i] == pgPart[i]?'-':'x');
+                    dumpDest << endl;
+                }
                 mismatchedReadsCount[readMismatchesCount[i]]++;
             }
         }

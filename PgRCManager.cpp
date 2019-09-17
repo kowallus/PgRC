@@ -357,12 +357,13 @@ namespace PgTools {
                 divReadsSets->getLqReadsIndexesMapping(), divReadsSets->getNReadsIndexesMapping())):divReadsSets->getLqReadsIndexesMapping();
         if (!forceConstantParamsMode)
             readsExactMatchingChars += matchingCharsCorrection(hqPg->getPseudoGenomeLength());
+        bool dumpInfoFlag = false;
         const vector<bool>& isReadMappedIntoHqPg = mapReadsIntoPg(
                 hqPg, true, preserveOrderMode, readsSet, !pairFastqFile.empty() && !singleReadsMode, revComplPairFile,
                 DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
-                false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);
+                dumpInfoFlag, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);
         uint_reads_cnt_max nBegIdx = divReadsSets->getLqReadsSet()->readsCount();
         divReadsSets->removeReadsFromLqReadsSet(isReadMappedIntoHqPg);
         if (separateNReads) {
