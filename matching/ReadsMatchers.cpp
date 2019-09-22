@@ -464,6 +464,7 @@ namespace PgTools {
         clock_checkpoint();
 
         vector<uint_reads_cnt_max> mismatchedReadsCount(maxMismatches + 1, 0);
+        vector<uint64_t> mismatchesPerReadPositionCount(readLength, 0);
         for (uint_reads_cnt_max i = 0; i < readsCount; i++) {
             if (readMatchPos[i] == NOT_MATCHED_POSITION)
                 missedPatternsDest << readsSet->getRead(i) << "\n";
@@ -472,22 +473,39 @@ namespace PgTools {
                 const string read = readMatchRC[i]?reverseComplement(readsSet->getRead(i)):readsSet->getRead(i);
                 reportMismatches(read.data(), pgPtr + readMatchPos[i], matchingLength, offsetsDest);
                 offsetsDest << "\n";
+                uint_read_len_max mismatchesCount = 0;
                 if (matchingLength < readLength) {
                     dumpDest << readsSet->getRead(i).substr(matchingLength);
                 } else {
                     dumpDest << i << "\t" << readMatchPos[i] << (readMatchRC[i]?"\tRC":"") << endl;
                     dumpDest << read << endl;
-                    const string pgPart(pgPtr + readMatchPos[i], read.length());
+                    const string pgPart(pgPtr + readMatchPos[i], readLength);
                     dumpDest << pgPart << endl;
-                    for(int i = 0; i < read.length(); i++)
-                        dumpDest.put(read[i] == pgPart[i]?'-':'x');
+                    for(int j = 0; j < read.length(); j++) {
+                        const bool symbolMatch = read[j] == pgPart[j];
+                        dumpDest.put(symbolMatch ? '-' : 'x');
+                        if (!symbolMatch) {
+                            mismatchesCount++;
+                            if (readMatchRC[i])
+                                mismatchesPerReadPositionCount[readLength - j - 1]++;
+                            else
+                                mismatchesPerReadPositionCount[j]++;
+                        }
+                    }
                     dumpDest << endl;
                 }
-                mismatchedReadsCount[readMismatchesCount[i]]++;
+                mismatchedReadsCount[mismatchesCount]++;
             }
         }
+        offsetsDest << endl << "Stats:" << endl;
+        for (uint8_t i = 0; i <= maxMismatches; i++)
+            offsetsDest << "Matched " << mismatchedReadsCount[i] << " reads with " << (int) i << " mismatches." << endl;
 
-        cout << "... writing info dump files completed in " << clock_millis() << " msec. " << endl;
+        offsetsDest << endl << "Mismatches per reads position:" << endl;
+        for (uint8_t i = 0; i < readLength; i++)
+            offsetsDest << (int) i << ":\t" << mismatchesPerReadPositionCount[i] << endl;
+
+        cout << endl << "... writing info dump files completed in " << clock_millis() << " msec. " << endl;
     }
 
     SeparatedPseudoGenomeOutputBuilder *AbstractReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
