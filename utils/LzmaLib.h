@@ -42,7 +42,7 @@ void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t code
 void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uint8_t coder_level,
                      int coder_param = -1, double estimated_compression = 1);
 
-void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type);
+void Uncompress(char* dest, size_t destLen, istream &src, size_t srcLen, uint8_t coder_type);
 void readCompressed(istream &src, string& dest);
 
 template<typename T>
@@ -60,9 +60,7 @@ void readCompressed(istream &src, vector<T>& dest) {
         return;
     PgSAHelpers::readValue<uint64_t>(src, srcLen, false);
     PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
-    const char* srcArray = (const char*) PgSAHelpers::readArray(src, srcLen);
-    Uncompress((char*) dest.data(), destLen, srcArray, srcLen, coder_type);
-    delete(srcArray);
+    Uncompress((char*) dest.data(), destLen, src, srcLen, coder_type);
 }
 
 #endif
