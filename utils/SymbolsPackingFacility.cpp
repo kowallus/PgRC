@@ -115,13 +115,13 @@ namespace PgSAIndex {
         return maxValue;
     }
 
-    bool SymbolsPackingFacility::isCompatibile(uchar symbolsPerElement, uchar symbolsCount) {
+    bool SymbolsPackingFacility::isCompatible(uchar symbolsPerElement, uchar symbolsCount) {
         return powuint(symbolsCount, symbolsPerElement) - 1 <= (uint8_t) - 1;
     }
 
     uchar SymbolsPackingFacility::maxSymbolsPerElement(uchar symbolsCount) {
         for (int i = 0; i < UCHAR_MAX; i++)
-            if (!SymbolsPackingFacility::isCompatibile(i + 1, symbolsCount))
+            if (!SymbolsPackingFacility::isCompatible(i + 1, symbolsCount))
                 return i;
         return UCHAR_MAX;
     }

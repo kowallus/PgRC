@@ -4,11 +4,11 @@
 #include "../ReadsSetBase.h"
 
 namespace PgSAReadsSet {
-    class ReadsSetAnalizer {
+    class ReadsSetAnalyzer {
     public:
 
         template<class ReadsSourceIterator>
-        static ReadsSetProperties* analizeReadsSet(ReadsSourceIterator* readsIterator);
+        static ReadsSetProperties* analyzeReadsSet(ReadsSourceIterator *readsIterator);
     };
 }
 

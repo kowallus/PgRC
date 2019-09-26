@@ -28,7 +28,7 @@ private:
     int K, k1, k2;
     std::uint32_t(*hashFunc32)(const char*);
     std::uint32_t(*hashFuncMatrix[64][6])(const char*);
-    const int H = 1;
+    const int H = 3;
     std::uint32_t hash_size;
     std::uint32_t hash_size_minus_one;
 

@@ -49,8 +49,8 @@ namespace PgTools {
                 setPreReadsExactMatchingChars(0);
                 setMatchingMode('c');
                 setReadSeedLength(38);
-                setMinCharsPerMismatch(6);
-                setMinimalPgReverseComplementedRepeatLength(50);
+                setMinCharsPerMismatch(5);
+                setMinimalPgReverseComplementedRepeatLength(45);
                 break;
             case PGRC_CODER_LEVEL_MAX:
                 setQualityBasedDivisionErrorLimitInPromils(1000);
@@ -377,12 +377,13 @@ namespace PgTools {
                 divReadsSets->getLqReadsIndexesMapping(), divReadsSets->getNReadsIndexesMapping())):divReadsSets->getLqReadsIndexesMapping();
         if (!forceConstantParamsMode)
             readsExactMatchingChars += matchingCharsCorrection(hqPg->getPseudoGenomeLength());
+        bool dumpInfoFlag = false;
         const vector<bool>& isReadMappedIntoHqPg = mapReadsIntoPg(
                 hqPg, true, preserveOrderMode, readsSet, !pairFastqFile.empty() && !singleReadsMode, revComplPairFile,
                 DefaultReadsMatcher::DISABLED_PREFIX_MODE,
                 preReadsExactMatchingChars, readsExactMatchingChars,
                 minCharsPerMismatch, preMatchingMode, matchingMode,
-                false, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);
+                dumpInfoFlag, pgrcOut, compressionLevel, extraFilesForValidation?pgMappedHqPrefix:"", mapping);
         uint_reads_cnt_max nBegIdx = divReadsSets->getLqReadsSet()->readsCount();
         divReadsSets->removeReadsFromLqReadsSet(isReadMappedIntoHqPg);
         if (separateNReads) {

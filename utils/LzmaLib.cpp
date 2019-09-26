@@ -236,7 +236,7 @@ MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned ch
     CPpmd7z_RangeEnc rEnc;
     Ppmd7z_RangeEnc_Init(&rEnc);
     size_t propsSize = 5;
-    size_t maxDestSize = propsSize + (srcLen + srcLen / 3) * estimated_compression + 128; //TODO: better estimation of max size
+    size_t maxDestSize = propsSize + (srcLen + srcLen / 3) * estimated_compression + 128;
     try {
         dest = new unsigned char[maxDestSize];
     } catch (const std::bad_alloc& e) {
@@ -279,28 +279,68 @@ Returns:
   SZ_ERROR_INPUT_EOF   - it needs more bytes in input buffer (src)
 */
 
-MY_STDAPI LzmaUncompress(unsigned char *dest, size_t *destLen, const unsigned char *src, size_t *srcLen) {
+#define RC_INIT_SIZE 5
+#define UNCOMPRESS_BUFFER_SIZE 8192
+
+MY_STDAPI LzmaUncompress(unsigned char *dest, size_t *destLen, istream &src, size_t *srcLen) {
     size_t propsSize = LZMA_PROPS_SIZE;
-    size_t srcBufSize = *srcLen - LZMA_PROPS_SIZE;
-    ELzmaStatus status;
     *PgSAHelpers::logout << "... lzma ... ";
-    return LzmaDecode(dest, destLen, src + propsSize, &srcBufSize, src, (unsigned) propsSize, LZMA_FINISH_ANY, &status, &g_Alloc);
+    unsigned char propsBuf[LZMA_PROPS_SIZE];
+    PgSAHelpers::readArray(src, (void*) propsBuf, propsSize);
+
+    CLzmaDec p;
+    SRes res;
+    SizeT outSize = *destLen, inSize = *srcLen - propsSize;
+    *destLen = *srcLen = 0;
+    ELzmaStatus status = LZMA_STATUS_NOT_SPECIFIED;
+    if (inSize < RC_INIT_SIZE)
+        return SZ_ERROR_INPUT_EOF;
+    LzmaDec_Construct(&p);
+    RINOK(LzmaDec_AllocateProbs(&p, propsBuf, propsSize, &g_Alloc));
+    p.dic = dest;
+    p.dicBufSize = outSize;
+    LzmaDec_Init(&p);
+    unsigned char* srcBuf = new unsigned char[UNCOMPRESS_BUFFER_SIZE];
+    Int64 srcLeftCount = inSize;
+    do {
+        size_t srcBufSize = UNCOMPRESS_BUFFER_SIZE > srcLeftCount?srcLeftCount:UNCOMPRESS_BUFFER_SIZE;
+        *srcLen = srcBufSize;
+        PgSAHelpers::readArray(src, srcBuf, srcBufSize);
+        srcLeftCount -= srcBufSize;
+        res = LzmaDec_DecodeToDic(&p, outSize, srcBuf, srcLen, LZMA_FINISH_ANY, &status);
+    } while (srcLeftCount && status == LZMA_STATUS_NEEDS_MORE_INPUT);
+    delete[] srcBuf;
+    *destLen = p.dicPos;
+    if (res == SZ_OK && status == LZMA_STATUS_NEEDS_MORE_INPUT)
+        res = SZ_ERROR_INPUT_EOF;
+    LzmaDec_FreeProbs(&p, &g_Alloc);
+    *srcLen = inSize + propsSize;
+    return res;
 }
 
 struct CByteInBufWrap
 {
     IByteIn vt;
-    const Byte *Cur;
-    const Byte *Lim;
+    const Byte *Cur = 0;
+    const Byte *Lim = 0;
     Byte *Buf;
     UInt32 Size;
     bool Extra;
     int Res;
 
-    CByteInBufWrap(unsigned char *buf, size_t bufLen);
-    ~CByteInBufWrap() { }
+    istream *src;
+    unsigned char* const srcBuf = 0;
+    Int64 srcLeftCount;
 
-    UInt64 GetProcessed() const { return (Cur - Buf); }
+    bool reloadSrcBuf();
+
+    CByteInBufWrap(unsigned char *buf, size_t bufLen);
+    CByteInBufWrap(istream &src, size_t bufLen);
+    ~CByteInBufWrap() {
+        delete[] srcBuf;
+    }
+
+    UInt64 GetProcessed() const { return srcBuf?(Size - srcLeftCount):(Cur - Buf); }
 };
 
 static Byte Wrap_ReadByte(const IByteIn *pp) throw()
@@ -321,21 +361,54 @@ CByteInBufWrap::CByteInBufWrap(unsigned char *buf, size_t bufLen): Buf(buf), Siz
     vt.Read = Wrap_ReadByte;
 }
 
+static Byte Wrap_Stream_ReadByte(const IByteIn *pp) throw()
+{
+    CByteInBufWrap *p = CONTAINER_FROM_VTBL_CLS(pp, CByteInBufWrap, vt);
+    if (p->Cur != p->Lim)
+        return *p->Cur++;
+    if (p->reloadSrcBuf())
+        return *p->Cur++;
+    p->Res = SZ_ERROR_INPUT_EOF;
+    return 0;
+}
 
-MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, const unsigned char *src, size_t *srcLen) {
+bool CByteInBufWrap::reloadSrcBuf() {
+    if (!srcLeftCount)
+        return false;
+    size_t srcBufSize = UNCOMPRESS_BUFFER_SIZE > srcLeftCount?srcLeftCount:UNCOMPRESS_BUFFER_SIZE;
+    PgSAHelpers::readArray(*src, srcBuf, srcBufSize);
+    Cur = srcBuf;
+    Lim = srcBuf + srcBufSize;
+    srcLeftCount -= srcBufSize;
+    return true;
+}
+
+CByteInBufWrap::CByteInBufWrap(istream &src, size_t bufLen): src(&src),
+    srcBuf(new unsigned char[UNCOMPRESS_BUFFER_SIZE]), Size(bufLen)
+{
+    srcLeftCount = Size;
+    reloadSrcBuf();
+    Extra = false;
+    Res = SZ_OK;
+    vt.Read = Wrap_Stream_ReadByte;
+}
+
+MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, istream &src, size_t *srcLen) {
     size_t propsSize = LZMA_PROPS_SIZE;
     CPpmd7 ppmd;
     //LzmaDecProps_Set(&props, coder_level, srcLen, numThreads, coder_param); // extract method, support numThreads?
     Ppmd7_Construct(&ppmd);
-    uint32_t memSize = GetUi32(src + 1);
+    unsigned char propsBuf[LZMA_PROPS_SIZE];
+    PgSAHelpers::readArray(src, (void*) propsBuf, propsSize);
+    uint32_t memSize = GetUi32(propsBuf + 1);
     if (!Ppmd7_Alloc(&ppmd, memSize, &g_Alloc))
         return SZ_ERROR_MEM;
-    unsigned int order = src[0];
+    unsigned int order = propsBuf[0];
     Ppmd7_Init(&ppmd, order);
     *PgSAHelpers::logout << "... ppmd (mem = " << (memSize >> 20) << "MB; ord = " << order << ") ... ";
     CPpmd7z_RangeDec rDec;
     Ppmd7z_RangeDec_CreateVTable(&rDec);
-    CByteInBufWrap _inStream((unsigned char *) src + propsSize, *srcLen - propsSize);
+    CByteInBufWrap _inStream(src, *srcLen - propsSize);
     rDec.Stream = &_inStream.vt;
 
     int Res = SZ_OK;
@@ -408,23 +481,17 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
     return (char*) dest;
 }
 
-void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint8_t coder_type) {
+void Uncompress(char* dest, size_t destLen, istream &src, size_t srcLen, uint8_t coder_type) {
     chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
     int res = 0;
     size_t outLen = destLen;
     switch (coder_type) {
     case LZMA_CODER:
-        res = LzmaUncompress((unsigned char*) dest, &outLen,
-                             (unsigned char*) src, &srcLen);
+        res = LzmaUncompress((unsigned char*) dest, &outLen, src, &srcLen);
     break;
     case PPMD7_CODER:
-        res = PpmdUncompress((unsigned char*) dest, &outLen,
-                             (unsigned char*) src, &srcLen);
+        res = PpmdUncompress((unsigned char*) dest, &outLen, src, &srcLen);
     break;
-    case VARLEN_DNA_CODER:
-        res = PgSAHelpers::VarLenDNACoder::Uncompress((unsigned char*) dest, &outLen,
-                                                      (unsigned char*) src, &srcLen);
-        break;
     case LZMA2_CODER:
     default:
     fprintf(stderr, "Unsupported coder type: %d.\n", coder_type);
@@ -438,6 +505,29 @@ void Uncompress(char* dest, size_t destLen, const char *src, size_t srcLen, uint
     }
     *PgSAHelpers::logout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
          << PgSAHelpers::time_millis(start_t) << " msec." << endl;
+}
+
+void Uncompress(char* dest, size_t destLen, const char* src, size_t srcLen, uint8_t coder_type) {
+    chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
+    int res = 0;
+    size_t outLen = destLen;
+    switch (coder_type) {
+        case VARLEN_DNA_CODER:
+            res = PgSAHelpers::VarLenDNACoder::Uncompress((unsigned char*) dest, &outLen,
+                                                          (unsigned char*) src, &srcLen);
+            break;
+        default:
+            fprintf(stderr, "Unsupported coder type: %d.\n", coder_type);
+            exit(EXIT_FAILURE);
+    }
+    assert(outLen == destLen);
+
+    if (res != SZ_OK) {
+        fprintf(stderr, "Error during decompression (code: %d).\n", res);
+        exit(EXIT_FAILURE);
+    }
+    *PgSAHelpers::logout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
+                         << PgSAHelpers::time_millis(start_t) << " msec." << endl;
 }
 
 void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
@@ -495,9 +585,7 @@ void readCompressed(istream &src, string& dest) {
         assert(srcLen == component.length());
         Uncompress((char *) dest.data(), destLen, component.data(), srcLen, coder_type);
     } else {
-        const char *srcArray = (const char *) PgSAHelpers::readArray(src, srcLen);
-        Uncompress((char *) dest.data(), destLen, srcArray, srcLen, coder_type);
-        delete (srcArray);
+        Uncompress((char *) dest.data(), destLen, src, srcLen, coder_type);
     }
 }
 

@@ -156,7 +156,7 @@ namespace PgSAIndex {
             this->removeCyclesAndPrepareComponents();
             *logout << this->countComponents() << " pseudo-genome components\n";
         }
-        
+
         cout << "Overlapping done in " << time_millis() << " msec\n";
         *logout << endl;
     }

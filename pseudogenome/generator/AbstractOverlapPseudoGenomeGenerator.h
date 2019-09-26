@@ -70,7 +70,6 @@ namespace PgSAIndex {
 
         bool isPseudoGenomeLengthStandardVirtual();
         bool isPseudoGenomeLengthMaximalVirtual();
-
     };
 
 }

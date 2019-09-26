@@ -1,6 +1,6 @@
 #include "PackedConstantLengthReadsSet.h"
 
-#include "tools/ReadsSetAnalizer.h"
+#include "tools/ReadsSetAnalyzer.h"
 
 namespace PgSAReadsSet {
 
@@ -61,7 +61,7 @@ namespace PgSAReadsSet {
                                                                              ReadsSetProperties *properties) {
         bool ownProperties = properties == 0;
         if (ownProperties)
-            properties = ReadsSetAnalizer::analizeReadsSet(readsIterator);
+            properties = ReadsSetAnalyzer::analyzeReadsSet(readsIterator);
 
         if (!properties->constantReadLength) {
             cout << "Unsupported: variable length reads :(" << endl;

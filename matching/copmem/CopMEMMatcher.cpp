@@ -48,7 +48,7 @@ const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
 
-#define INIT_HASH_FUNC(n) hashFuncMatrix[n][1] = maRushPrime1HashSimplified<n>; hashFuncMatrix[n][2] = xxhash32<n>; hashFuncMatrix[n][3] = xxhash64<n>;hashFuncMatrix[n][4] = metroHash64<n>; hashFuncMatrix[n][5] = cityHash64<n>;
+#define INIT_HASH_FUNC(n) hashFuncMatrix[n][1] = maRushPrime1HashSimplified<n>; hashFuncMatrix[n][2] = xxhash32<n>; hashFuncMatrix[n][3] = maRushPrime1HashSparsified<n>;hashFuncMatrix[n][4] = metroHash64<n>; hashFuncMatrix[n][5] = cityHash64<n>;
 void CopMEMMatcher::initHashFuncMatrix() {
     INIT_HASH_FUNC(20);
     INIT_HASH_FUNC(24);
@@ -101,7 +101,7 @@ void CopMEMMatcher::displayParams() {
 	std::cout << "HASH_SIZE = " << hash_size << "; ";
 	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
-	*PgSAHelpers::logout << "Hash function: maRushPrime1HashSimplified" << std::endl;
+	*PgSAHelpers::logout << "Hash function: maRushPrime1HashSparsified" << std::endl;
     *PgSAHelpers::logout << "Hash collisions per position limit: " << HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
     *PgSAHelpers::logout << "Average hash collisions per position limit (in approx mode): " << AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
     *PgSAHelpers::logout << "Unlimited number of hash collisions per position (in approx mode): " << UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION << std::endl;
