@@ -47,4 +47,32 @@ inline std::uint32_t maRushPrime1HashSimplified(const char *str) {
 	return (std::uint32_t)(hash);
 }
 
+const uint32_t SPARSIFY_MASK_A = 0x00FFFFFF;
+const int SPARSIFY_MASK_A_COUNT = 3;
+const uint32_t SPARSIFY_MASK_B = 0x0000FFFF;
+// based on http://www.amsoftware.narod.ru/algo2.html
+template <size_t K>
+inline std::uint32_t maRushPrime1HashSparsified(const char *str) {
+	std::uint64_t hash = K;
+	std::uint32_t j = 0;
+	std::uint32_t k;
+	while (j < SPARSIFY_MASK_A_COUNT) {
+		memcpy(&k, str, 4);
+		k &= SPARSIFY_MASK_A;
+		k += j++;
+		hash ^= k;
+		hash *= 171717;
+		str += 4;
+	}
+	while (j < K/4) {
+		memcpy(&k, str, 4);
+		k &= SPARSIFY_MASK_B;
+		k += j++;
+		hash ^= k;
+		hash *= 171717;
+		str += 4;
+	}
+	return (std::uint32_t)(hash);
+}
+
 #endif //!_HASHES_H

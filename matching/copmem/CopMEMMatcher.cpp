@@ -48,7 +48,7 @@ const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
 
 //////////////////// GLOBAL VARS ////////////////////////////
 
-#define INIT_HASH_FUNC(n) hashFuncMatrix[n][1] = maRushPrime1HashSimplified<n>; hashFuncMatrix[n][2] = xxhash32<n>; hashFuncMatrix[n][3] = xxhash64<n>;hashFuncMatrix[n][4] = metroHash64<n>; hashFuncMatrix[n][5] = cityHash64<n>;
+#define INIT_HASH_FUNC(n) hashFuncMatrix[n][1] = maRushPrime1HashSimplified<n>; hashFuncMatrix[n][2] = xxhash32<n>; hashFuncMatrix[n][3] = maRushPrime1HashSparsified<n>;hashFuncMatrix[n][4] = metroHash64<n>; hashFuncMatrix[n][5] = cityHash64<n>;
 void CopMEMMatcher::initHashFuncMatrix() {
     INIT_HASH_FUNC(20);
     INIT_HASH_FUNC(24);
