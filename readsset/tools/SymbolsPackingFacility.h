@@ -75,7 +75,7 @@ namespace PgSAIndex {
 
             uint8_t clearSuffix(const uint8_t value, uchar prefixLength);
             
-            static bool isCompatibile(uchar symbolsPerElement, uchar symbolsCount);
+            static bool isCompatible(uchar symbolsPerElement, uchar symbolsCount);
             
             static uchar maxSymbolsPerElement(uchar symbolsCount);
           

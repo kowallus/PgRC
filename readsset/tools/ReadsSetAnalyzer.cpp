@@ -1,9 +1,9 @@
-#include "ReadsSetAnalizer.h"
+#include "ReadsSetAnalyzer.h"
 
 namespace PgSAReadsSet {
 
     template<class ReadsSourceIterator>
-    ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet(ReadsSourceIterator *readsIterator) {
+    ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet(ReadsSourceIterator *readsIterator) {
         ReadsSetProperties* properties = new ReadsSetProperties();
         bool symbolOccured[UCHAR_MAX] = {0};
 
@@ -11,7 +11,7 @@ namespace PgSAReadsSet {
 
             properties->readsCount++;
 
-            // analize read length
+            // analyze read length
             uint_read_len_max currLength = readsIterator->getReadLength();
             if (properties->maxReadLength == 0) {
                 properties->maxReadLength = currLength;
@@ -25,7 +25,7 @@ namespace PgSAReadsSet {
             }
             properties->allReadsLength += currLength;
 
-            //analize symbols
+            //analyze symbols
             string read(readsIterator->getRead());
 
             for (uint_read_len_max i = 0; i < currLength; i++) {
@@ -48,13 +48,13 @@ namespace PgSAReadsSet {
         return properties;
     }
 
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<ReadsSourceIteratorTemplate<uint_read_len_min>>(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<ReadsSourceIteratorTemplate<uint_read_len_std>>(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_min>>(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_std>>(ConcatenatedReadsSourceIterator<uint_read_len_std>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<FASTAReadsSourceIterator<uint_read_len_min>>(FASTAReadsSourceIterator<uint_read_len_min>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<FASTAReadsSourceIterator<uint_read_len_std>>(FASTAReadsSourceIterator<uint_read_len_std>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<FASTQReadsSourceIterator<uint_read_len_min>>(FASTQReadsSourceIterator<uint_read_len_min>* readsIterator);
-    template ReadsSetProperties* ReadsSetAnalizer::analizeReadsSet<FASTQReadsSourceIterator<uint_read_len_std>>(FASTQReadsSourceIterator<uint_read_len_std>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<ReadsSourceIteratorTemplate<uint_read_len_min>>(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<ReadsSourceIteratorTemplate<uint_read_len_std>>(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_min>>(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_std>>(ConcatenatedReadsSourceIterator<uint_read_len_std>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<FASTAReadsSourceIterator<uint_read_len_min>>(FASTAReadsSourceIterator<uint_read_len_min>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<FASTAReadsSourceIterator<uint_read_len_std>>(FASTAReadsSourceIterator<uint_read_len_std>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<FASTQReadsSourceIterator<uint_read_len_min>>(FASTQReadsSourceIterator<uint_read_len_min>* readsIterator);
+    template ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet<FASTQReadsSourceIterator<uint_read_len_std>>(FASTQReadsSourceIterator<uint_read_len_std>* readsIterator);
 
 }

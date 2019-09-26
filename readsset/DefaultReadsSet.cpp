@@ -12,7 +12,7 @@ namespace PgSAReadsSet {
 
             properties->readsCount++;
 
-            // analize read length
+            // analyze read length
             uint_read_len_max length = readsIterator->getReadLength();
             if (properties->maxReadLength == 0) {
                 properties->maxReadLength = length;
@@ -27,7 +27,7 @@ namespace PgSAReadsSet {
 
             properties->allReadsLength += length;
 
-            //analize symbols
+            //analyze symbols
             string read(readsIterator->getRead());
 
             for (uint_read_len_max i = 0; i < length; i++) {

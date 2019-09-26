@@ -32,7 +32,7 @@ set(READSSET_FILES
         readsset/iterator/ReadsSetIterator.h
         readsset/iterator/DivisionReadsSetDecorators.cpp readsset/iterator/DivisionReadsSetDecorators.h
         readsset/DividedPCLReadsSets.cpp readsset/DividedPCLReadsSets.h
-        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h readsset/tools/ReadsSetAnalizer.cpp readsset/tools/ReadsSetAnalizer.h)
+        readsset/persistance/ReadsSetPersistence.cpp readsset/persistance/ReadsSetPersistence.h readsset/tools/ReadsSetAnalyzer.cpp readsset/tools/ReadsSetAnalyzer.h)
 
 set(LZMA_FILES
         utils/LzmaLib.h utils/LzmaLib.cpp
