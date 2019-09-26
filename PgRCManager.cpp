@@ -41,7 +41,7 @@ namespace PgTools {
                 setPgGeneratorBasedDivisionOverlapThreshold_str("65");
                 setPreReadsExactMatchingChars(0);
                 setMatchingMode('c');
-                setReadSeedLength(40);
+                setReadSeedLength(38);
                 setMinCharsPerMismatch(5);
                 setMinimalPgReverseComplementedRepeatLength(45);
                 break;
