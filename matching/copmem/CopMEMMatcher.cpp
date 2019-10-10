@@ -42,6 +42,7 @@
 #define _prefetch(x,y) __builtin_prefetch(x,1,(4-y))
 
 #include "Hashes.h"
+#include <omp.h>
 
 //////////////////// GLOBAL CONSTS //////////////////////////
 const uint64_t NOT_MATCHED_POSITION = UINT64_MAX;
@@ -135,41 +136,43 @@ void CopMEMMatcher::calcCoprimes()
     }
 }
 
-template<typename MyUINT1, typename MyUINT2>
-void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList) {
+template<typename MyUINT2>
+void CopMEMMatcher::genCumm(size_t N, const char* gen, uint8_t* counts, MyUINT2* cumm) {
 	const size_t MULTI1 = 128;
 	const size_t k1MULTI1 = k1 * MULTI1;
 
-	uint32_t hashPositions[MULTI1];
-	size_t i;
-
-	for (i = 0; i + K + k1MULTI1 < N ; i += k1MULTI1) {
+	#pragma omp parallel for
+    for (size_t i = 0; i < N - K - k1MULTI1; i += k1MULTI1) {
+        uint32_t hashPositions[MULTI1];
 		const char* tempPointer = gen + i;
 		for (size_t temp = 0; temp < MULTI1; ++temp) {
-			hashPositions[temp] = hashFunc(tempPointer) + 2;
+			hashPositions[temp] = hashFunc(tempPointer);
 			tempPointer += k1;
-			_prefetch((char*)(cumm + hashPositions[temp]), 1);
+			_prefetch((char*)(counts + hashPositions[temp]), 1);
 		}
 
-		for (size_t temp = 0; temp < MULTI1; ++temp) {
-			if (cumm[hashPositions[temp]] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
-			    ++cumm[hashPositions[temp]];
-			else
-			    skippedList.push_back(i + k1 * temp);
-		}
+        for (size_t temp = 0; temp < MULTI1; ++temp) {
+            {
+                if (counts[hashPositions[temp]] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
+                    ++counts[hashPositions[temp]];
+            }
+        }
+
 	}
 
 	//////////////////// processing the end part of R  //////////////////////
-	for (; i < N - K + 1; i += k1) {
-		uint32_t h = hashFunc(gen + i) + 2;
-		if (cumm[h] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
-		    ++cumm[h];
-        else
-            skippedList.push_back(i);
+	for (size_t i = ((N - K - 1) / k1MULTI1) * k1MULTI1; i < N - K + 1; i += k1) {
+		uint32_t h = hashFunc(gen + i);
+		if (counts[h] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
+		    ++counts[h];
 	}
 	//////////////////// processing the end part of R //////////////////////
-	std::partial_sum(cumm, cumm + hash_size + 2, cumm);
-	skippedList.push_back(N);
+    MyUINT2 sum = 0;
+    for(size_t i = 0; i < hash_size + 1; i++) {
+        cumm[i] = sum;
+        sum += counts[i];
+    }
+    cumm[hash_size + 1] = sum;
 }
 
 template<typename MyUINT1, typename MyUINT2>
@@ -179,21 +182,20 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 	const unsigned int k1MULTI2 = k1 * MULTI2;
 
 	MyUINT2* cumm = new MyUINT2[hash_size + 2]();
-	vector<MyUINT1> skippedList;
-	genCumm(N, start1, cumm, skippedList);
+    uint8_t* counts = new uint8_t[hash_size + 2]();
+	genCumm(N, start1, counts, cumm);
     const size_t hashCount = cumm[hash_size + 1];
     MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
     *v1logger << "Hash count = " << hashCount << std::endl;
 
-	uint32_t hashPositions[MULTI2];
-	MyUINT1 i1;
-
-	size_t s = 0;
-	for (i1 = 0; i1 + K + k1MULTI2 < N ; i1 += k1MULTI2) {
+    #pragma omp parallel for
+	for (MyUINT1 i1 = 0; i1 < N - K - k1MULTI2 ; i1 += k1MULTI2) {
+        uint32_t hashPositions[MULTI2];
 		const char* tempPointer = start1 + i1;
 		for (unsigned int temp = 0; temp < MULTI2; ++temp) {
-		    hashPositions[temp] = hashFunc(tempPointer) + 1;
+		    hashPositions[temp] = hashFunc(tempPointer);
 			tempPointer += k1;
+            _prefetch((char*)(counts + hashPositions[temp]), 1);
 			_prefetch((char*)(cumm + hashPositions[temp]), 1);
 		}
 
@@ -203,25 +205,27 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
 
 		MyUINT1 i2 = i1;
 		for (size_t temp = 0; temp < MULTI2; ++temp, i2 += k1) {
-            if (skippedList[s] == i2) {
-                s++;
+            if (!counts[hashPositions[temp]])
                 continue;
-            }
-			sampledPositions[cumm[hashPositions[temp]]] = i2;
-			++cumm[hashPositions[temp]];
+			sampledPositions[cumm[hashPositions[temp]] + (--counts[hashPositions[temp]])] = i2;
 		}
 	}
 
 	//////////////////// processing the end part of R
-	for (; i1 < N - K + 1; i1 += k1) {
-        if (skippedList[s] == i1) {
-            s++;
+	for (MyUINT1 i1 = ((N - K - 1) / k1MULTI2) * k1MULTI2; i1 < N - K + 1; i1 += k1) {
+        uint32_t h = hashFunc(start1 + i1);
+	    if (!counts[h])
             continue;
-        }
-	    uint32_t h = hashFunc(start1 + i1) + 1;
-		sampledPositions[cumm[h]] = i1;
-		++cumm[h];
+		sampledPositions[cumm[h] + (--counts[h])] = i1;
 	}
+	delete[] counts;
+
+    #pragma omp parallel for
+	for (size_t i = 0; i < hashCount + 2; i++) {
+	    if (sampledPositions[i] > N - K)
+	        sampledPositions[i] = 0;
+	}
+
 
 	return { sampledPositions, cumm };
 }

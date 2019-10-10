@@ -43,8 +43,8 @@ private:
 
     inline std::uint32_t hashFunc(const char* str) { return hashFunc32(str) & hash_size_minus_one; };
 
-    template<typename MyUINT1, typename MyUINT2>
-    void genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList);
+    template<typename MyUINT2>
+    void genCumm(size_t N, const char* gen, uint8_t* counts, MyUINT2* cumm);
 
     void dumpMEM(SequenceItem& item1, SequenceItem& item2, size_t* match);
     void dumpMEMTight(SequenceItem& item1, size_t* match, size_t counter);
