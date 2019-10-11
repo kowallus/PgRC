@@ -136,8 +136,101 @@ void CopMEMMatcher::calcCoprimes()
     }
 }
 
+template<typename MyUINT1, typename MyUINT2>
+void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList) {
+    const size_t MULTI1 = 128;
+    const size_t k1MULTI1 = k1 * MULTI1;
+
+    uint32_t hashPositions[MULTI1];
+    size_t i;
+
+    for (i = 0; i + K + k1MULTI1 < N ; i += k1MULTI1) {
+        const char* tempPointer = gen + i;
+        for (size_t temp = 0; temp < MULTI1; ++temp) {
+            hashPositions[temp] = hashFunc(tempPointer) + 2;
+            tempPointer += k1;
+            _prefetch((char*)(cumm + hashPositions[temp]), 1);
+        }
+
+        for (size_t temp = 0; temp < MULTI1; ++temp) {
+            if (cumm[hashPositions[temp]] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
+                ++cumm[hashPositions[temp]];
+            else
+                skippedList.push_back(i + k1 * temp);
+        }
+    }
+
+    //////////////////// processing the end part of R  //////////////////////
+    for (; i < N - K + 1; i += k1) {
+        uint32_t h = hashFunc(gen + i) + 2;
+        if (cumm[h] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
+            ++cumm[h];
+        else
+            skippedList.push_back(i);
+    }
+    //////////////////// processing the end part of R //////////////////////
+    std::partial_sum(cumm, cumm + hash_size + 2, cumm);
+    skippedList.push_back(N);
+}
+
+template<typename MyUINT1, typename MyUINT2>
+HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
+    if (PgSAHelpers::numberOfThreads > 1)
+        return processRefMultithreaded<MyUINT1, MyUINT2>();
+
+    const unsigned int MULTI2 = 128;
+    const unsigned int k1MULTI2 = k1 * MULTI2;
+
+    MyUINT2* cumm = new MyUINT2[hash_size + 2]();
+    vector<MyUINT1> skippedList;
+    genCumm(N, start1, cumm, skippedList);
+    const size_t hashCount = cumm[hash_size + 1];
+    MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
+    *v1logger << "Hash count = " << hashCount << std::endl;
+
+    uint32_t hashPositions[MULTI2];
+    MyUINT1 i1;
+
+    size_t s = 0;
+    for (i1 = 0; i1 + K + k1MULTI2 < N ; i1 += k1MULTI2) {
+        const char* tempPointer = start1 + i1;
+        for (unsigned int temp = 0; temp < MULTI2; ++temp) {
+            hashPositions[temp] = hashFunc(tempPointer) + 1;
+            tempPointer += k1;
+            _prefetch((char*)(cumm + hashPositions[temp]), 1);
+        }
+
+        for (unsigned int temp = 0; temp < MULTI2; ++temp) {
+            _prefetch((char*)(sampledPositions + *(cumm + hashPositions[temp])), 1);
+        }
+
+        MyUINT1 i2 = i1;
+        for (size_t temp = 0; temp < MULTI2; ++temp, i2 += k1) {
+            if (skippedList[s] == i2) {
+                s++;
+                continue;
+            }
+            sampledPositions[cumm[hashPositions[temp]]] = i2;
+            ++cumm[hashPositions[temp]];
+        }
+    }
+
+    //////////////////// processing the end part of R
+    for (; i1 < N - K + 1; i1 += k1) {
+        if (skippedList[s] == i1) {
+            s++;
+            continue;
+        }
+        uint32_t h = hashFunc(start1 + i1) + 1;
+        sampledPositions[cumm[h]] = i1;
+        ++cumm[h];
+    }
+
+    return { sampledPositions, cumm };
+}
+
 template<typename MyUINT2>
-void CopMEMMatcher::genCumm(size_t N, const char* gen, uint8_t* counts, MyUINT2* cumm) {
+void CopMEMMatcher::genCummMultithreaded(size_t N, const char* gen, uint8_t* counts, MyUINT2* cumm) {
 	const size_t MULTI1 = 128;
 	const size_t k1MULTI1 = k1 * MULTI1;
 
@@ -157,7 +250,6 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, uint8_t* counts, MyUINT2*
                     ++counts[hashPositions[temp]];
             }
         }
-
 	}
 
 	//////////////////// processing the end part of R  //////////////////////
@@ -176,14 +268,14 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, uint8_t* counts, MyUINT2*
 }
 
 template<typename MyUINT1, typename MyUINT2>
-HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
+HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRefMultithreaded() {
 
 	const unsigned int MULTI2 = 128;
 	const unsigned int k1MULTI2 = k1 * MULTI2;
 
 	MyUINT2* cumm = new MyUINT2[hash_size + 2]();
     uint8_t* counts = new uint8_t[hash_size + 2]();
-	genCumm(N, start1, counts, cumm);
+	genCummMultithreaded(N, start1, counts, cumm);
     const size_t hashCount = cumm[hash_size + 1];
     MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
     *v1logger << "Hash count = " << hashCount << std::endl;
