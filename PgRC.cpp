@@ -150,9 +150,9 @@ int main(int argc, char *argv[])
 #endif
             case '?':
             default: /* '?' */
-                fprintf(stderr, "PgRC 1.0: Copyright (c) 2019 Tomasz Kowalski, Szymon Grabowski : 2019-07-20\n\n");
-                fprintf(stderr, "Usage: %s [-c compressionLevel] [-i inputSrcFile [pairSrcFile]] [-o] [-d] "
-                                "outputName\n\n", argv[0]);
+                fprintf(stderr, "PgRC 1.1: Copyright (c) 2019 Tomasz Kowalski, Szymon Grabowski : 2019-10-11\n\n");
+                fprintf(stderr, "Usage: %s [-c compressionLevel] [-i fastqSrcFile [pairSrcFile]] [-o] [-d] "
+                                "archiveName\n\n", argv[0]);
                 fprintf(stderr, "-c compression levels: 1 - fast; 2 - default; 3 - max\n");
                 fprintf(stderr, "-d decompression mode\n");
                 fprintf(stderr, "-o preserve original read order information\n\n");
