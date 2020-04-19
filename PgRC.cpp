@@ -5,7 +5,7 @@
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include <omp.h>
 
-#define RELEASE_DATE "2019-09-13"
+#define RELEASE_DATE "2020-04-22"
 
 using namespace std;
 using namespace PgTools;
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 #endif
             case '?':
             default: /* '?' */
-                fprintf(stderr, "PgRC %d.%d: Copyright (c) 2019 Tomasz Kowalski, Szymon Grabowski: %s\n\n",
+                fprintf(stderr, "PgRC %d.%d: Copyright (c) 2020 Tomasz Kowalski, Szymon Grabowski: %s\n\n",
                         (int) PGRC_VERSION_MAJOR, (int) PGRC_VERSION_MINOR, RELEASE_DATE);
                 fprintf(stderr, "Usage: %s [-c compressionLevel] [-i seqSrcFile [pairSrcFile]] [-t noOfThreads]"
                                 "\n[-o] [-d] archiveName\n\n", argv[0]);
