@@ -2,6 +2,7 @@
 #define HELPER_H_INCLUDED
 
 #include <ctime>
+#include <chrono>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -21,7 +22,11 @@ public:
     int overflow(int c) { return c; }
 };
 
+extern std::ostream null_stream;
+
 namespace PgSAHelpers {
+
+    extern int numberOfThreads;
 
     // bioinformatical routines
 
@@ -56,6 +61,11 @@ namespace PgSAHelpers {
     clock_t clock_checkpoint();
     unsigned long long int clock_millis();
     unsigned long long int clock_millis(clock_t checkpoint);
+
+    chrono::steady_clock::time_point time_checkpoint();
+    unsigned long long int time_millis();
+    unsigned long long int time_millis(chrono::steady_clock::time_point checkpoint);
+
 
     // string conversion routines
 

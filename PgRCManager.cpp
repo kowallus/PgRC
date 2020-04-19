@@ -6,6 +6,7 @@
 #include "pseudogenome/TemplateUserGenerator.h"
 #include "readsset/persistance/ReadsSetPersistence.h"
 #include "pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
+#include "pseudogenome/generator/ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "pseudogenome/persistence/PseudoGenomePersistence.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 
@@ -20,9 +21,15 @@ namespace PgTools {
     static const char *const PGRC_HEADER = "PgRC";
 
     uint_read_len_max probeReadsLength(const string &srcFastqFile);
-    clock_t getTimeInSec(clock_t end_t, clock_t begin_t) { return ((end_t - begin_t) / CLOCKS_PER_SEC); }
-    string getTimeInSec(clock_t end_t, clock_t begin_t, int decimalPlaces) {
-        return toString(((double) (end_t - begin_t)) / CLOCKS_PER_SEC, decimalPlaces); }
+
+    time_t getTimeInSec(chrono::steady_clock::time_point end_t, chrono::steady_clock::time_point begin_t) {
+        chrono::nanoseconds time_span = chrono::duration_cast<chrono::nanoseconds>(end_t - begin_t);
+        return (double)time_span.count() / 1000000.0;
+    }
+
+    string getTimeInSec(chrono::steady_clock::time_point end_t, chrono::steady_clock::time_point begin_t, int decimalPlaces) {
+        chrono::nanoseconds time_span = chrono::duration_cast<chrono::nanoseconds>(end_t - begin_t);
+        return toString((double)time_span.count() / 1000000000.0, decimalPlaces); }
 
     void PgRCManager::initCompressionParameters() {
         setPreMatchingMode('c');
@@ -72,6 +79,11 @@ namespace PgTools {
             fprintf(stderr, "Warning: file %s already exists\n", pgRCFileName.data());
         pgrcOut = fstream(pgRCFileName + TEMPORARY_FILE_SUFFIX, ios::out | ios::binary | ios::trunc);
         pgrcOut.write(PGRC_HEADER, strlen(PGRC_HEADER));
+        pgrcOut.put(PGRC_VERSION_MODE);
+        pgrcOut.put(PGRC_VERSION_MAJOR);
+        pgrcOut.put(PGRC_VERSION_MINOR);
+        pgrcOut.put(PGRC_VERSION_REVISON);
+        pgrcOut.put(compressionLevel);
         const char pgrc_mode = singleReadsMode ? PGRC_SE_MODE :
                                (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):
                      (ignorePairOrderInformation?PGRC_MIN_PE_MODE:PGRC_PE_MODE));
@@ -128,7 +140,7 @@ namespace PgTools {
     }
 
     void PgRCManager::executePgRCChain() {
-        start_t = clock();
+        start_t = chrono::steady_clock::now();
         prepareChainData();
         stageCount = 0;
         if (skipStages < ++stageCount && qualityDivision) {
@@ -138,7 +150,7 @@ namespace PgTools {
                 disposeChainData();
             }
         }
-        div_t = clock();
+        div_t = chrono::steady_clock::now();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgGeneratorBaseReadsDivision();
             if (generatorDivision)
@@ -149,7 +161,7 @@ namespace PgTools {
             }
 
         }
-        pgDiv_t = clock();
+        pgDiv_t = chrono::steady_clock::now();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForHqPgGeneration();
             runHQPgGeneration();
@@ -159,7 +171,7 @@ namespace PgTools {
                 disposeChainData();
             }
         }
-        good_t = clock();
+        good_t = chrono::steady_clock::now();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForMappingLQReadsOnHQPg();
             runMappingLQReadsOnHQPg();
@@ -179,7 +191,7 @@ namespace PgTools {
                 hqPg->disposeReadsList();
             }
         }
-        match_t = clock();
+        match_t = chrono::steady_clock::now();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForLQPgAndNPgGeneration();
             runLQPgGeneration();
@@ -226,7 +238,7 @@ namespace PgTools {
             delete(divReadsSets);
             divReadsSets = 0;
         }
-        bad_t = clock();
+        bad_t = chrono::steady_clock::now();
         if (!singleReadsMode && skipStages < ++stageCount && endAtStage >= stageCount) {
             if (preserveOrderMode) {
                 const uint_pg_len_max joinedPgLength =
@@ -251,7 +263,7 @@ namespace PgTools {
                     SeparatedPseudoGenomePersistence::dumpPgPairs({pgMappedHqPrefix, pgMappedLqPrefix});
             }
         }
-        order_t = clock();
+        order_t = chrono::steady_clock::now();
         if (skipStages < ++stageCount && endAtStage >= stageCount) {
             prepareForPgMatching();
             string emptySequence;
@@ -301,8 +313,12 @@ namespace PgTools {
     void PgRCManager::runPgGeneratorBasedReadsDivision() {
         cout << "HQ ";
         divReadsSets->getHqReadsSet()->printout();
-        const vector<bool>& isReadHqInHqReadsSet = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
-                divReadsSets->getHqReadsSet(), gen_quality_coef);
+        const vector<bool>& isReadHqInHqReadsSet =
+                (numberOfThreads > 1 && divReadsSets->getHqReadsSet()->readsCount() > PARALLEL_PG_GENERATION_READS_COUNT_THRESHOLD)?
+                ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
+                        divReadsSets->getHqReadsSet(), gen_quality_coef):
+                GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getHQReads(
+                        divReadsSets->getHqReadsSet(), gen_quality_coef);
         divReadsSets->moveLqReadsFromHqReadsSetsToLqReadsSets(isReadHqInHqReadsSet);
     }
 
@@ -319,8 +335,12 @@ namespace PgTools {
     void PgRCManager::runHQPgGeneration() {
         cout << "HQ ";
         divReadsSets->getHqReadsSet()->printout();
-        hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
-                divReadsSets->getHqReadsSet());
+        if (numberOfThreads > 1 && divReadsSets->getHqReadsSet()->readsCount() > PARALLEL_PG_GENERATION_READS_COUNT_THRESHOLD)
+            hqPg = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+                    divReadsSets->getHqReadsSet());
+        else
+            hqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+                    divReadsSets->getHqReadsSet());
         divReadsSets->disposeHqReadsSet();
         IndexesMapping* hq2IndexesMapping = divReadsSets->generateHqReadsIndexesMapping();
         hqPg->applyIndexesMapping(hq2IndexesMapping);
@@ -401,8 +421,12 @@ namespace PgTools {
     void PgRCManager::runLQPgGeneration() {
         cout << "LQ ";
         divReadsSets->getLqReadsSet()->printout();
-        lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
-                divReadsSets->getLqReadsSet());
+        if (numberOfThreads > 1 && divReadsSets->getLqReadsSet()->readsCount() > PARALLEL_PG_GENERATION_READS_COUNT_THRESHOLD)
+            lqPg = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+                    divReadsSets->getLqReadsSet());
+        else
+            lqPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+                    divReadsSets->getLqReadsSet());
         lqPg->applyIndexesMapping(divReadsSets->getLqReadsIndexesMapping());
         divReadsSets->disposeLqReadsSet();
     }
@@ -420,8 +444,12 @@ namespace PgTools {
     void PgRCManager::runNPgGeneration() {
         cout << "N ";
         divReadsSets->getNReadsSet()->printout();
-        nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
-                divReadsSets->getNReadsSet());
+        if (numberOfThreads > 1 && divReadsSets->getNReadsSet()->readsCount() > PARALLEL_PG_GENERATION_READS_COUNT_THRESHOLD)
+            nPg = ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+                    divReadsSets->getNReadsSet());
+        else
+            nPg = GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::generateSeparatedPg(
+                    divReadsSets->getNReadsSet());
         nPg->applyIndexesMapping(divReadsSets->getNReadsIndexesMapping());
         divReadsSets->disposeNReadsSet();
     }
@@ -456,29 +484,29 @@ namespace PgTools {
         bool hasHeader = (bool) std::ifstream(outputfile);
         fstream fout(outputfile, ios::out | ios::binary | ios::app);
         if (!hasHeader)
-            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%]\tm\tM\tp\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\torder[s]\tpgSeq-s[s]" << endl;
+            fout << "srcFastq\tpairFastq\trcPairFile\tpgPrefix\tq[%o]\tg[%]\tm\tM\tp\tt\tsize[B]\ttotal[s]\tdiv[s]\tPgDiv[s]\tgood[s]\treadsMatch[s]\tbad&N[s]\torder[s]\tpgSeq-s[s]" << endl;
 
         fout << srcFastqFile << "\t" << pairFastqFile << "\t" << (revComplPairFile?"yes":"no") << "\t"
              << pgRCFileName << "\t" << toString(error_limit_in_promils) << "\t" << gen_quality_str << "\t";
-
         if (preReadsExactMatchingChars > 0)
             fout << (char) tolower(preMatchingMode) << ((toupper(preMatchingMode) == preMatchingMode)?string("s"):string("")) << (int) preReadsExactMatchingChars;
-        fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t" << targetPgMatchLength << "\t";
+        fout << (char) tolower(matchingMode) << ((toupper(matchingMode) == matchingMode)?string("s"):string("")) << (int) readsExactMatchingChars << "\t" << (int) minCharsPerMismatch << "\t";
+        fout << targetPgMatchLength << "\t" << numberOfThreads << "\t";
         fout << pgRCSize << "\t";
-        fout << getTimeInSec(clock(), start_t, 2) << "\t";
+        fout << getTimeInSec(chrono::steady_clock::now(), start_t, 2) << "\t";
         fout << getTimeInSec(div_t, start_t, 2) << "\t";
         fout << getTimeInSec(pgDiv_t, div_t, 2) << "\t";
         fout << getTimeInSec(good_t, pgDiv_t, 2) << "\t";
         fout << getTimeInSec(match_t, good_t, 2) << "\t";
         fout << getTimeInSec(bad_t, match_t, 2) << "\t";
         fout << getTimeInSec(order_t, bad_t, 2) << "\t";
-        fout << getTimeInSec(clock(), order_t, 2) << endl;
+        fout << getTimeInSec(chrono::steady_clock::now(), order_t, 2) << endl;
     }
 
     void PgRCManager::finalizeCompression() {
         pgRCSize = pgrcOut.tellp();
         cout << endl << "Created PgRC of size " << pgRCSize << " bytes in "
-             << toString((double) clock_millis(start_t ) / 1000, 2) << " s." << endl;
+             << toString((double) time_millis(start_t ) / 1000, 2) << " s." << endl;
         pgrcOut.close();
         string pgRCTempFileName = pgRCFileName + TEMPORARY_FILE_SUFFIX;
         if (std::ifstream(pgRCFileName))
@@ -509,7 +537,7 @@ namespace PgTools {
     }
 
     void PgRCManager::decompressPgRC() {
-        start_t = clock();
+        start_t = chrono::steady_clock::now();
         string tmpDirectoryPath = pgRCFileName + "/";
         ifstream pgrcIn(pgRCFileName);
         char pgrc_mode;
@@ -521,6 +549,20 @@ namespace PgTools {
                 }
             }
             pgrc_mode = pgrcIn.get();
+            if (pgrc_mode == PGRC_VERSION_MODE) {
+                pgrcVersionMajor = pgrcIn.get();
+                pgrcVersionMinor = pgrcIn.get();
+                pgrcVersionRevision = pgrcIn.get();
+                if (pgrcVersionMajor > PGRC_VERSION_MAJOR || (pgrcVersionMajor == PGRC_VERSION_MAJOR &&
+                    pgrcVersionMinor > PGRC_VERSION_MINOR)) {
+                    fprintf(stderr, "ERROR: Archive is packed with a newer PgRC version %d.%d.\n",
+                            (int) pgrcVersionMajor, (int) pgrcVersionMinor);
+                    exit(EXIT_FAILURE);
+                }
+                compressionLevel = pgrcIn.get();
+                pgrc_mode = pgrcIn.get();
+            } else
+                SimplePgMatcher::MATCH_MARK = 128;
             if (pgrc_mode < PGRC_SE_MODE || pgrc_mode > PGRC_MIN_PE_MODE) {
                 fprintf(stderr, "Unsupported decompression mode: %d.\n", pgrc_mode);
                 exit(EXIT_FAILURE);
@@ -547,7 +589,7 @@ namespace PgTools {
             loadAllPgs(pgrcIn);
         else
             loadAllPgs();
-        cout << "... loaded Pgs (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
+        cout << "... loaded Pgs (checkpoint: " << time_millis(start_t) << " msec.)" << endl;
 
         uint_reads_cnt_max nonNPgReadsCount = hqPg->getReadsSetProperties()->readsCount
                                               + lqPg->getReadsSetProperties()->readsCount;
@@ -580,7 +622,7 @@ namespace PgTools {
             cout << "Validated ";
         }
 
-        cout << readsTotalCount << " reads in " << clock_millis(start_t) << " msec." << endl;
+        cout << readsTotalCount << " reads in " << time_millis(start_t) << " msec." << endl;
 
         disposeChainData();
     }
@@ -634,7 +676,7 @@ namespace PgTools {
             res.push_back('\n');
         }
         pushOutToQueue(res);
-        cout << "... finished loading queue (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
+        cout << "... finished loading queue (checkpoint: " << time_millis(start_t) << " msec.)" << endl;
         finishWritingParallel();
         writing.join();
     }
@@ -950,7 +992,7 @@ namespace PgTools {
     template void PgRCManager::applyRevComplPairFileToPgs<uint_pg_len_max>(vector<uint_pg_len_max> &orgIdx2PgPos);
 
     void PgRCManager::loadAllPgs(istream& pgrcIn) {
-        clock_t start_t = clock();
+        chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
         PseudoGenomeHeader hqPgh(pgrcIn);
         ReadsSetProperties hqRsProp(pgrcIn);
         if (confirmTextReadMode(pgrcIn)) {
@@ -1002,7 +1044,7 @@ namespace PgTools {
             SeparatedPseudoGenomePersistence::decompressReadsOrder(pgrcIn, rlIdxOrder,
                                                                    preserveOrderMode, ignorePairOrderInformation, singleReadsMode);
         }
-        cout << "... loaded Pgs Reads Lists (checkpoint: " << clock_millis(start_t) << " msec.)" << endl;
+        cout << "... loaded Pgs Reads Lists (checkpoint: " << time_millis(start_t) << " msec.)" << endl;
         string hqPgSeq, lqPgSeq, nPgSeq;
         SimplePgMatcher::restoreMatchedPgs(pgrcIn, hqPgLen, hqPgSeq, lqPgSeq, nPgSeq);
         hqPg = new SeparatedPseudoGenome(move(hqPgSeq), hqCaeRl, &hqRsProp);

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.4)
 project(PgTools)
 
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS} -O3 -DNDEBUG -mavx2")
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Release")
@@ -19,8 +19,8 @@ set(HELPER_FILES
 set(READSSET_FILES
         ${HELPER_FILES}
         readsset/tools
-        readsset/tools/SymbolsPackingFacility.cpp
-        readsset/tools/SymbolsPackingFacility.h
+        utils/SymbolsPackingFacility.cpp
+        utils/SymbolsPackingFacility.h
         readsset/DefaultReadsSet.cpp
         readsset/DefaultReadsSet.h
         readsset/iterator
@@ -44,7 +44,7 @@ set(LZMA_FILES
         lzma/Ppmd7.h lzma/Ppmd7.c
         lzma/Ppmd7Enc.c lzma/Ppmd7Dec.c
         lzma/Threads.h lzma/Threads.c
-        )
+        utils/VarLenDNACoder.cpp utils/VarLenDNACoder.h)
 
 set(PG_FILES
         ${READSSET_FILES}
@@ -81,6 +81,8 @@ set(PG_GEN_FILES
         pseudogenome/generator/AbstractOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.cpp
         pseudogenome/generator/GreedySwipingPackedOverlapPseudoGenomeGenerator.h
+        pseudogenome/generator/ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.cpp
+        pseudogenome/generator/ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.h
         pseudogenome/generator/PackedPseudoGenomeGenerator.h
         pseudogenome/generator/PseudoGenomeGeneratorBase.h)
 

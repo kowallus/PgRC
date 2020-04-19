@@ -1,6 +1,8 @@
 #include "GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 
+#include <parallel/algorithm>
+
 using namespace PgSAReadsSet;
 using namespace PgSAHelpers;
 
@@ -23,11 +25,16 @@ namespace PgSAIndex {
             delete(this->packedReadsSet);
     }
     
-        template<typename uint_read_len, typename uint_reads_cnt>
+    template<typename uint_read_len, typename uint_reads_cnt>
     string GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::getReadUpToOverlap(uint_reads_cnt incIdx) {
         return packedReadsSet->getReadPrefix(incIdx - 1, this->overlap[incIdx]);
     }
-    
+
+    template<typename uint_read_len, typename uint_reads_cnt>
+    void GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::getReadSuffix(char *destPtr, uint_reads_cnt incIdx, uint_read_len suffixPos) {
+        packedReadsSet->getReadSuffix(destPtr, incIdx - 1, suffixPos);
+    }
+
     template<typename uint_read_len, typename uint_reads_cnt>
     uint_read_len GreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::readLength(uint_reads_cnt incIdx) {
         return packedReadsSet->readLength(incIdx - 1);
@@ -88,7 +95,7 @@ namespace PgSAIndex {
             sortedReadsIdxs.push_back(i);
         
         PackedReadsComparator comparePacked = PackedReadsComparator(this);
-        std::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
+        __gnu_parallel::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
 
         uint_reads_cnt sortedReadsLeftCount = 1;
 
@@ -118,7 +125,7 @@ namespace PgSAIndex {
         ssiSymbolEnd[curSymOrder] = sortedSuffixIdxs.size();
         sortedReadsIdxs.resize(sortedReadsLeftCount);
         
-        cout << "Found " << (readsTotal() - this->readsLeft) << " duplicates (..." << clock_millis() << " msec)" << endl;;
+        cout << "Found " << (readsTotal() - this->readsLeft) << " duplicates (..." << time_millis() << " msec)" << endl;;
     }
     
     template<typename uint_read_len, typename uint_reads_cnt>
@@ -132,7 +139,7 @@ namespace PgSAIndex {
 
         for(int i = 1 ; i < overlapIterations; i++) {
             overlapSortedReadsAndMergeSortSuffixes<false>(i);
-            *logout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap (..." << clock_millis() << " msec)" << endl;
+            *logout << this->readsLeft << " reads left after " << (uint_read_len_max) (packedReadsSet->maxReadLength() - i) << " overlap (..." << time_millis() << " msec)" << endl;
         }
 
         sortedReadsIdxs.clear();
@@ -150,7 +157,7 @@ namespace PgSAIndex {
             *logout << this->countComponents() << " pseudo-genome components\n";
         }
 
-        cout << "Overlapping done in " << clock_millis() << " msec\n";
+        cout << "Overlapping done in " << time_millis() << " msec\n";
         *logout << endl;
     }
 

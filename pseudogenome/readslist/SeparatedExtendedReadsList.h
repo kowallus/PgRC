@@ -3,7 +3,7 @@
 
 #include "iterator/ExtendedReadsListIteratorInterface.h"
 #include "../SeparatedPseudoGenomeBase.h"
-#include "../../readsset/tools/SymbolsPackingFacility.h"
+#include "../../utils/SymbolsPackingFacility.h"
 #include "../DefaultPseudoGenome.h"
 
 namespace PgTools {

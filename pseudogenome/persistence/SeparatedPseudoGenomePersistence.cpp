@@ -3,41 +3,43 @@
 #include "../TemplateUserGenerator.h"
 #include "../SeparatedPseudoGenomeBase.h"
 
+#include <parallel/algorithm>
+
 namespace PgTools {
 
     void SeparatedPseudoGenomePersistence::writePseudoGenome(PseudoGenomeBase *pgb, const string &pseudoGenomePrefix,
             IndexesMapping* orgIndexesMapping, bool revComplPairFile) {
-        clock_checkpoint();
+        time_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(pseudoGenomePrefix, !revComplPairFile, true);
         builder.writePseudoGenome(pgb, orgIndexesMapping, revComplPairFile);
         builder.build();
-        cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << clock_millis() << " msec." << endl << endl;
+        cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << time_millis() << " msec." << endl << endl;
     }
 
     void SeparatedPseudoGenomePersistence::writeSeparatedPseudoGenome(SeparatedPseudoGenome *sPg,
             const string &pseudoGenomePrefix, bool skipPgSequence) {
-        clock_checkpoint();
+        time_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(sPg->getReadsList()->isRevCompEnabled(),
                 sPg->getReadsList()->areMismatchesEnabled());
         builder.feedSeparatedPseudoGenome(sPg, skipPgSequence);
         builder.build(pseudoGenomePrefix);
-        cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << clock_millis() << " msec." << endl << endl;
+        cout << "Writing (" << pseudoGenomePrefix << ") pseudo genome files in " << time_millis() << " msec." << endl << endl;
     }
 
     void SeparatedPseudoGenomePersistence::compressSeparatedPseudoGenomeReadsList(SeparatedPseudoGenome *sPg,
                                                                       ostream* pgrcOut, uint8_t coder_level,
                                                                       bool ignoreOffDest, bool skipPgSequence) {
-        clock_checkpoint();
+        time_checkpoint();
         SeparatedPseudoGenomeOutputBuilder builder(!sPg->getReadsList()->isRevCompEnabled(),
                                                    !sPg->getReadsList()->areMismatchesEnabled());
         builder.feedSeparatedPseudoGenome(sPg, true);
         builder.compressedBuild(*pgrcOut, coder_level, ignoreOffDest);
-        *logout << "Compressed Pg reads list in " << clock_millis() << " msec." << endl << endl;
+        *logout << "Compressed Pg reads list in " << time_millis() << " msec." << endl << endl;
         if (!skipPgSequence) {
-            clock_checkpoint();
+            time_checkpoint();
             writeCompressed(*pgrcOut, sPg->getPgSequence().data(), sPg->getPgSequence().size(), LZMA_CODER, coder_level,
                             PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
-            *logout << "Compressed Pg sequence in " << clock_millis() << " msec." << endl << endl;
+            *logout << "Compressed Pg sequence in " << time_millis() << " msec." << endl << endl;
         }
     }
 
@@ -194,19 +196,19 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomePersistence::dumpPgPairs(vector<string> pgFilePrefixes) {
-        clock_checkpoint();
+        time_checkpoint();
         vector<uint_reads_cnt_std> orgIdxs;
         for(string pgFilePrefix: pgFilePrefixes)
             SeparatedPseudoGenomePersistence::appendIndexesFromPg(pgFilePrefix, orgIdxs);
 
         SeparatedPseudoGenomePersistence::writePairMapping(pgFilePrefixes[0], orgIdxs);
-        *logout << "... dumping pairs completed in " << clock_millis() << " msec. " << endl;
+        *logout << "... dumping pairs completed in " << time_millis() << " msec. " << endl;
     }
 
     void SeparatedPseudoGenomePersistence::compressReadsOrder(ostream &pgrcOut,
             const vector<uint_reads_cnt_std>& orgIdxs, uint8_t coder_level,
             bool completeOrderInfo, bool ignorePairOrderInformation, bool singleFileMode) {
-        clock_checkpoint();
+        time_checkpoint();
         uint_reads_cnt_std readsCount = orgIdxs.size();
         int lzma_reads_dataperiod_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         vector<uint_reads_cnt_std> rev(readsCount);
@@ -310,7 +312,7 @@ namespace PgTools {
                                 PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
             }
         }
-        *logout << "... compressing order information completed in " << clock_millis() << " msec. " << endl;
+        *logout << "... compressing order information completed in " << time_millis() << " msec. " << endl;
         *logout << endl;
     }
 
@@ -403,7 +405,7 @@ namespace PgTools {
     void SeparatedPseudoGenomePersistence::compressReadsPgPositions(ostream &pgrcOut,
             vector<uint_pg_len_max> orgIdx2PgPos, uint_pg_len_max joinedPgLength, uint8_t coder_level,
             bool singleFileMode, bool deltaPairEncodingEnabled) {
-        clock_checkpoint();
+        time_checkpoint();
         uint_reads_cnt_std readsTotalCount = orgIdx2PgPos.size();
         int lzma_pos_dataperiod_param = sizeof(uint_pg_len) == 4 ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         double estimated_pos_ratio = simpleUintCompressionEstimate(joinedPgLength, sizeof(uint_pg_len) == 4?UINT32_MAX:UINT64_MAX);
@@ -444,10 +446,10 @@ namespace PgTools {
                 basePairPos.push_back(orgIdx2PgPos[i]);
                 bppRank.push_back(i >> 1);
             }
-            std::stable_sort(bppRank.begin(), bppRank.end(),
+            __gnu_parallel::stable_sort(bppRank.begin(), bppRank.end(),
                     [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                         { return basePairPos[idx1] < basePairPos[idx2]; });
-            *logout << "... reordering bases checkpoint: " << clock_millis() << " msec. " << endl;
+            *logout << "... reordering bases checkpoint: " << time_millis() << " msec. " << endl;
             int64_t refPrev = 0;
             int64_t prev = 0;
             bool match = false;
@@ -513,7 +515,7 @@ namespace PgTools {
             writeCompressed(pgrcOut, (char *) notBasePairPos.data(), notBasePairPos.size() * sizeof(uint_pg_len),
                             LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
         }
-        *logout << "... compressing reads positions completed in " << clock_millis() << " msec. " << endl;
+        *logout << "... compressing reads positions completed in " << time_millis() << " msec. " << endl;
         *logout << endl;
     }
     template void SeparatedPseudoGenomePersistence::compressReadsPgPositions<uint_pg_len_std>(ostream &pgrcOut,
@@ -553,7 +555,7 @@ namespace PgTools {
             bppRank.reserve(pairsCount);
             for (uint_reads_cnt_std p = 0; p < pairsCount; p++)
                 bppRank.push_back(p);
-            std::stable_sort(bppRank.begin(), bppRank.end(),
+            __gnu_parallel::stable_sort(bppRank.begin(), bppRank.end(),
                              [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                              { return pgPos[idx1] < pgPos[idx2]; });
 

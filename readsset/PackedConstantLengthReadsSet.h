@@ -5,7 +5,7 @@
 #include "ReadsSetBase.h"
 #include "iterator/ReadsSetIterator.h"
 #include "ReadsSetInterface.h"
-#include "tools/SymbolsPackingFacility.h"
+#include "../utils/SymbolsPackingFacility.h"
 
 using namespace PgSAIndex;
 
@@ -39,6 +39,7 @@ namespace PgSAReadsSet {
 
             inline const uint_ps_element_min* getPackedRead(uint_reads_cnt_max i) { return packedReads.data() + i * (size_t) packedLength;};
             inline const string getReadPrefix(uint_reads_cnt_max i, uint_read_len_max skipSuffix) { return sPacker->reverseSequence(packedReads.data() + i * (size_t) packedLength, 0, readLength(i) - skipSuffix);};
+            inline void getReadSuffix(char *destPtr, uint_reads_cnt_max i, uint_read_len_max suffixPos) { sPacker->reverseSequence(packedReads.data() + i * (size_t) packedLength, suffixPos, readLength(i) - suffixPos, destPtr);};
             inline const string getRead(uint_reads_cnt_max i) { return sPacker->reverseSequence(packedReads.data() + (size_t) packedLength * i, 0, readLength(i));};
             inline void getRead(uint_reads_cnt_max i, string &res) { sPacker->reverseSequence(packedReads.data() + (size_t) packedLength * i, 0, readLength(i), res);};
             inline void getRead(uint_reads_cnt_max i, char_pg* res) { sPacker->reverseSequence(packedReads.data() + (size_t) packedLength * i, 0, readLength(i), res);};
@@ -50,6 +51,7 @@ namespace PgSAReadsSet {
             int compareSuffixWithPrefix(uint_reads_cnt_max sufIdx, uint_reads_cnt_max preIdx, uint_read_len_max sufOffset);
 
             int compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern);
+            int compareReadWithPattern(const uint_reads_cnt_max i, const char *pattern, int length);
             uint8_t countMismatchesVsPattern(uint_reads_cnt_max i, const char *pattern, uint_read_len_max length, uint8_t maxMismatches);
 
             uint_read_len_max maxReadLengthVirtual() { return maxReadLength(); };
@@ -64,6 +66,7 @@ namespace PgSAReadsSet {
 
             template<class ReadsSourceIterator>
             static PackedConstantLengthReadsSet* loadReadsSet(ReadsSourceIterator* readsIterator, ReadsSetProperties* properties = 0);
+
     };
 }
 

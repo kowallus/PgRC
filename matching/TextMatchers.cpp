@@ -100,7 +100,7 @@ namespace PgTools {
             /*            if ((i++ % 1000000) == 0 || matchLength > minMatchLength * 15) {
                              cout << (confirmPatternMatch?"Matched ":"False-matched ") << matchLength << " chars: <" << matchSrcPos << "; "
                                  << (matchSrcPos + matchLength) << ") " << " in " << matchDestPos << " (" << matchCharsCount << " chars matched total)" << endl;
-                             cout << "Elapsed time: " << ((double) destPg.length() / matchDestPos) * clock_millis() / 1000 << "[s]" << endl;
+                             cout << "Elapsed time: " << ((double) destPg.length() / matchDestPos) * time_millis() / 1000 << "[s]" << endl;
                             if (matchLength < matchingLength * 10) {
                                 uint8_t beforeChars = matchingLength / 4;
                                 const uint64_t &minPos = min<uint64_t>(matchPatternIndex, matchDestPos);

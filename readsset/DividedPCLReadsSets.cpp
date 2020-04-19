@@ -60,7 +60,7 @@ namespace PgTools {
                                                           uint_read_len_max readLength,
                                                           double error_limit, bool separateNReadsSet, bool nReadsLQ) {
         DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, separateNReadsSet, nReadsLQ);
-        clock_checkpoint();
+        time_checkpoint();
         QualityDividingReadsSetIterator<uint_read_len_max> *divReadsIt =
                 new QualityDividingReadsSetIterator<uint_read_len_max>(readsIt, error_limit);
         vector<uint_reads_cnt_max> lqMapping, nMapping;
@@ -85,7 +85,7 @@ namespace PgTools {
         if (separateNReadsSet)
             cout << " (including " << nMapping.size() << " containing N)";
         cout << " reads (out of " <<
-            (divReadsIt->getReadOriginalIndex()) << ") in " << clock_millis() << " msec." << endl;
+            (divReadsIt->getReadOriginalIndex()) << ") in " << time_millis() << " msec." << endl;
         *logout << endl;
 
         readsSets->lqMapping = new VectorMapping(std::move(lqMapping), divReadsIt->getReadOriginalIndex());

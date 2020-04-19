@@ -46,6 +46,9 @@ private:
     template<typename MyUINT1, typename MyUINT2>
     void genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyUINT1> &skippedList);
 
+    template<typename MyUINT2>
+    void genCummMultithreaded(size_t N, const char* gen, uint8_t* counts, MyUINT2* cumm);
+
     void dumpMEM(SequenceItem& item1, SequenceItem& item2, size_t* match);
     void dumpMEMTight(SequenceItem& item1, size_t* match, size_t counter);
 
@@ -55,6 +58,9 @@ private:
 
     template<typename MyUINT1, typename MyUINT2>
     HashBuffer<MyUINT1, MyUINT2> processRef();
+
+    template<typename MyUINT1, typename MyUINT2>
+    HashBuffer<MyUINT1, MyUINT2> processRefMultithreaded();
 
     template <class MyUINT1, class MyUINT2>
     void deleteHashBuffer(HashBuffer<MyUINT1, MyUINT2> & buf);

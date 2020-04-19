@@ -34,6 +34,7 @@ namespace PgSAIndex {
 
         virtual uint_read_len readLength(uint_reads_cnt incIdx) = 0;
         virtual string getReadUpToOverlap(uint_reads_cnt incIdx) = 0;
+        virtual void getReadSuffix(char *destPtr, uint_reads_cnt incIdx, uint_read_len suffixPos) = 0;
         virtual uint_reads_cnt readsTotal() = 0;
 
         virtual ReadsSetProperties* getReadsSetProperties() = 0;

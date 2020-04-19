@@ -1,3 +1,4 @@
+#include "ParallelGreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include <cassert>
 #include "AbstractOverlapPseudoGenomeGenerator.h"
 
@@ -67,7 +68,7 @@ namespace PgSAIndex {
     const vector<bool> AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::getBothSidesOverlappedReads(
             double overlappedReadsCountStopCoef) {
 
-        clock_checkpoint();
+        time_checkpoint();
         init(false);
         performOverlapping(overlappedReadsCountStopCoef, false);
 
@@ -90,7 +91,7 @@ namespace PgSAIndex {
         }
         dispose();
 
-        cout << "Found " << resCount << " both-side overlapped reads in " << clock_millis() << " msec\n";
+        cout << "Found " << resCount << " both-side overlapped reads in " << time_millis() << " msec\n";
         *logout << endl;
 
         return res;
@@ -99,7 +100,7 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::performOverlapping(
             double overlappedReadsCountStopCoef, bool pgGenerationMode) {
-        clock_checkpoint();
+        time_checkpoint();
         findOverlappingReads(overlappedReadsCountStopCoef, pgGenerationMode);
         if (pgGenerationMode) {
             pseudoGenomeLength = countPseudoGenomeLength();
@@ -180,7 +181,7 @@ namespace PgSAIndex {
     template<typename uint_read_len, typename uint_reads_cnt>
     template<class GeneratedPseudoGenome>
     GeneratedPseudoGenome* AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::assemblePseudoGenomeTemplate() {
-        clock_checkpoint();
+        time_checkpoint();
         if (!getReadsSetProperties()->constantReadLength) {
             cout << "ERROR: Unsuported variable reads length!";
             exit(EXIT_FAILURE);
@@ -189,17 +190,30 @@ namespace PgSAIndex {
         GeneratedPseudoGenome* genPG =
                 new GeneratedPseudoGenome(this->pseudoGenomeLength, getReadsSetProperties());
 
+        char* seq = genPG->getSequencePtr();
+        uint_read_len readLength = this->getReadsSetProperties()->maxReadLength;
+        uint_read_len prefixDoneLength = 0;
+
         for (uint_reads_cnt i = 1; i <= readsTotal(); i++) {
             uint_reads_cnt idx = i;
             if (!hasPredecessor(idx))
                 do {
-                    genPG->append(getReadUpToOverlap(idx), readLength(idx), overlap[idx], idx - 1);
+                    genPG->append(readLength, overlap[idx], idx - 1);
+                    const uint_read_len shiftLength = readLength - overlap[idx];
+                    if (prefixDoneLength < shiftLength) {
+                        getReadSuffix(seq, idx, prefixDoneLength);
+                        seq += readLength - prefixDoneLength;
+                        prefixDoneLength = overlap[idx];
+                    } else {
+                        prefixDoneLength -= shiftLength;
+                    }
                     idx = nextRead[idx];
+
                 } while (idx != 0);
         }
 
         genPG->validate();
-        *logout << "Pseudogenome assembled in " << clock_millis() << " msec\n\n";
+        *logout << "Pseudogenome assembled in " << time_millis() << " msec\n\n";
 
         return genPG;
     }

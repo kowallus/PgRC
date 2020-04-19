@@ -127,12 +127,17 @@ namespace PgTools {
         readsList->orgIdx.reserve(properties->readsCount);
     }
 
-    void GeneratedSeparatedPseudoGenome::append(const string &read, uint_read_len_max length, uint_read_len_max overlap,
+    void GeneratedSeparatedPseudoGenome::append(uint_read_len_max length, uint_read_len_max overlap,
                                                 uint_reads_cnt_max orgIdx) {
         readsList->off.push_back(delta);
         readsList->orgIdx.push_back(orgIdx);
 
         delta = length - overlap;
+    }
+
+    void GeneratedSeparatedPseudoGenome::append(const string &read, uint_read_len_max length, uint_read_len_max overlap,
+                                                uint_reads_cnt_max orgIdx) {
+        append(length, overlap, orgIdx);
         if (delta > 0) {
             strncpy(this->sequence + pos, read.data(), delta);
             pos += delta;
@@ -140,5 +145,9 @@ namespace PgTools {
     }
 
     void GeneratedSeparatedPseudoGenome::validate() {
+    }
+
+    char_pg *GeneratedSeparatedPseudoGenome::getSequencePtr() const {
+        return sequence;
     }
 }

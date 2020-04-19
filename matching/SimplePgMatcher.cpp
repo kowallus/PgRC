@@ -7,9 +7,9 @@
 
 namespace PgTools {
 
-    SimplePgMatcher::SimplePgMatcher(const string& srcPg, uint32_t targetMatchLength,
-            uint32_t minMatchLength)
-            :srcPg(srcPg), targetMatchLength(targetMatchLength) {
+    SimplePgMatcher::SimplePgMatcher(const string &srcPg, uint32_t targetMatchLength,
+                                     uint32_t minMatchLength)
+            : srcPg(srcPg), targetMatchLength(targetMatchLength) {
         cout << "Source pseudogenome length: " << srcPg.length() << endl;
         if (srcPg.size() >= targetMatchLength)
             matcher = new CopMEMMatcher(srcPg.data(), srcPg.length(), targetMatchLength, minMatchLength);
@@ -18,11 +18,11 @@ namespace PgTools {
 
     SimplePgMatcher::~SimplePgMatcher() {
         if (matcher)
-            delete(matcher);
+            delete (matcher);
     }
 
-    void SimplePgMatcher::exactMatchPg(string& destPg, bool destPgIsSrcPg, uint32_t minMatchLength) {
-        clock_checkpoint();
+    void SimplePgMatcher::exactMatchPg(string &destPg, bool destPgIsSrcPg, uint32_t minMatchLength) {
+        time_checkpoint();
 
         if (!destPgIsSrcPg)
             cout << "Destination pseudogenome length: " << destPgLength << endl;
@@ -39,7 +39,7 @@ namespace PgTools {
         } else
             matcher->matchTexts(textMatches, destPg, destPgIsSrcPg, revComplMatching, minMatchLength);
 
-        *logout << "... found " << textMatches.size() << " exact matches in " << clock_millis() << " msec. " << endl;
+        *logout << "... found " << textMatches.size() << " exact matches in " << time_millis() << " msec. " << endl;
 
         /*        std::sort(textMatches.begin(), textMatches.end(), [](const TextMatch &match1, const TextMatch &match2) -> bool
             { return match1.length > match2.length; });
@@ -54,18 +54,18 @@ namespace PgTools {
     using namespace PgTools;
 
     void SimplePgMatcher::correctDestPositionDueToRevComplMatching() {
-        for (TextMatch& match: textMatches)
+        for (TextMatch &match: textMatches)
             match.posDestText = destPgLength - (match.posDestText + match.length);
     }
 
     string SimplePgMatcher::getTotalMatchStat(uint_pg_len_max totalMatchLength) {
-        return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPgLength, 1)+ "%)";
+        return toString(totalMatchLength) + " (" + toString((totalMatchLength * 100.0) / destPgLength, 1) + "%)";
     }
 
-    static const char MATCH_MARK = 128;
+    char SimplePgMatcher::MATCH_MARK = '%';
 
     void SimplePgMatcher::markAndRemoveExactMatches(
-            bool destPgIsSrcPg, string &destPg, string &resPgMapOff, string& resPgMapLen,
+            bool destPgIsSrcPg, string &destPg, string &resPgMapOff, string &resPgMapLen,
             bool revComplMatching, uint32_t minMatchLength) {
         if (!matcher) {
             resPgMapOff.clear();
@@ -80,7 +80,7 @@ namespace PgTools {
             minMatchLength = targetMatchLength;
         exactMatchPg(destPg, destPgIsSrcPg, minMatchLength);
 
-        clock_t post_start = clock();
+        chrono::steady_clock::time_point post_start = chrono::steady_clock::now();
         if (destPgIsSrcPg)
             resolveMappingCollisionsInTheSameText();
 
@@ -89,17 +89,17 @@ namespace PgTools {
 
         PgSAHelpers::writeUIntByteFrugal(pgMapLenDest, minMatchLength);
 
-        sort( textMatches.begin(), textMatches.end() );
-        textMatches.erase( unique( textMatches.begin(), textMatches.end() ), textMatches.end() );
+        sort(textMatches.begin(), textMatches.end());
+        textMatches.erase(unique(textMatches.begin(), textMatches.end()), textMatches.end());
         *logout << "Unique exact matches: " << textMatches.size() << endl;
 
-        char* destPtr = (char*) destPg.data();
+        char *destPtr = (char *) destPg.data();
         uint_pg_len_max pos = 0;
         uint_pg_len_max nPos = 0;
         uint_pg_len_max totalDestOverlap = 0;
         uint_pg_len_max totalMatched = 0;
         bool isPgLengthStd = srcPg.length() <= UINT32_MAX;
-        for(TextMatch& match: textMatches) {
+        for (TextMatch &match: textMatches) {
             if (match.posDestText < pos) {
                 uint_pg_len_max overflow = pos - match.posDestText;
                 if (overflow >= match.length) {
@@ -140,23 +140,23 @@ namespace PgTools {
         resPgMapLen = pgMapLenDest.str();
         pgMapLenDest.clear();
 
-        *logout << "Preparing output time: " <<  clock_millis(post_start) << " msec." << endl;
+        *logout << "Preparing output time: " << time_millis(post_start) << " msec." << endl;
         cout << "Final size of Pg: " << nPos << " (removed: " <<
              getTotalMatchStat(totalMatched) << "; " << totalDestOverlap << " chars in overlapped dest symbol)" << endl;
     }
 
     void SimplePgMatcher::writeMatchingResult(const string &pgPrefix,
-                                              const string &pgMapped, const string &pgMapOff, const string& pgMapLen) {
+                                              const string &pgMapped, const string &pgMapOff, const string &pgMapLen) {
         PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX,
-                                      pgMapped);
+                                       pgMapped);
         PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX,
-                                      pgMapOff);
+                                       pgMapOff);
         PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX,
-                                      pgMapLen);
+                                       pgMapLen);
     }
 
     void SimplePgMatcher::resolveMappingCollisionsInTheSameText() {
-        for (TextMatch& match: textMatches) {
+        for (TextMatch &match: textMatches) {
             if (match.posSrcText > match.posDestText) {
                 uint64_t tmp = match.posSrcText;
                 match.posSrcText = match.posDestText;
@@ -174,33 +174,33 @@ namespace PgTools {
                                         bool separateNReads, ostream &pgrcOut, uint8_t coder_level,
                                         const string &hqPgPrefix, const string &lqPgPrefix, const string &nPgPrefix,
                                         uint_pg_len_max targetMatchLength, uint32_t minMatchLength) {
-        clock_t ref_start = clock();
+        chrono::steady_clock::time_point ref_start = chrono::steady_clock::now();
         const unsigned long refSequenceLength = hqPgSequence.length();
         bool isPgLengthStd = refSequenceLength <= UINT32_MAX;
         
         PgTools::SimplePgMatcher* matcher = new PgTools::SimplePgMatcher(hqPgSequence, targetMatchLength, minMatchLength);
-        *logout << "Feeding reference pseudogenome finished in " << clock_millis(ref_start) << " msec. " << endl;
-        clock_t lq_start = clock();
+        *logout << "Feeding reference pseudogenome finished in " << time_millis(ref_start) << " msec. " << endl;
+        chrono::steady_clock::time_point lq_start = chrono::steady_clock::now();
         string lqPgMapOff, lqPgMapLen;
         matcher->markAndRemoveExactMatches(false, lqPgSequence, lqPgMapOff, lqPgMapLen, true, minMatchLength);
         if (!lqPgPrefix.empty())
             matcher->writeMatchingResult(lqPgPrefix, lqPgSequence, lqPgMapOff, lqPgMapLen);
-        *logout << "PgMatching lqPg finished in " << clock_millis(lq_start) << " msec. " << endl;
+        *logout << "PgMatching lqPg finished in " << time_millis(lq_start) << " msec. " << endl;
 
-        clock_t n_start = clock();
+        chrono::steady_clock::time_point n_start = chrono::steady_clock::now();
         string nPgMapOff, nPgMapLen;
         matcher->markAndRemoveExactMatches(false, nPgSequence, nPgMapOff, nPgMapLen, true, minMatchLength);
         if (!nPgPrefix.empty())
             matcher->writeMatchingResult(nPgPrefix, nPgSequence, nPgMapOff, nPgMapLen);
         if (!nPgSequence.empty())
-            *logout << "PgMatching nPg finished in " << clock_millis(n_start) << " msec. " << endl;
+            *logout << "PgMatching nPg finished in " << time_millis(n_start) << " msec. " << endl;
 
-        clock_t hq_start = clock();
+        chrono::steady_clock::time_point hq_start = chrono::steady_clock::now();
         string hqPgMapOff, hqPgMapLen;
         matcher->markAndRemoveExactMatches(true, hqPgSequence, hqPgMapOff, hqPgMapLen, true, minMatchLength);
         if (!hqPgPrefix.empty())
             matcher->writeMatchingResult(hqPgPrefix, hqPgSequence, hqPgMapOff, hqPgMapLen);
-        *logout << "PgMatching hqPg finished in " << clock_millis(hq_start) << " msec. " << endl;
+        *logout << "PgMatching hqPg finished in " << time_millis(hq_start) << " msec. " << endl;
         delete(matcher);
 
         PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, hqPgSequence.length(), false);
@@ -214,12 +214,9 @@ namespace PgTools {
         comboPgSeq.append(nPgSequence);
         nPgSequence.clear();
         nPgSequence.shrink_to_fit();
-
-        *logout << "Joined mapped sequences (good&bad" << (nPgSequence.empty()?"":"&N") << ")... ";
-        writeCompressed(pgrcOut, comboPgSeq.data(), comboPgSeq.size(), LZMA_CODER, coder_level,
-                PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
+        compressPgSequence(pgrcOut, comboPgSeq, coder_level, nPgSequence.empty());
         *logout << "Good sequence mapping - offsets... ";
-        double estimated_pg_offset_ratio = simpleUintCompressionEstimate(refSequenceLength, isPgLengthStd?UINT32_MAX:UINT64_MAX);
+        double estimated_pg_offset_ratio = simpleUintCompressionEstimate(refSequenceLength, isPgLengthStd ? UINT32_MAX : UINT64_MAX);
         const int pgrc_pg_offset_dataperiodcode = isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
         writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, coder_level,
                         pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
@@ -242,8 +239,49 @@ namespace PgTools {
         }
     }
 
+    void SimplePgMatcher::compressPgSequence(ostream &pgrcOut, string &pgSequence, uint8_t coder_level,
+                                             bool noNPgSequence, bool testAndValidation) {
+        *logout << "Var-len encoding joined mapped sequences (good&bad" << (noNPgSequence ? "" : "&N") << ")... ";
+        size_t compLen = 0;
+        char *compSeq = componentCompress(pgrcOut, compLen, pgSequence.data(), pgSequence.size(), VARLEN_DNA_CODER, coder_level,
+                                          VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM,
+                                                  VarLenDNACoder::AG_EXTENDED_CODES_ID), 1);
+        if (testAndValidation) {
+            cout << "\n*** Var-len coding validation and additional tests..." << endl;
+            string valPgSeq;
+            valPgSeq.resize(pgSequence.size());
+            size_t valSeq = pgSequence.size();
+            Uncompress((char *) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
+            cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
+            writeCompressed(null_stream, pgSequence.data(), pgSequence.length(), LZMA_CODER, coder_level,
+                            PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
+            cout << "OTHER CODEBOOKS..." << endl;
+            for(int i = 1; i < VarLenDNACoder::CODEBOOK_ID::VARLEN_CODEBOOKS_COUNT; i++) {
+                cout << "codebook id: " << i << endl;
+                size_t compLen = 0;
+                char *compSeq = componentCompress(pgrcOut, compLen, pgSequence.data(), pgSequence.size(),
+                                                  VARLEN_DNA_CODER, coder_level,
+                                                  VarLenDNACoder::getCoderParam(
+                                                          VarLenDNACoder::STATIC_CODES_CODER_PARAM, i), 1);
+                Uncompress((char *) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
+                cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
+                writeCompressed(null_stream, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t,
+                                COMPRESSION_ESTIMATION_VAR_LEN_DNA);
+                delete[] compSeq;
+            }
+            cout << "***\n" << endl;
+
+        }
+        pgSequence.clear();
+        pgSequence.shrink_to_fit();
+        *logout << "Joined var-len encoded mapped sequences (good&bad" << (noNPgSequence ? "" : "&N") << ")... ";
+        writeCompressed(pgrcOut, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t,
+                        COMPRESSION_ESTIMATION_VAR_LEN_DNA);
+        delete[] compSeq;
+    }
+
     void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen, string &hqPgSequence, string &lqPgSequence,
-            string &nPgSequence) {
+                                            string &nPgSequence) {
         uint_pg_len_max hqPgMappedLen, lqPgMappedLen, nPgMappedLen;
         string pgMapOff, pgMapLen;
         istringstream pgMapOffSrc, pgMapLenSrc;
@@ -286,13 +324,13 @@ namespace PgTools {
     }
 
     string
-    SimplePgMatcher::restoreMatchedPg(string &srcPg, size_t orgSrcLen, const string& destPg, istream &pgMapOffSrc, istream &pgMapLenSrc,
-            bool revComplMatching, bool plainTextReadMode, bool srcIsDest) {
+    SimplePgMatcher::restoreMatchedPg(string &srcPg, size_t orgSrcLen, const string &destPg, istream &pgMapOffSrc, istream &pgMapLenSrc,
+                                      bool revComplMatching, bool plainTextReadMode, bool srcIsDest) {
         bool isPgLengthStd = orgSrcLen <= UINT32_MAX;
         if (srcIsDest)
             srcPg.resize(0);
         string tmp;
-        string& resPg = srcIsDest?srcPg:tmp;
+        string &resPg = srcIsDest ? srcPg : tmp;
         uint64_t posDest = 0;
         uint32_t minMatchLength = 0;
 
@@ -323,8 +361,8 @@ namespace PgTools {
         return resPg;
     }
 
-    string SimplePgMatcher::restoreMatchedPg(string &srcPg, const string& destPgPrefix,
-                                   bool revComplMatching, bool plainTextReadMode) {
+    string SimplePgMatcher::restoreMatchedPg(string &srcPg, const string &destPgPrefix,
+                                             bool revComplMatching, bool plainTextReadMode) {
         string destPg = SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(destPgPrefix);
         ifstream pgMapOffSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(destPgPrefix, SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX);
         ifstream pgMapLenSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(destPgPrefix, SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX);
@@ -333,8 +371,8 @@ namespace PgTools {
 
     string
     SimplePgMatcher::restoreAutoMatchedPg(const string &pgPrefix, bool revComplMatching) {
-        PseudoGenomeHeader* pgh = 0;
-        ReadsSetProperties* prop = 0;
+        PseudoGenomeHeader *pgh = 0;
+        ReadsSetProperties *prop = 0;
         bool plainTextReadMode = false;
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgPrefix, pgh, prop, plainTextReadMode);
         string destPg = SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(pgPrefix);
@@ -342,11 +380,9 @@ namespace PgTools {
         ifstream pgMapLenSrc = SeparatedPseudoGenomePersistence::getPseudoGenomeElementSrc(pgPrefix, SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX);
         string resPg;
         resPg = SimplePgMatcher::restoreMatchedPg(resPg, pgh->getPseudoGenomeLength(), destPg, pgMapOffSrc, pgMapLenSrc,
-                revComplMatching, plainTextReadMode, true);
-        delete(pgh);
-        delete(prop);
+                                                  revComplMatching, plainTextReadMode, true);
+        delete (pgh);
+        delete (prop);
         return resPg;
     }
 }
-
-

@@ -23,6 +23,11 @@ namespace PgTools {
     static const char PGRC_ORD_PE_MODE = 3;
     static const char PGRC_MIN_PE_MODE = 4;
 
+    static const char PGRC_VERSION_MODE = '#';
+    static const char PGRC_VERSION_MAJOR = 1;
+    static const char PGRC_VERSION_MINOR = 1;
+    static const char PGRC_VERSION_REVISON = 0;
+
     class PgRCManager {
     private:
         static const int MIN_CHARS_PER_PGMATCH = 20;
@@ -65,13 +70,13 @@ namespace PgTools {
 
         // TESTING&REPORTING
         bool disableInMemoryMode = false;
-        clock_t start_t;
-        clock_t div_t;
-        clock_t pgDiv_t;
-        clock_t good_t;
-        clock_t match_t;
-        clock_t bad_t;
-        clock_t order_t;
+        chrono::steady_clock::time_point start_t;
+        chrono::steady_clock::time_point div_t;
+        chrono::steady_clock::time_point pgDiv_t;
+        chrono::steady_clock::time_point good_t;
+        chrono::steady_clock::time_point match_t;
+        chrono::steady_clock::time_point bad_t;
+        chrono::steady_clock::time_point order_t;
         size_t pgRCSize = 0;
 
         void generateReport();
@@ -105,6 +110,10 @@ namespace PgTools {
         string mappedLqDivisionFile;
 
         // Decompression chain variables
+        char pgrcVersionMajor = 1;
+        char pgrcVersionMinor = 0;
+        char pgrcVersionRevision = 0;
+
         uint_reads_cnt_max hqReadsCount;
         uint_reads_cnt_max lqReadsCount;
         uint_reads_cnt_max nonNPgReadsCount;

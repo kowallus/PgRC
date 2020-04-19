@@ -7,6 +7,7 @@
 #include "../lzma/LzmaEnc.h"
 #include "../lzma/Ppmd7.h"
 #include "LzmaLib.h"
+#include "../utils/VarLenDNACoder.h"
 
 /*
 RAM requirements for LZMA:
@@ -106,7 +107,7 @@ void LzmaEncProps_Set(CLzmaEncProps *p, int coder_level, size_t dataLength, int 
     }
     p->numThreads = numThreads;
     p->reduceSize = dataLength;
-    *PgSAHelpers::logout << " lzma (level = " << p->level << "; dictSize = " << (p->dictSize >> 20) << "MB; lp,pb = " << p->lp << ") ...";
+    *PgSAHelpers::logout << " lzma (level = " << p->level << "; dictSize = " << (p->dictSize >> 20) << "MB; lp,pb = " << p->lp << "; th = " << p->numThreads << ") ...";
 }
 
 void Ppmd7_SetProps(uint32_t &memSize, uint8_t coder_level, size_t dataLength, int& order_param) {
@@ -434,20 +435,28 @@ MY_STDAPI PpmdUncompress(unsigned char *dest, size_t *destLen, istream &src, siz
     return Res;
 }
 
+using namespace PgSAHelpers;
 
 char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
                int coder_param, double estimated_compression) {
-    clock_t start_t = clock();
+    chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
     unsigned char* dest = 0;
     int res = 0;
+    int noOfThreads = PgSAHelpers::numberOfThreads;
     switch (coder_type) {
         case LZMA_CODER:
-            res = LzmaCompress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
-                               estimated_compression);
+            noOfThreads = noOfThreads>1?2:1;
+            res = LzmaCompress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, noOfThreads, coder_param,
+                    estimated_compression);
             break;
         case PPMD7_CODER:
-            res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, 1, coder_param,
+            noOfThreads = 1;
+            res = Ppmd7Compress(dest, destLen, (const unsigned char*) src, srcLen, coder_level, noOfThreads, coder_param,
                     estimated_compression);
+            break;
+        case VARLEN_DNA_CODER:
+            res = VarLenDNACoder::Compress(dest, destLen, (const unsigned char *) src, srcLen, coder_param);
+            estimated_compression = VarLenDNACoder::COMPRESSION_ESTIMATION;
             break;
         case LZMA2_CODER:
         default:
@@ -464,7 +473,7 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
     *PgSAHelpers::logout << "compressed " << srcLen << " bytes to " << destLen << " bytes (ratio "
          << PgSAHelpers::toString(ratio, 3) << " vs estimated "
          << PgSAHelpers::toString(estimated_compression, 3) << ") in "
-         << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
+         << PgSAHelpers::time_millis(start_t) << " msec." << endl;
     if (ratio > estimated_compression)
         *PgSAHelpers::logout << "WARNING: compression ratio " << PgSAHelpers::toString(ratio / estimated_compression, 5)
         << " times greater than estimation." << endl;
@@ -473,7 +482,7 @@ char* Compress(size_t &destLen, const char *src, size_t srcLen, uint8_t coder_ty
 }
 
 void Uncompress(char* dest, size_t destLen, istream &src, size_t srcLen, uint8_t coder_type) {
-    clock_t start_t = clock();
+    chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
     int res = 0;
     size_t outLen = destLen;
     switch (coder_type) {
@@ -495,7 +504,30 @@ void Uncompress(char* dest, size_t destLen, istream &src, size_t srcLen, uint8_t
         exit(EXIT_FAILURE);
     }
     *PgSAHelpers::logout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
-         << PgSAHelpers::clock_millis(start_t) << " msec." << endl;
+         << PgSAHelpers::time_millis(start_t) << " msec." << endl;
+}
+
+void Uncompress(char* dest, size_t destLen, const char* src, size_t srcLen, uint8_t coder_type) {
+    chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
+    int res = 0;
+    size_t outLen = destLen;
+    switch (coder_type) {
+        case VARLEN_DNA_CODER:
+            res = PgSAHelpers::VarLenDNACoder::Uncompress((unsigned char*) dest, &outLen,
+                                                          (unsigned char*) src, &srcLen);
+            break;
+        default:
+            fprintf(stderr, "Unsupported coder type: %d.\n", coder_type);
+            exit(EXIT_FAILURE);
+    }
+    assert(outLen == destLen);
+
+    if (res != SZ_OK) {
+        fprintf(stderr, "Error during decompression (code: %d).\n", res);
+        exit(EXIT_FAILURE);
+    }
+    *PgSAHelpers::logout << "uncompressed " << srcLen << " bytes to " << destLen << " bytes in "
+                         << PgSAHelpers::time_millis(start_t) << " msec." << endl;
 }
 
 void writeCompressed(ostream &dest, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
@@ -517,6 +549,25 @@ void writeCompressed(ostream &dest, const string srcStr, uint8_t coder_type, uin
         double estimated_compression) {
     writeCompressed(dest, srcStr.data(), srcStr.length(), coder_type, coder_level, coder_param, estimated_compression);
 }
+
+char* componentCompress(ostream &dest, size_t &compLen, const char *src, size_t srcLen, uint8_t coder_type, uint8_t coder_level,
+                        int coder_param, double estimated_compression) {
+    char* component = Compress(compLen, src, srcLen, coder_type, coder_level, coder_param, estimated_compression);
+    writeCompoundCompressionHeader(dest, srcLen, compLen, coder_type);
+    return component;
+}
+
+void writeCompoundCompressionHeader(ostream &dest, size_t srcLen, size_t compLen, uint8_t coder_type) {
+    PgSAHelpers::writeValue<uint64_t>(dest, srcLen, false);
+    if (srcLen == 0) {
+        *PgSAHelpers::logout << "skipped compression (0 bytes)." << endl;
+        return;
+    }
+    PgSAHelpers::writeValue<uint64_t>(dest, compLen, false);
+    PgSAHelpers::writeValue<uint8_t>(dest, COMPOUND_CODER_TYPE, false);
+    PgSAHelpers::writeValue<uint8_t>(dest, coder_type, false);
+}
+
 void readCompressed(istream &src, string& dest) {
     size_t destLen = 0;
     size_t srcLen = 0;
@@ -527,7 +578,15 @@ void readCompressed(istream &src, string& dest) {
         return;
     PgSAHelpers::readValue<uint64_t>(src, srcLen, false);
     PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
-    Uncompress((char*) dest.data(), destLen, src, srcLen, coder_type);
+    if (coder_type == COMPOUND_CODER_TYPE) {
+        PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
+        string component;
+        readCompressed(src, component);
+        assert(srcLen == component.length());
+        Uncompress((char *) dest.data(), destLen, component.data(), srcLen, coder_type);
+    } else {
+        Uncompress((char *) dest.data(), destLen, src, srcLen, coder_type);
+    }
 }
 
 double simpleUintCompressionEstimate(uint64_t dataMaxValue, uint64_t typeMaxValue) {
