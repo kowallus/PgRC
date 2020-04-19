@@ -121,7 +121,7 @@ namespace PgSAReadsSet {
         do {
             if (!std::getline(*src, line))
                 return false;
-        } while (line.find('>') == 0);
+        } while (line[0] == '>' || line[0] == ';');
             
         for (length = 0; length < line.length(); length++)
             if (!isalpha(line[length]))

@@ -31,14 +31,19 @@ namespace PgSAReadsSet {
                 exit(EXIT_FAILURE);
             }
         }
-
-        if (srcFile.substr(srcFile.length() - 6) == ".fasta")
-            readsIterator = new FASTAReadsSourceIterator<uint_read_len_max>(srcSource, pairSource);
-        else if (srcFile.substr(srcFile.length() - 6) == ".fastq")
-            readsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(srcSource, pairSource);
-        else
-            readsIterator = new ConcatenatedReadsSourceIterator<uint_read_len_max>(srcSource);
-
+        char firstSymbol = srcSource->get();
+        srcSource->clear();
+        srcSource->seekg(0);
+        switch(firstSymbol) {
+            case '@': readsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(srcSource, pairSource);
+                break;
+            case ';':
+            case '>':
+                readsIterator = new FASTAReadsSourceIterator<uint_read_len_max>(srcSource, pairSource);
+                break;
+            default:
+                readsIterator = new ConcatenatedReadsSourceIterator<uint_read_len_max>(srcSource);
+        }
         if ((pairFile != "") && revComplPairFile) {
             coreIterators.push_back(readsIterator);
             readsIterator = new RevComplPairReadsSetIterator<uint_read_len_max>(readsIterator);
