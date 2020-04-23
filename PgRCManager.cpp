@@ -537,6 +537,10 @@ namespace PgTools {
     }
 
     void PgRCManager::decompressPgRC() {
+#ifdef DEVELOPER_BUILD
+        dump_after_decompression = extraFilesForValidation;
+        dump_after_decompression_prefix = pgRCFileName + "_dump_";
+#endif
         start_t = chrono::steady_clock::now();
         string tmpDirectoryPath = pgRCFileName + "/";
         ifstream pgrcIn(pgRCFileName);

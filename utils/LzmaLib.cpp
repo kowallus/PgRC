@@ -9,6 +9,12 @@
 #include "LzmaLib.h"
 #include "../utils/VarLenDNACoder.h"
 
+#ifdef DEVELOPER_BUILD
+bool dump_after_decompression = false;
+int dump_after_decompression_counter = 1;
+string dump_after_decompression_prefix;
+#endif
+
 /*
 RAM requirements for LZMA:
   for compression:   (dictSize * 11.5 + 6 MB) + state_size
@@ -587,6 +593,13 @@ void readCompressed(istream &src, string& dest) {
     } else {
         Uncompress((char *) dest.data(), destLen, src, srcLen, coder_type);
     }
+#ifdef DEVELOPER_BUILD
+    if (dump_after_decompression) {
+        string dumpFileName = dump_after_decompression_prefix + (dump_after_decompression_counter < 10?"0":"");
+        PgSAHelpers::writeArrayToFile(dumpFileName + PgSAHelpers::toString(dump_after_decompression_counter++),
+                                      (void*) dest.data(), destLen);
+    }
+#endif
 }
 
 double simpleUintCompressionEstimate(uint64_t dataMaxValue, uint64_t typeMaxValue) {

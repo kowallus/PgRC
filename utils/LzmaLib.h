@@ -15,6 +15,12 @@ using namespace std;
 
 #define LZMA_PROPS_SIZE 5
 
+#ifdef DEVELOPER_BUILD
+extern bool dump_after_decompression;
+extern int dump_after_decompression_counter;
+extern string dump_after_decompression_prefix;
+#endif
+
 const static uint8_t LZMA_CODER = 1;
 const static uint8_t LZMA2_CODER = 2;
 const static uint8_t PPMD7_CODER = 3;
@@ -71,6 +77,13 @@ void readCompressed(istream &src, vector<T>& dest) {
     PgSAHelpers::readValue<uint64_t>(src, srcLen, false);
     PgSAHelpers::readValue<uint8_t>(src, coder_type, false);
     Uncompress((char*) dest.data(), destLen, src, srcLen, coder_type);
+#ifdef DEVELOPER_BUILD
+    if (dump_after_decompression) {
+        string dumpFileName = dump_after_decompression_prefix + (dump_after_decompression_counter < 10?"0":"");
+        PgSAHelpers::writeArrayToFile(dumpFileName + PgSAHelpers::toString(dump_after_decompression_counter++),
+                dest.data(), destLen);
+    }
+#endif
 }
 
 #endif

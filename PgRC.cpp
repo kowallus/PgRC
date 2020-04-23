@@ -130,7 +130,6 @@ int main(int argc, char *argv[])
                 pgRC->allowVariableParams();
                 break;
             case 'v':
-                compressionParamPresent = true;
                 pgRC->setValidationOutputMode();
                 break;
             case 'T':
@@ -185,7 +184,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-r disable reverse compliment reads in a pair file for all PE modes\n");
                 fprintf(stderr, "-N reads containing N are not processed separately\n");
                 fprintf(stderr, "-V allow variable (auto-adjusting) parameters during processing\n");
-                fprintf(stderr, "-v dump extra files for validation mode purposes "
+                fprintf(stderr, "-v dump extra files for validation mode and development purposes "
                                 "(decompression supports -i parameter in validation mode)\n"
                                 "-T write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
