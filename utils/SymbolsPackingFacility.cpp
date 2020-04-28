@@ -10,7 +10,7 @@ namespace PgSAIndex {
 
     static const vector<char> acgtSymbols { 'A', 'C', 'G', 'T' };
     static const vector<char> acgtnSymbols { 'A', 'C', 'G', 'N', 'T' };
-    
+
     SymbolsPackingFacility SymbolsPackingFacility::ACGTPacker(acgtSymbols, true);
     SymbolsPackingFacility SymbolsPackingFacility::ACGTNPacker(acgtnSymbols, true);
     
@@ -62,6 +62,8 @@ namespace PgSAIndex {
         delete[]reverseFlat;
         delete[]clear;
         delete[]clearFlat;
+        delete[]packLUT0;
+        delete[]packLUT1;
     }
 
     void SymbolsPackingFacility::buildReversePackAndClearIndexes() {
@@ -92,17 +94,19 @@ namespace PgSAIndex {
         delete[]currentClear;
         delete[]sequence;
 
+        packLUT0 = new uchar[PACK_LUT_SIZE]();
+        packLUT1 = new uchar[PACK_LUT_SIZE]();
         symbolsPerLUT1 = symbolsPerElement - SYMBOLS_PER_LUT_0;
         for (uint_max i = 0; i <= maxValue; i++) {
             uint16_t temp = 0;
             if (reverse[i][SYMBOLS_PER_LUT_0] == symbolsList[0]
                 && (symbolsPerLUT1 == 1 || reverse[i][SYMBOLS_PER_LUT_0 + 1] == symbolsList[0])) {
                 memcpy(&temp, reverse[i], SYMBOLS_PER_LUT_0);
-                packLUT[0][temp & PACK_MASK] = i;
+                packLUT0[temp & PACK_MASK] = (uint8_t) i;
             }
             if (reverse[i][0] == symbolsList[0] && reverse[i][1] == symbolsList[0]) {
                 memcpy(&temp, reverse[i] + SYMBOLS_PER_LUT_0, symbolsPerLUT1);
-                packLUT[1][temp & PACK_MASK] = i;
+                packLUT1[temp & PACK_MASK] = (uint8_t) i;
             }
         }
     }
@@ -177,7 +181,7 @@ namespace PgSAIndex {
         uint16_t temp0 = 0, temp1 = 0;
         memcpy(&temp0, symbols, SYMBOLS_PER_LUT_0);
         memcpy(&temp1, symbols + SYMBOLS_PER_LUT_0, symbolsPerLUT1);
-        return packLUT[0][temp0 & PACK_MASK] + packLUT[1][temp1 & PACK_MASK];
+        return packLUT0[temp0 & PACK_MASK] + packLUT1[temp1 & PACK_MASK];
     }
 
     const string SymbolsPackingFacility::reverseSequence(const uint8_t* sequence, const uint_max pos, const uint_max length) {
@@ -195,10 +199,16 @@ namespace PgSAIndex {
         res.clear();
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger(pos, this->symbolsPerElement, i);
+        uint8_t value = sequence[i++];
+        for (uchar j = reminder; j < symbolsPerElement; j++) {
+            res.push_back(reverse[value][j]);
+            if (res.size() < length)
+                return;
+        }
         res.append(reverse[sequence[i++]], reminder, this->symbolsPerElement - reminder);
         while (res.size() < length - symbolsPerElement)
             res.append(reverse[sequence[i++]], symbolsPerElement);
-        uint8_t value = sequence[i];
+        value = sequence[i];
         for (uchar j = 0; res.size() < length; j++)
             res.push_back(reverse[value][j]);
     }
@@ -233,7 +243,7 @@ namespace PgSAIndex {
         uint_max i = divideBySmallInteger(pos, symbolsPerElement);
         uint_max reminder = moduloBySmallInteger<uint_max>(pos, this->symbolsPerElement, i);
 
-        uint8_t value = sequence[i++];
+        uint8_t value = sequence[i];
         return reverse[value][reminder];
     }
 
@@ -373,10 +383,10 @@ namespace PgSAIndex {
     SymbolsPackingFacility *
     SymbolsPackingFacility::getInstance(ReadsSetProperties *properties, uchar symbolsPerElement) {
         if (symbolsPerElement == 3 &&
-            strcmp(SymbolsPackingFacility::ACGTNPacker.symbolsList, properties->symbolsList))
+            strcmp(SymbolsPackingFacility::ACGTNPacker.symbolsList, properties->symbolsList) == 0)
             return &SymbolsPackingFacility::ACGTNPacker;
         if (symbolsPerElement == 4 &&
-            strcmp(SymbolsPackingFacility::ACGTPacker.symbolsList, properties->symbolsList))
+            strcmp(SymbolsPackingFacility::ACGTPacker.symbolsList, properties->symbolsList) == 0)
             return &SymbolsPackingFacility::ACGTPacker;
         return new SymbolsPackingFacility(properties, symbolsPerElement);
     }

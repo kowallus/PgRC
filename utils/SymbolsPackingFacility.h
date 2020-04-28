@@ -12,8 +12,8 @@ namespace PgSAIndex {
     class SymbolsPackingFacility {
         private:
 
-            const static uint32_t PACK_LUT_SIZE = 1 << 11;
-            const static uint32_t PACK_MASK = PACK_LUT_SIZE - 1;
+            const static uint16_t PACK_LUT_SIZE = 1 << 11;
+            const static uint16_t PACK_MASK = PACK_LUT_SIZE - 1;
 
             uint_max maxValue;
             const uint_symbols_cnt symbolsCount;
@@ -22,7 +22,8 @@ namespace PgSAIndex {
             char symbolsList[UCHAR_MAX] = {};
             int symbolOrder[UCHAR_MAX] = {};
 
-            uint8_t packLUT[2][PACK_LUT_SIZE];
+            uint8_t* packLUT0;
+            uint8_t* packLUT1;
             const uchar SYMBOLS_PER_LUT_0 = 2;
             uchar symbolsPerLUT1;
 

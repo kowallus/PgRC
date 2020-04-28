@@ -35,7 +35,7 @@ void PgSAHelpers::VarLenDNACoder::initUsing(const string &codes) {
 }
 
 PgSAHelpers::VarLenDNACoder::~VarLenDNACoder() {
-    delete(codeLUT);
+    delete[] codeLUT;
 }
 
 void
@@ -113,7 +113,7 @@ int PgSAHelpers::VarLenDNACoder::decode(unsigned char *dest, size_t expDestLen, 
     }
     size_t destLen = destPtr - dest;
     if (expDestLen != destLen) {
-        fprintf(stderr, "Unexpected decoded length: %d (expected %d).\n", destLen, expDestLen);
+        fprintf(stderr, "Unexpected decoded length: %ld (expected %ld).\n", destLen, expDestLen);
         exit(EXIT_FAILURE);
     }
     return 0;
@@ -154,7 +154,7 @@ PgSAHelpers::VarLenDNACoder::Compress(unsigned char *&dest, size_t &destLen, con
     delete(coder);
     destLen += headerSize;
     if (destLen > maxDestSize)
-        fprintf(stderr, "WARNING: exceeded maximum destination size: %d .\n", maxDestSize);
+        fprintf(stderr, "WARNING: exceeded maximum destination size: %ld .\n", maxDestSize);
 
     return SZ_OK;
 }
