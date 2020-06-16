@@ -5,7 +5,7 @@
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include <omp.h>
 
-#define RELEASE_DATE "2020-04-22"
+#define RELEASE_DATE "2020-06-16"
 
 using namespace std;
 using namespace PgTools;
