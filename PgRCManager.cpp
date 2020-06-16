@@ -82,7 +82,7 @@ namespace PgTools {
         pgrcOut.put(PGRC_VERSION_MODE);
         pgrcOut.put(PGRC_VERSION_MAJOR);
         pgrcOut.put(PGRC_VERSION_MINOR);
-        pgrcOut.put(PGRC_VERSION_REVISON);
+        pgrcOut.put(PGRC_VERSION_REVISION);
         pgrcOut.put(compressionLevel);
         const char pgrc_mode = singleReadsMode ? PGRC_SE_MODE :
                                (preserveOrderMode?(pairFastqFile.empty()?PGRC_ORD_SE_MODE:PGRC_ORD_PE_MODE):

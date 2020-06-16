@@ -147,6 +147,7 @@ namespace PgSAIndex {
             }
             threadStartBlock[t] = b;
         }
+        threadStartBlock[numberOfThreads] = blocksCount;
         uint_reads_cnt sortedSuffixesLeftCount[MAX_BLOCKS_COUNT] = { 0 };
         uint_reads_cnt duplicatesCount = 0;
         #pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) reduction(+:duplicatesCount)
@@ -301,7 +302,7 @@ namespace PgSAIndex {
             }
             threadStartBlock[t] = b;
         }
-
+        threadStartBlock[numberOfThreads] = blocksCount;
         uint_reads_cnt overlapsCount = 0;
 #pragma omp parallel for reduction(+:sortedSuffixesLeftCount[0:MAX_BLOCKS_COUNT]) num_threads(threadsInIteration) \
                         reduction(+:overlapsCount)

@@ -25,8 +25,8 @@ namespace PgTools {
 
     static const char PGRC_VERSION_MODE = '#';
     static const char PGRC_VERSION_MAJOR = 1;
-    static const char PGRC_VERSION_MINOR = 1;
-    static const char PGRC_VERSION_REVISON = 0;
+    static const char PGRC_VERSION_MINOR = 2;
+    static const char PGRC_VERSION_REVISION = 1;
 
     class PgRCManager {
     private:
