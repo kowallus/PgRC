@@ -33,19 +33,19 @@ PgRC [-c compressionLevel] [-i seqSrcFile [pairSrcFile]] [-t noOfThreads] [-o] [
 
 compression of DNA stream in order non-preserving regime (SE mode):
 ```
-./PgRC -i in.fastq -o comp.pgrc
+./PgRC -i in.fastq comp.pgrc
 ```
 compression of DNA stream in order preserving regime (SE_ORD mode):
 ```
-./PgRC -o -i in.fastq -o comp.pgrc
+./PgRC -o -i in.fastq comp.pgrc
 ```
 compression of paired-end DNA stream in order non-preserving regime (PE mode):
 ```
-./PgRC -i in1.fastq in2.fastq -o comp.pgrc
+./PgRC -i in1.fastq in2.fastq comp.pgrc
 ```
 compression of paired-end DNA stream in order preserving regime (PE mode):
 ```
-./PgRC -o -i in.fastq -o comp.pgrc
+./PgRC -o -i in.fastq comp.pgrc
 ```
 
 ## Publications
