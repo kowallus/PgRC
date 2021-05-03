@@ -28,7 +28,7 @@ namespace PgSAReadsSet {
 
     void PackedConstantLengthReadsSet::resize(uint_reads_cnt_max readsCount) {
         properties->readsCount = readsCount;
-        properties->allReadsLength = readsCount * properties->minReadLength;
+        properties->allReadsLength = (size_t) readsCount * properties->minReadLength;
         packedReads.resize((size_t) packedLength * readsCount);
 //        packedReads.shrink_to_fit();
     }
@@ -68,7 +68,7 @@ namespace PgSAReadsSet {
             cout << "Trimming reads to " << properties->minReadLength << " symbols." << endl;
             properties->constantReadLength = true;
             properties->maxReadLength = properties->minReadLength;
-            properties->allReadsLength = properties->minReadLength * properties->readsCount;
+            properties->allReadsLength = properties->minReadLength * (size_t) properties->readsCount;
         }
 
         PackedConstantLengthReadsSet* readsSet = new PackedConstantLengthReadsSet(properties->maxReadLength, properties->symbolsList, properties->symbolsCount);

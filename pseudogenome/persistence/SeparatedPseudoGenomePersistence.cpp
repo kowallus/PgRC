@@ -685,7 +685,7 @@ namespace PgTools {
     void SeparatedPseudoGenomeOutputBuilder::buildProps() {
         pgh->setReadsCount(readsCounter);
         rsProp->readsCount = readsCounter;
-        rsProp->allReadsLength = rsProp->constantReadLength ? readsCounter * rsProp->maxReadLength : -1;
+        rsProp->allReadsLength = rsProp->constantReadLength ? (size_t) readsCounter * rsProp->maxReadLength : -1;
         if (pgPropDest) {
             delete (pgPropDest);
             pgPropDest = 0;

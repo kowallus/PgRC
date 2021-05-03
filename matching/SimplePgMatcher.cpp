@@ -346,7 +346,7 @@ namespace PgTools {
                 matchSrcPos = tmp;
             } else
                 PgSAHelpers::readValue<uint64_t>(pgMapOffSrc, matchSrcPos, plainTextReadMode);
-            uint16_t matchLength = 0;
+            uint64_t matchLength = 0;
             PgSAHelpers::readUIntByteFrugal(pgMapLenSrc, matchLength);
             matchLength += minMatchLength;
             if (revComplMatching)
