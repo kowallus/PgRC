@@ -119,7 +119,7 @@ namespace PgTools {
             }
             totalMatched += match.length;
             uint64_t length = match.posDestText - pos;
-            memcpy(destPtr + nPos, destPtr + pos, length);
+            memmove(destPtr + nPos, destPtr + pos, length);
             nPos += length;
             destPg[nPos++] = MATCH_MARK;
             if (isPgLengthStd)
@@ -130,7 +130,7 @@ namespace PgTools {
             pos = match.endPosDestText();
         }
         uint64_t length = destPg.length() - pos;
-        memcpy(destPtr + nPos, destPtr + pos, length);
+        memmove(destPtr + nPos, destPtr + pos, length);
         nPos += length;
         destPg.resize(nPos);
 
