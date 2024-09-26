@@ -47,7 +47,7 @@ namespace PgTools {
         virtual void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &suffixesDest) = 0;
 
         virtual SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
-                SeparatedPseudoGenome *sPg) = 0;
+                SeparatedPseudoGenome *sPg, bool allStreams = true) = 0;
 
         virtual void initEntryUpdating() = 0;
         virtual void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool revComplPairFile) = 0;
@@ -92,7 +92,7 @@ namespace PgTools {
         void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest);
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
-                SeparatedPseudoGenome *sPg) override;
+                SeparatedPseudoGenome *sPg, bool allStreams = true) override;
 
         void initEntryUpdating() override {};
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) override {};
@@ -119,7 +119,7 @@ namespace PgTools {
         void printApproxMatchingStats();
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
-                SeparatedPseudoGenome *sPg) override;
+                SeparatedPseudoGenome *sPg, bool allStreams = true) override;
         void initEntryUpdating() override;
         string currentRead;
         void updateEntry(DefaultReadsListEntry &entry, uint_reads_cnt_max matchIdx, bool reverseComplementFlag) override;

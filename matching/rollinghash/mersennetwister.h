@@ -80,6 +80,10 @@
 #include <stdio.h>
 #include <time.h>
 
+#ifdef __MINGW32__
+#include <stdint-gcc.h>
+#endif
+
 class MTRand {
 // Data
 public:

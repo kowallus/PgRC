@@ -4,9 +4,9 @@
 #include "../readsset/ReadsSetBase.h"
 #include "../readsset/DefaultReadsSet.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class PseudoGenomeBase: public ReadsSetBase
     {
@@ -27,8 +27,8 @@ namespace PgSAIndex {
             
             virtual ~PseudoGenomeBase() { };
             
-            bool isPGLengthStd() { return PgSAIndex::isPGLengthStd(length); };
-            bool isPGLengthMax() { return PgSAIndex::isPGLengthMax(length); };
+            bool isPGLengthStd() { return PgIndex::isPGLengthStd(length); };
+            bool isPGLengthMax() { return PgIndex::isPGLengthMax(length); };
 
             const uint_pg_len_max getPseudoGenomeLength() { return this->length; };
 
@@ -100,14 +100,14 @@ namespace PgSAIndex {
 
             bool isReadLengthConstant() { return constantReadLength; };
 
-            bool isReadLengthMin() { return PgSAReadsSet::isReadLengthMin(maxReadLength); };
-            bool isReadLengthStd() { return PgSAReadsSet::isReadLengthStd(maxReadLength); };
+            bool isReadLengthMin() { return PgReadsSet::isReadLengthMin(maxReadLength); };
+            bool isReadLengthStd() { return PgReadsSet::isReadLengthStd(maxReadLength); };
 
-            bool isReadsCountStd() { return PgSAReadsSet::isReadsCountStd(readsCount); };
-            bool isReadsCountMax() { return PgSAReadsSet::isReadsCountMax(readsCount); };
+            bool isReadsCountStd() { return PgReadsSet::isReadsCountStd(readsCount); };
+            bool isReadsCountMax() { return PgReadsSet::isReadsCountMax(readsCount); };
 
-            bool isPGLengthStd() { return PgSAIndex::isPGLengthStd(pgLength); };
-            bool isPGLengthMax() { return PgSAIndex::isPGLengthMax(pgLength); };
+            bool isPGLengthStd() { return PgIndex::isPGLengthStd(pgLength); };
+            bool isPGLengthMax() { return PgIndex::isPGLengthMax(pgLength); };
 
 
             uint_reads_cnt_max getReadsCount() const {

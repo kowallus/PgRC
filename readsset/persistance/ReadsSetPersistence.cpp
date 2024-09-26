@@ -2,7 +2,7 @@
 
 #include "../iterator/DivisionReadsSetDecorators.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     ReadsSourceIteratorTemplate<uint_read_len_max> *ReadsSetPersistence::createManagedReadsIterator(const string &srcFile,
                                                                                                     const string &pairFile,
@@ -24,18 +24,19 @@ namespace PgSAReadsSet {
             fprintf(stderr, "cannot open reads file %s\n", srcFile.c_str());
             exit(EXIT_FAILURE);
         }
+        srcSource->rdbuf()->pubsetbuf(buf1, 1 << 16);
         if (pairFile != "") {
             pairSource = new ifstream(pairFile, ios_base::in | ios_base::binary);
             if (pairSource->fail()) {
                 fprintf(stderr, "cannot open reads pair file %s\n", pairFile.c_str());
                 exit(EXIT_FAILURE);
             }
+            pairSource->rdbuf()->pubsetbuf(buf2, 1 << 16);
         }
         char firstSymbol = srcSource->get();
         srcSource->clear();
         srcSource->seekg(0);
-        switch(firstSymbol) {
-            case '@': readsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(srcSource, pairSource);
+        switch(firstSymbol) {case '@': readsIterator = new FASTQReadsSourceIterator<uint_read_len_max>(srcSource, pairSource);
                 break;
             case ';':
             case '>':
@@ -79,11 +80,11 @@ namespace PgSAReadsSet {
         return readsIterator->moveNext();
     }
 
-    string ReadsSetPersistence::ManagedReadsSetIterator::getRead() {
+    string& ReadsSetPersistence::ManagedReadsSetIterator::getRead() {
         return readsIterator->getRead();
     }
 
-    string ReadsSetPersistence::ManagedReadsSetIterator::getQualityInfo() {
+    string& ReadsSetPersistence::ManagedReadsSetIterator::getQualityInfo() {
         return readsIterator->getQualityInfo();
     }
 

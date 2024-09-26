@@ -4,7 +4,7 @@
 #include "DefaultPseudoGenome.h"
 #include "PackedPseudoGenome.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class TemplateUserGenerator {
     private:
@@ -32,20 +32,20 @@ namespace PgSAIndex {
         if (pgb->isReadLengthMin()) {
             if (pgb->isReadsCountStd()) {
                 if (pgb->isPGLengthStd())
-                    return PgSAIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
+                    return PgIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
                             PseudoGenomeUserClass, PseudoGenomeUserBase>(pgb);
                 if (pgb->isPGLengthMax())
-                    return PgSAIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max,
+                    return PgIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max,
                             PseudoGenomeUserClass, PseudoGenomeUserBase>(pgb);
             }
         }
         if (pgb->isReadLengthStd()) {
             if (pgb->isReadsCountStd()) {
                 if (pgb->isPGLengthStd())
-                    return PgSAIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std,
+                    return PgIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std,
                             PseudoGenomeUserClass, PseudoGenomeUserBase>(pgb);
                 if (pgb->isPGLengthMax())
-                    return PgSAIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max,
+                    return PgIndex::TemplateUserGenerator::generatePseudoGenomeUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max,
                             PseudoGenomeUserClass, PseudoGenomeUserBase>(pgb);
             }
         }
@@ -81,20 +81,20 @@ namespace PgSAIndex {
         if (pgb->isReadLengthMin()) {
             if (pgb->isReadsCountStd()) {
                 if (pgb->isPGLengthStd())
-                    return PgSAIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
+                    return PgIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_std,
                             ReadsListUserClass, ReadsListUserBase>(pgb);
                 if (pgb->isPGLengthMax())
-                    return PgSAIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max,
+                    return PgIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_min, uint_reads_cnt_std, uint_pg_len_max,
                             ReadsListUserClass, ReadsListUserBase>(pgb);
             }
         }
         if (pgb->isReadLengthStd()) {
             if (pgb->isReadsCountStd()) {
                 if (pgb->isPGLengthStd())
-                    return PgSAIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std,
+                    return PgIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_std,
                             ReadsListUserClass, ReadsListUserBase>(pgb);
                 if (pgb->isPGLengthMax())
-                    return PgSAIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max,
+                    return PgIndex::TemplateUserGenerator::generateReadsListUserTemplate<uint_read_len_std, uint_reads_cnt_std, uint_pg_len_max,
                             ReadsListUserClass, ReadsListUserBase>(pgb);
             }
         }

@@ -36,7 +36,7 @@ namespace PgTools {
         uint8_t count = 0;
         while (count < mismatchesCount) {
             if (read[pos] != pgPart[pos]) {
-                entry.addMismatch(mismatch2code(pgPart[pos], read[pos]), pos);
+                entry.addMismatch(mismatch2CxtCode(pgPart[pos], read[pos]), pos);
                 count++;
             }
             pos++;
@@ -50,7 +50,7 @@ namespace PgTools {
         uint8_t count = 0;
         while (count < mismatchesCount) {
             if (read[--pos] != pgPart[pos]) {
-                entry.addMismatch(mismatch2code(reverseComplement(pgPart[pos]), reverseComplement(read[pos])),
+                entry.addMismatch(mismatch2CxtCode(reverseComplement(pgPart[pos]), reverseComplement(read[pos])),
                         readLength - pos - 1);
                 count++;
             }
@@ -157,9 +157,9 @@ namespace PgTools {
         this->executeMatching(false);
 
         if (revComplPg) {
-            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
+            PgHelpers::reverseComplementInPlace(pgPtr, pgLength);
             this->executeMatching(true);
-            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
+            PgHelpers::reverseComplementInPlace(pgPtr, pgLength);
         }
     }
 
@@ -169,9 +169,9 @@ namespace PgTools {
         this->executeMatching(false);
 
         if (revComplPg) {
-            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
+            PgHelpers::reverseComplementInPlace(pgPtr, pgLength);
             this->executeMatching(true);
-            PgSAHelpers::reverseComplementInPlace(pgPtr, pgLength);
+            PgHelpers::reverseComplementInPlace(pgPtr, pgLength);
         }
     }
 
@@ -511,22 +511,23 @@ namespace PgTools {
     }
 
     SeparatedPseudoGenomeOutputBuilder *AbstractReadsApproxMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            SeparatedPseudoGenome* sPg) {
+            SeparatedPseudoGenome* sPg, bool allStreams) {
         DefaultReadsListIteratorInterface* rlIt = sPg->getReadsList();
-        bool isRevCompEnabled = sPg->getReadsList()->isRevCompEnabled();
-        bool areMismatchesEnabled = sPg->getReadsList()->areMismatchesEnabled();
+        bool isRevCompEnabled = allStreams || sPg->getReadsList()->isRevCompEnabled();
+        bool areMismatchesEnabled = allStreams || sPg->getReadsList()->areMismatchesEnabled();
         SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(
-                !isRevCompEnabled && !this->revComplPg, !areMismatchesEnabled && this->maxMismatches == 0);
+                !isRevCompEnabled && !this->revComplPg,
+                !areMismatchesEnabled && this->maxMismatches == 0);
         builder->setReadsSourceIterator(rlIt);
         builder->copyPseudoGenomeProperties(sPg);
         return builder;
     }
 
     SeparatedPseudoGenomeOutputBuilder *DefaultReadsExactMatcher::createSeparatedPseudoGenomeOutputBuilder(
-            SeparatedPseudoGenome *sPg){
+            SeparatedPseudoGenome *sPg, bool allStreams){
         DefaultReadsListIteratorInterface* rlIt = sPg->getReadsList();
-        bool isRevCompEnabled = sPg->getReadsList()->isRevCompEnabled();
-        bool areMismatchesEnabled = sPg->getReadsList()->areMismatchesEnabled();
+        bool isRevCompEnabled = allStreams || sPg->getReadsList()->isRevCompEnabled();
+        bool areMismatchesEnabled = allStreams || sPg->getReadsList()->areMismatchesEnabled();
         SeparatedPseudoGenomeOutputBuilder* builder = new SeparatedPseudoGenomeOutputBuilder(
                 !isRevCompEnabled && !this->revComplPg, !areMismatchesEnabled);
         builder->setReadsSourceIterator(rlIt);

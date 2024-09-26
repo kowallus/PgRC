@@ -58,11 +58,13 @@ namespace PgTools {
     DividedPCLReadsSets*
     DividedPCLReadsSets::getQualityDivisionBasedReadsSets(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt,
                                                           uint_read_len_max readLength,
-                                                          double error_limit, bool separateNReadsSet, bool nReadsLQ) {
+                                                          double error_limit, bool simplified_suffix_mode,
+                                                          bool separateNReadsSet, bool nReadsLQ) {
         DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, separateNReadsSet, nReadsLQ);
         time_checkpoint();
         QualityDividingReadsSetIterator<uint_read_len_max> *divReadsIt =
-                new QualityDividingReadsSetIterator<uint_read_len_max>(readsIt, error_limit);
+                new QualityDividingReadsSetIterator<uint_read_len_max>(readsIt, error_limit,
+                                                                       simplified_suffix_mode);
         vector<uint_reads_cnt_max> lqMapping, nMapping;
         while (divReadsIt->moveNext()) {
             if (separateNReadsSet || nReadsLQ) {
@@ -73,11 +75,12 @@ namespace PgTools {
                     continue;
                 }
             }
-            if (!divReadsIt->isQualityHigh()) {
+            if (error_limit < 1 && !divReadsIt->isQualityHigh()) {
                 readsSets->lqReadsSet->addRead(
                         divReadsIt->getRead().data(), divReadsIt->getReadLength());
                 lqMapping.push_back(divReadsIt->getReadOriginalIndex());
-            } else {
+            } else
+            {
                 readsSets->hqReadsSet->addRead(divReadsIt->getRead().data(), divReadsIt->getReadLength());
             }
         };
@@ -101,7 +104,7 @@ namespace PgTools {
                                                       uint_read_len_max readLength, bool separateNReadsSet,
                                                       bool nReadsLQ) {
         if (separateNReadsSet || nReadsLQ)
-            return DividedPCLReadsSets::getQualityDivisionBasedReadsSets(readsIt, readLength, 1, separateNReadsSet, nReadsLQ);
+            return DividedPCLReadsSets::getQualityDivisionBasedReadsSets(readsIt, readLength, 1, false, separateNReadsSet, nReadsLQ);
         DividedPCLReadsSets* readsSets = new DividedPCLReadsSets(readLength, false, false);
         while (readsIt->moveNext()) {
             readsSets->hqReadsSet->addRead(readsIt->getRead().data(), readsIt->getReadLength());

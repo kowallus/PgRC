@@ -1,16 +1,20 @@
 # PgRC: Pseudogenome based Read Compressor
+
+
+[![GitHub downloads](https://img.shields.io/github/downloads/kowallus/pgrc/total.svg?style=flag&label=GitHub%20downloads)](https://github.com/kowallus/pgrc/releases)
+[![Bioconda downloads](https://img.shields.io/conda/dn/bioconda/pgrc.svg?style=flag&label=Bioconda%20downloads)](https://anaconda.org/bioconda/pgrc)
  
 Pseudogenome-based Read Compressor (PgRC) is an in-memory algorithm 
 for compressing the DNA stream of FASTQ datasets, based on the idea 
 of building an approximation of the shortest common superstring over 
 high-quality reads.
 
-The current implementation supports constant-length reads limited
+The implementation supports constant-length reads limited
 to 255 bases.
 
 ### Installation on Linux
 The following steps create an PgRC executable. 
-On Linux PgRC build requires installed cmake version >= 3.4 (check using ```cmake --version```):
+On Linux PgRC build requires installed cmake version >= 3.5 (check using ```cmake --version```):
 ```bash
 git clone https://github.com/kowallus/PgRC.git
 cd PgRC
@@ -23,12 +27,11 @@ make PgRC
 ### Basic usage
 
 ```
-PgRC [-c compressionLevel] [-i seqSrcFile [pairSrcFile]] [-t noOfThreads] [-o] [-d] archiveName
+PgRC [-i <seqSrcFile> [<pairSrcFile>]] [-t <noOfThreads>] [-o] [-d] <archiveName>
    
-   -c compression levels: 1 - fast; 2 - default; 3 - max
-   -t number of threads used (8 - default)
-   -d decompression mode
    -o preserve original read order information
+   -t number of threads used
+   -d decompression mode
 ```
 
 compression of DNA stream in order non-preserving regime (SE mode):
@@ -46,6 +49,10 @@ compression of paired-end DNA stream in order non-preserving regime (PE mode):
 compression of paired-end DNA stream in order preserving regime (PE mode):
 ```
 ./PgRC -o -i in.fastq comp.pgrc
+```
+decompression of DNA stream to the current folder:
+```
+./PgRC -d comp.pgrc
 ```
 
 ## Publications

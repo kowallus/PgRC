@@ -1,6 +1,6 @@
 #include "DefaultReadsSet.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
         
     template<class ReadsSourceIterator>
     DefaultReadsSet::DefaultReadsSet(ReadsSourceIterator* readsIterator) {

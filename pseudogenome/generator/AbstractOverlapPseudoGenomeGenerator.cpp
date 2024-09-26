@@ -40,12 +40,12 @@ void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>
     *logout << "Removed " << cyclesCount << " cycles (lost " << overlapLost << " symbols)" << endl;
 }
 
-using namespace PgSAReadsSet;
-using namespace PgSAHelpers;
+using namespace PgReadsSet;
+using namespace PgHelpers;
 
 // GENERATOR
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
     void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>::init(bool pgGenerationMode) {

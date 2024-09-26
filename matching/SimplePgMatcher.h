@@ -7,7 +7,7 @@
 
 namespace PgTools {
 
-    using namespace PgSAIndex;
+    using namespace PgIndex;
 
     struct PgMatch;
 
@@ -29,9 +29,6 @@ namespace PgTools {
 
         string getTotalMatchStat(uint_pg_len_max totalMatchLength);
 
-        static void compressPgSequence(ostream &pgrcOut, string &pgSequence, uint8_t coder_level,
-                bool noNPgSequence, bool testAndValidation = false);
-
     public:
         SimplePgMatcher(const string& srcPg, uint32_t targetMatchLength,
                 uint32_t minMatchLength = UINT32_MAX);
@@ -48,7 +45,7 @@ namespace PgTools {
                                     uint_pg_len_max targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
         static void restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen,
-                string &hqPgSequence, string &lqPgSequence, string &nPgSequence);
+                string &hqPgSequence, string &lqPgSequence, string &nPgSequence, PgRCParams* params);
 
         static string restoreMatchedPg(string &srcPg, size_t orgSrcLen, const string& destPg,
                 istream &pgMapOffSrc, istream &pgMapLenSrc,

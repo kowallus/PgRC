@@ -5,9 +5,9 @@
 #include "../PackedPseudoGenome.h"
 #include "../../utils/helper.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class PseudoGenomePersistence
     {

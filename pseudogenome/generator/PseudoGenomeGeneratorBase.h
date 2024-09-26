@@ -6,11 +6,11 @@
 #include "../../readsset/DefaultReadsSet.h"
 #include "../SeparatedPseudoGenome.h"
 
-using namespace PgSAHelpers;
-using namespace PgSAReadsSet;
+using namespace PgHelpers;
+using namespace PgReadsSet;
 using namespace PgTools;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class PseudoGenomeGeneratorBase
     {

@@ -2,14 +2,17 @@
 
 #include "../../utils/helper.h"
 
-using namespace PgSAHelpers;
+using namespace PgHelpers;
 
 namespace PgTools {
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::QualityDividingReadsSetIterator(
-            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level)
-            :coreIterator(coreIterator), error_level(error_level) {}
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level, bool suffix_simplified_mode)
+            :coreIterator(coreIterator), error_level(error_level), suffix_simplified_mode(suffix_simplified_mode) {
+                double read_length = coreIterator->getReadLength();
+                suffix_pos = read_length * (1 - error_level);
+            }
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::~QualityDividingReadsSetIterator() {}
@@ -26,16 +29,22 @@ namespace PgTools {
 
     template<typename uint_read_len>
     bool QualityDividingReadsSetIterator<uint_read_len>::isQualityHigh() {
-        return (1 - qualityScore2correctProb(getQualityInfo()) <= error_level);
+        string& quality = getQualityInfo();
+        if (suffix_simplified_mode) {
+            return quality[suffix_pos] > '#';
+        } else {
+            double q = qualityScore2correctProbArithAvg(quality);
+            return (1 - q <= error_level);
+        }
     }
 
     template<typename uint_read_len>
-    string QualityDividingReadsSetIterator<uint_read_len>::getRead() {
+    string& QualityDividingReadsSetIterator<uint_read_len>::getRead() {
         return coreIterator->getRead();
     }
 
     template<typename uint_read_len>
-    string QualityDividingReadsSetIterator<uint_read_len>::getQualityInfo() {
+    string& QualityDividingReadsSetIterator<uint_read_len>::getQualityInfo() {
         return coreIterator->getQualityInfo();
     }
 
@@ -114,12 +123,12 @@ namespace PgTools {
     }
 
     template<typename uint_read_len>
-    string DividedReadsSetIterator<uint_read_len>::getRead() {
+    string& DividedReadsSetIterator<uint_read_len>::getRead() {
         return coreIterator->getRead();
     }
 
     template<typename uint_read_len>
-    string DividedReadsSetIterator<uint_read_len>::getQualityInfo() {
+    string& DividedReadsSetIterator<uint_read_len>::getQualityInfo() {
         return coreIterator->getQualityInfo();
     }
 

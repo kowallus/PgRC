@@ -11,18 +11,21 @@ namespace PgTools {
         ReadsSourceIteratorTemplate< uint_read_len >* coreIterator;
         int64_t allCounter = -1;
         double error_level;
+        int suffix_pos;
+        bool suffix_simplified_mode;
 
     public:
 
-        QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level);
+        QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
+                                        bool suffix_simplified_mode = true);
 
         virtual ~QualityDividingReadsSetIterator();
 
         uint_reads_cnt_max getReadOriginalIndex();
 
         bool moveNext();
-        string getRead();
-        string getQualityInfo();
+        string& getRead();
+        string& getQualityInfo();
         uint_read_len getReadLength();
         void rewind();
 
@@ -51,8 +54,8 @@ namespace PgTools {
                 bool visitComplement = false, bool ignoreNReads = false, bool ignoreNoNReads = false);
 
         bool moveNext();
-        string getRead();
-        string getQualityInfo();
+        string& getRead();
+        string& getQualityInfo();
         uint_read_len getReadLength();
         void rewind();
 

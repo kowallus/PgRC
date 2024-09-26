@@ -5,7 +5,7 @@
 
 namespace PgTools {
 
-    using namespace PgSAIndex;
+    using namespace PgIndex;
 
     class SeparatedPseudoGenomeBase : public PseudoGenomeBase {
     public:

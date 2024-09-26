@@ -1,6 +1,7 @@
 #ifndef PGTOOLS_SEPARATEDPSEUDOGENOMEPERSISTENCE_H
 #define PGTOOLS_SEPARATEDPSEUDOGENOMEPERSISTENCE_H
 
+#include <memory>
 #include "../DefaultPseudoGenome.h"
 #include "../PackedPseudoGenome.h"
 #include "../SeparatedPseudoGenome.h"
@@ -8,7 +9,7 @@
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 #include "../readslist/iterator/ReadsListIteratorExtendedWrapper.h"
 #include "../readslist/SeparatedExtendedReadsList.h"
-#include "../../utils/LzmaLib.h"
+#include "../../coders/CodersLib.h"
 
 namespace PgTools {
 
@@ -54,7 +55,7 @@ namespace PgTools {
         static void compressReadsPgPositions(ostream &pgrcOut, vector<uint_pg_len_max> orgIdx2PgPos,
                 uint_pg_len_max joinedPgLength, uint8_t coder_level, bool singleFileMode, bool deltaPairEncodingEnabled = true);
         template <typename uint_pg_len>
-        static void decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
+        static void decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos, PgRCParams* params);
     };
 
     class SeparatedPseudoGenomeOutputBuilder {
@@ -96,9 +97,9 @@ namespace PgTools {
         void freeDest(ostream* &dest);
         void freeDests();
 
-        void compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type, uint8_t coder_level, int coder_param = -1,
-                          double estimated_compression = 1, SymbolsPackingFacility* symPacker = 0);
-        void compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level, bool transposeMode = false);
+        string toStringAndSeparateZeros(ostream* dest, string& zeroFlags);
+        string toString(ostream* dest);
+        void compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level, bool separateFirstOffsetMode = false, bool transposeMode = false);
         void destToFile(ostream *dest, const string &fileName);
     public:
 
@@ -127,6 +128,7 @@ namespace PgTools {
 
         void updateOriginalIndexesIn(SeparatedPseudoGenome *sPg);
 
+        string reorderingSymbolsExclusiveMismatchEncoding(string &rlMisSym);
     };
 
 

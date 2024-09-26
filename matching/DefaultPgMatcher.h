@@ -7,7 +7,7 @@
 
 namespace PgTools {
 
-    using namespace PgSAIndex;
+    using namespace PgIndex;
 
     struct PgMatch;
 

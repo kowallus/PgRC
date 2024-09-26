@@ -2,12 +2,12 @@
 #define READSSETINTERFACE_H_INCLUDED
 
 #include "../utils/helper.h"
-#include "../pgsaconfig.h"
+#include "../pgrc/pg-config.h"
 #include "ReadsSetBase.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     template < typename uint_read_len, typename uint_reads_cnt >
     class ReadsSetInterface

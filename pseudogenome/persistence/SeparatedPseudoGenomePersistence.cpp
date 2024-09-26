@@ -2,8 +2,11 @@
 #include "PseudoGenomePersistence.h"
 #include "../TemplateUserGenerator.h"
 #include "../SeparatedPseudoGenomeBase.h"
+#include "../../coders/PropsLibrary.h"
+#include <memory>
 
 #include <parallel/algorithm>
+#include <cassert>
 
 namespace PgTools {
 
@@ -37,8 +40,9 @@ namespace PgTools {
         *logout << "Compressed Pg reads list in " << time_millis() << " msec." << endl << endl;
         if (!skipPgSequence) {
             time_checkpoint();
-            writeCompressed(*pgrcOut, sPg->getPgSequence().data(), sPg->getPgSequence().size(), LZMA_CODER, coder_level,
-                            PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
+            auto pgCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, LZMA_DATAPERIODCODE_8_t);
+            writeCompressed(*pgrcOut, sPg->getPgSequence().data(), sPg->getPgSequence().size(), pgCoderProps.get(),
+                    COMPRESSION_ESTIMATION_BASIC_DNA);
             *logout << "Compressed Pg sequence in " << time_millis() << " msec." << endl << endl;
         }
     }
@@ -75,7 +79,7 @@ namespace PgTools {
         size_t size = pgSrc.tellg();
         std::string buffer(size, ' ');
         pgSrc.seekg(0);
-        PgSAHelpers::readArray(pgSrc, &buffer[0], size);
+        PgHelpers::readArray(pgSrc, &buffer[0], size);
         return buffer;
     }
 
@@ -83,7 +87,7 @@ namespace PgTools {
     void SeparatedPseudoGenomePersistence::writePseudoGenomeSequence(string &pgSequence, string pgPrefix) {
         ofstream pgDest =
                 getPseudoGenomeElementDest(pgPrefix, SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX, true);
-        PgSAHelpers::writeArray(pgDest, (void*) pgSequence.data(), pgSequence.length());
+        PgHelpers::writeArray(pgDest, (void*) pgSequence.data(), pgSequence.length());
         pgDest.close();
         acceptTemporaryPseudoGenomeElement(pgPrefix, SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX, true);
     }
@@ -172,8 +176,8 @@ namespace PgTools {
         ofstream pair1OffsetsDest = getPseudoGenomeElementDest(pgFilePrefix, SeparatedPseudoGenomeBase::READSLIST_PAIR_FIRST_OFFSETS_FILE_SUFFIX, true);
         ofstream pair1SrcFlagDest = getPseudoGenomeElementDest(pgFilePrefix, SeparatedPseudoGenomeBase::READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX, true);
         ofstream pair1IndexesDest = getPseudoGenomeElementDest(pgFilePrefix, SeparatedPseudoGenomeBase::READSLIST_PAIR_FIRST_INDEXES_FILE_SUFFIX, true);
-        writeReadMode(pair1OffsetsDest, PgSAHelpers::plainTextWriteMode);
-        writeReadMode(pair1IndexesDest, PgSAHelpers::plainTextWriteMode);
+        writeReadMode(pair1OffsetsDest, PgHelpers::plainTextWriteMode);
+        writeReadMode(pair1IndexesDest, PgHelpers::plainTextWriteMode);
         uint_reads_cnt_std readsCount = orgIdxs.size();
         vector<uint_reads_cnt_std> rev(readsCount);
         for(uint_reads_cnt_std i = 0; i < readsCount; i++)
@@ -210,14 +214,15 @@ namespace PgTools {
             bool completeOrderInfo, bool ignorePairOrderInformation, bool singleFileMode) {
         time_checkpoint();
         uint_reads_cnt_std readsCount = orgIdxs.size();
-        int lzma_reads_dataperiod_param = readsCount <= UINT32_MAX ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
+        int lzma_reads_dataperiod_param = readsCount <= UINT32_MAX ? LZMA_DATAPERIODCODE_32_t : LZMA_DATAPERIODCODE_64_t;
         vector<uint_reads_cnt_std> rev(readsCount);
         for (uint_reads_cnt_std i = 0; i < readsCount; i++)
             rev[orgIdxs[i]] = i;
         if (completeOrderInfo && singleFileMode) {
             *logout << "Reverse index of original indexes... ";
-            writeCompressed(pgrcOut, (char *) rev.data(), rev.size() * sizeof(uint_reads_cnt_std), LZMA_CODER,
-                    coder_level, lzma_reads_dataperiod_param);
+            auto revIdxCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, lzma_reads_dataperiod_param);
+            writeCompressed(pgrcOut, (char *) rev.data(), rev.size() * sizeof(uint_reads_cnt_std),
+                    revIdxCoderProps.get());
         } else {
             // absolute pair base index of original pair
             vector<uint_reads_cnt_std> revPairBaseOrgIdx;
@@ -281,36 +286,45 @@ namespace PgTools {
                 }
                 prev = pairRelativeOffset;
             }
-
-            *logout << "Uint8 reads list relative offsets of pair reads (flag)... ";
-            writeCompressed(pgrcOut, (char *) offsetInUint8Flag.data(), offsetInUint8Flag.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            *logout << "Uint8 reads list relative offsets of pair reads (value)... ";
-            writeCompressed(pgrcOut, (char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 2);
-            *logout << "Relative offsets deltas of pair reads (flag)... ";
-            writeCompressed(pgrcOut, (char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            *logout << "Relative offsets deltas of pair reads (value)... ";
-            writeCompressed(pgrcOut, (char*) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(uint8_t),
-                            LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t);
+            vector<CompressionJob> cJobs;
+            auto rlRelOffFlagCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 11);
+            cJobs.emplace_back("Uint8 reads list relative offsets of pair reads (flag)... ",
+                               (unsigned char *) offsetInUint8Flag.data(), offsetInUint8Flag.size() * sizeof(uint8_t),
+                               rlRelOffFlagCoderProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+            auto rlRelOffValCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 2);
+            cJobs.emplace_back("Uint8 reads list relative offsets of pair reads (value)... ",
+                               (unsigned char *) offsetInUint8Value.data(), offsetInUint8Value.size() * sizeof(uint8_t),
+                            rlRelOffValCoderProps.get());
+            auto relOffDelFlagCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 10);
+            cJobs.emplace_back("Relative offsets deltas of pair reads (flag)... ",
+                            (unsigned char *) deltaInInt8Flag.data(), deltaInInt8Flag.size() * sizeof(uint8_t),
+                            relOffDelFlagCoderProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+            auto relOffDelValCoderProps = getRelativeOffsetDeltasOfPairsValueCoderProps(coder_level);
+            cJobs.emplace_back("Relative offsets deltas of pair reads (value)... ",
+                            (unsigned char*) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(uint8_t),
+                            relOffDelValCoderProps.get());
 //            writeCompressed(pgrcOut, (char *) deltaInInt8Value.data(), deltaInInt8Value.size() * sizeof(int8_t), PPMD7_CODER, coder_level, 2);
-            *logout << "Full reads list relative offsets of pair reads ... ";
+            auto rlRelOffCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, lzma_reads_dataperiod_param);
             double estimated_reads_ratio = simpleUintCompressionEstimate(readsCount, readsCount <= UINT32_MAX?UINT32_MAX:UINT64_MAX);
-            writeCompressed(pgrcOut, (char *) fullOffset.data(), fullOffset.size() * sizeof(uint_reads_cnt_std),
-                            LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
+            cJobs.emplace_back("Full reads list relative offsets of pair reads ... ",
+                               (unsigned char *) fullOffset.data(), fullOffset.size() * sizeof(uint_reads_cnt_std),
+                               rlRelOffCoderProps.get(), estimated_reads_ratio);
+            auto basesOrgIdxsCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, lzma_reads_dataperiod_param);
+            auto fileFlagsOffCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 2);
+            auto fileFlagsNoOffCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 10);
             if (completeOrderInfo) {
-                *logout << "Original indexes of pair bases... ";
-                writeCompressed(pgrcOut, (char *) revPairBaseOrgIdx.data(), revPairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
-                                LZMA_CODER, coder_level, lzma_reads_dataperiod_param, estimated_reads_ratio);
+                cJobs.emplace_back("Original indexes of pair bases... ",
+                                   (unsigned char *) revPairBaseOrgIdx.data(), revPairBaseOrgIdx.size() * sizeof(uint_reads_cnt_std),
+                                basesOrgIdxsCoderProps.get(), estimated_reads_ratio);
             } else if (!ignorePairOrderInformation) {
-                *logout << "File flags of pair bases (for offsets)... ";
-                writeCompressed(pgrcOut, (char *) offsetPairBaseFileFlag.data(), offsetPairBaseFileFlag.size() * sizeof(uint8_t),
-                                PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-                *logout << "File flags of pair bases (for non-offsets)... ";
-                writeCompressed(pgrcOut, (char *) nonOffsetPairBaseFileFlag.data(), nonOffsetPairBaseFileFlag.size() * sizeof(uint8_t),
-                                PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cJobs.emplace_back("File flags of pair bases (for offsets)... ",
+                                   (unsigned char *) offsetPairBaseFileFlag.data(), offsetPairBaseFileFlag.size() * sizeof(uint8_t),
+                                fileFlagsOffCoderProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cJobs.emplace_back("File flags of pair bases (for non-offsets)... ",
+                                   (unsigned char *) nonOffsetPairBaseFileFlag.data(), nonOffsetPairBaseFileFlag.size() * sizeof(uint8_t),
+                                fileFlagsNoOffCoderProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
             }
+            CompressionJob::writeCompressedCollectiveParallel(pgrcOut, cJobs);
         }
         *logout << "... compressing order information completed in " << time_millis() << " msec. " << endl;
         *logout << endl;
@@ -323,19 +337,38 @@ namespace PgTools {
         if (singleFileMode) {
             if (!completeOrderInfo)
                 return;
-            readCompressed<uint_reads_cnt_std>(pgrcIn, rlIdxOrder);
+            string rlIdxOrderStr;
+            readCompressed(pgrcIn, rlIdxOrderStr);
+            moveStringToVector(rlIdxOrderStr, rlIdxOrder);
         } else {
             vector<uint8_t> offsetInUint8Flag;
             vector<uint8_t> offsetInUint8Value;
             vector<uint8_t> deltaInInt8Flag;
             vector<int8_t> deltaInInt8Value;
             vector<uint_reads_cnt_std> fullOffset;
-            readCompressed<uint8_t>(pgrcIn, offsetInUint8Flag);
-            readCompressed<uint8_t>(pgrcIn, offsetInUint8Value);
-            readCompressed<uint8_t>(pgrcIn, deltaInInt8Flag);
-            readCompressed<int8_t>(pgrcIn, deltaInInt8Value);
-            readCompressed<uint_reads_cnt_std>(pgrcIn, fullOffset);
 
+            string offsetInUint8FlagStr, offsetInUint8ValueStr, deltaInInt8FlagStr, deltaInInt8ValueStr;
+            string fullOffsetStr, revPairBaseOrgIdxStr, offsetPairBaseFileFlagStr, nonOffsetPairBaseFileFlagStr;
+            vector<string*> destStrings;
+            destStrings.push_back(&offsetInUint8FlagStr);
+            destStrings.push_back(&offsetInUint8ValueStr);
+            destStrings.push_back(&deltaInInt8FlagStr);
+            destStrings.push_back(&deltaInInt8ValueStr);
+            destStrings.push_back(&fullOffsetStr);
+
+            if (completeOrderInfo) {
+                destStrings.push_back(&revPairBaseOrgIdxStr);
+            } else if (!ignorePairOrderInformation) {
+                destStrings.push_back(&offsetPairBaseFileFlagStr);
+                destStrings.push_back(&nonOffsetPairBaseFileFlagStr);
+            }
+            readCompressedCollectiveParallel(pgrcIn, destStrings);
+
+            moveStringToVector(offsetInUint8FlagStr, offsetInUint8Flag);
+            moveStringToVector(offsetInUint8ValueStr, offsetInUint8Value);
+            moveStringToVector(deltaInInt8FlagStr, deltaInInt8Flag);
+            moveStringToVector(deltaInInt8ValueStr, deltaInInt8Value);
+            moveStringToVector(fullOffsetStr, fullOffset);
             uint_reads_cnt_std readsCount = offsetInUint8Flag.size() * 2;
             rlIdxOrder.resize(readsCount);
             vector<bool> isReadDone(readsCount, false);
@@ -373,7 +406,7 @@ namespace PgTools {
             if (completeOrderInfo) {
                 vector<uint_reads_cnt_std> revPairBaseOrgIdx;
                 revPairBaseOrgIdx.reserve(readsCount);
-                readCompressed<uint_reads_cnt_std>(pgrcIn, revPairBaseOrgIdx);
+                moveStringToVector(revPairBaseOrgIdxStr, revPairBaseOrgIdx);
                 revPairBaseOrgIdx.resize(readsCount);
                 vector<uint_reads_cnt_std> peRlIdxOrder = std::move(rlIdxOrder);
                 for(uint_reads_cnt_std p = readsCount / 2; p-- > 0;) {
@@ -385,8 +418,8 @@ namespace PgTools {
             } else if (!ignorePairOrderInformation) {
                 vector<uint8_t> offsetPairBaseFileFlag;
                 vector<uint8_t> nonOffsetPairBaseFileFlag;
-                readCompressed<uint8_t>(pgrcIn, offsetPairBaseFileFlag);
-                readCompressed<uint8_t>(pgrcIn, nonOffsetPairBaseFileFlag);
+                moveStringToVector(offsetPairBaseFileFlagStr, offsetPairBaseFileFlag);
+                moveStringToVector(nonOffsetPairBaseFileFlagStr, nonOffsetPairBaseFileFlag);
                 int64_t offIdx = -1;
                 int64_t nonOffIdx = -1;
                 for(uint_reads_cnt_std p = 0; p < readsCount / 2; p++) {
@@ -407,7 +440,7 @@ namespace PgTools {
             bool singleFileMode, bool deltaPairEncodingEnabled) {
         time_checkpoint();
         uint_reads_cnt_std readsTotalCount = orgIdx2PgPos.size();
-        int lzma_pos_dataperiod_param = sizeof(uint_pg_len) == 4 ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
+        int lzma_pos_dataperiod_param = sizeof(uint_pg_len) == 4 ? LZMA_DATAPERIODCODE_32_t : LZMA_DATAPERIODCODE_64_t;
         double estimated_pos_ratio = simpleUintCompressionEstimate(joinedPgLength, sizeof(uint_pg_len) == 4?UINT32_MAX:UINT64_MAX);
         if (singleFileMode) {
             uint_pg_len_max* const maxPgPosPtr = orgIdx2PgPos.data();
@@ -416,8 +449,9 @@ namespace PgTools {
                 for (uint_reads_cnt_std i = 0; i < readsTotalCount; i++)
                     *(PgPosPtr++) = (uint_pg_len) orgIdx2PgPos[i];
             }
+            auto readsPgPosProps = getReadsPositionsCoderProps(coder_level, lzma_pos_dataperiod_param);
             writeCompressed(pgrcOut, (char*) maxPgPosPtr, readsTotalCount * sizeof(uint_pg_len),
-                            LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
+                            readsPgPosProps.get(), estimated_pos_ratio);
         } else {
             vector<uint_pg_len> basePairPos;
             // pair relative offset info
@@ -486,34 +520,46 @@ namespace PgTools {
                     notBasePairPos.push_back((uint_pg_len) orgIdx2PgPos[i + 1]);
                 }
             }
-            pgrcOut.put(deltaPairEncodingEnabled);
-            *logout << "Base pair position... ";
-            writeCompressed(pgrcOut, (char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len),
-                            LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
-            *logout << "Uint16 relative offset of pair positions (flag)... ";
-            writeCompressed(pgrcOut, (char *) offsetInUint16Flag.data(), offsetInUint16Flag.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            *logout << "Is uint16 relative offset of pair positions positive (flag)... ";
-            writeCompressed(pgrcOut, (char *) offsetIsBaseFirstFlag.data(), offsetIsBaseFirstFlag.size() * sizeof(uint8_t),
-                            PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-            *logout << "Uint16 relative offset of pair positions (value)... ";
-            writeCompressed(pgrcOut, (char*) offsetInUint16Value.data(), offsetInUint16Value.size() * sizeof(uint16_t),
-                            PPMD7_CODER, coder_level, 3);
+            assert(deltaPairEncodingEnabled);
+            vector<CompressionJob> cJobs;
+            auto basePosProps = getReadsPositionsCoderProps(coder_level, lzma_pos_dataperiod_param);
+            cJobs.emplace_back("Base pair position... ", (unsigned char *) basePairPos.data(), basePairPos.size() * sizeof(uint_pg_len),
+                            basePosProps.get(), estimated_pos_ratio);
+            auto pairRelOffFlagProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 11);
+            cJobs.emplace_back("Uint16 relative offset of pair positions (flag)... ",
+                               (unsigned char *) offsetInUint16Flag.data(), offsetInUint16Flag.size() * sizeof(uint8_t),
+                            pairRelOffFlagProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+            auto ppmd2CoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 2);
+            auto fse12CoderProps = getDefaultFSECoderProps(12);
+            auto pairRelOffPosFlagProps = getSelectorCoderProps( { ppmd2CoderProps.get(), fse12CoderProps.get() } );
+            cJobs.emplace_back("Is uint16 relative offset of pair positions positive (flag)... ",
+                               (unsigned char *) offsetIsBaseFirstFlag.data(), offsetIsBaseFirstFlag.size() * sizeof(uint8_t),
+                            pairRelOffPosFlagProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+            auto pairRelOffValProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 2);
+            auto range2CoderProps = getDefaultRangeCoderProps(256, 2);
+            auto selPairRelOffValCoderProps = getSelectorCoderProps({ range2CoderProps.get(), pairRelOffValProps.get() });
+            cJobs.emplace_back("Uint16 relative offset of pair positions (value)... ",
+                               (unsigned char*) offsetInUint16Value.data(), offsetInUint16Value.size() * sizeof(uint16_t),
+                            selPairRelOffValCoderProps.get());
+            auto pairRelOffDeltaFlagProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 10);
+            auto pairRelOffDeltaPosFlagProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 5);
+            auto pairRelOffDeltaValProps = getDefaultCoderProps(PPMD7_CODER, CODER_LEVEL_MAX, 3);
             if (deltaPairEncodingEnabled) {
-                *logout << "Relative offset deltas of pair positions (flag)... ";
-                writeCompressed(pgrcOut, (char *) deltaInInt16Flag.data(), deltaInInt16Flag.size() * sizeof(uint8_t),
-                                PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-                *logout << "Is relative offset (for deltas stream) of pair positions positive (flag)... ";
-                writeCompressed(pgrcOut, (char *) deltaIsBaseFirstFlag.data(),
+                cJobs.emplace_back("Relative offset deltas of pair positions (flag)... ",
+                                   (unsigned char *) deltaInInt16Flag.data(), deltaInInt16Flag.size() * sizeof(uint8_t),
+                                pairRelOffDeltaFlagProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cJobs.emplace_back("Is relative offset (for deltas stream) of pair positions positive (flag)... ",
+                                   (unsigned char *) deltaIsBaseFirstFlag.data(),
                                 deltaIsBaseFirstFlag.size() * sizeof(uint8_t),
-                                PPMD7_CODER, coder_level, 3, COMPRESSION_ESTIMATION_UINT8_BITMAP);
-                *logout << "Relative offset deltas of pair positions (value)... ";
-                writeCompressed(pgrcOut, (char *) deltaInInt16Value.data(), deltaInInt16Value.size() * sizeof(int16_t),
-                                PPMD7_CODER, coder_level, 3);
+                                pairRelOffDeltaPosFlagProps.get(), COMPRESSION_ESTIMATION_UINT8_BITMAP);
+                cJobs.emplace_back("Relative offset deltas of pair positions (value)... ",
+                                   (unsigned char *) deltaInInt16Value.data(), deltaInInt16Value.size() * sizeof(int16_t),
+                                pairRelOffDeltaValProps.get());
             }
-            *logout << "Not-base pair position... ";
-            writeCompressed(pgrcOut, (char *) notBasePairPos.data(), notBasePairPos.size() * sizeof(uint_pg_len),
-                            LZMA_CODER, coder_level, lzma_pos_dataperiod_param, estimated_pos_ratio);
+            auto nonBasePosProps = getReadsPositionsCoderProps(coder_level, lzma_pos_dataperiod_param);
+            cJobs.emplace_back("Not-base pair position... ", (unsigned char *) notBasePairPos.data(), notBasePairPos.size() * sizeof(uint_pg_len),
+                            nonBasePosProps.get(), estimated_pos_ratio);
+            CompressionJob::writeCompressedCollectiveParallel(pgrcOut, cJobs);
         }
         *logout << "... compressing reads positions completed in " << time_millis() << " msec. " << endl;
         *logout << endl;
@@ -527,11 +573,15 @@ namespace PgTools {
 
     template <typename uint_pg_len>
     void SeparatedPseudoGenomePersistence::decompressReadsPgPositions(istream &pgrcIn, vector<uint_pg_len> &pgPos,
-                                                                          uint_reads_cnt_std readsTotalCount, bool singleFileMode) {
-        if (singleFileMode)
-            readCompressed(pgrcIn, pgPos);
-        else {
-            bool deltaPairEncodingEnabled = (bool) pgrcIn.get();
+                                                                          PgRCParams* params) {
+        uint_reads_cnt_std readsTotalCount = params->readsTotalCount;
+        bool singleFileMode = params->singleReadsMode;
+        string pgPosStr;
+        if (singleFileMode) {
+            readCompressed(pgrcIn, pgPosStr);
+            moveStringToVector(pgPosStr, pgPos);
+        } else {
+            bool deltaPairEncodingEnabled = params->isVersionAtLeast(1, 3) ? true : (bool) pgrcIn.get();
             vector<uint8_t> offsetInUint16Flag;
             vector<uint8_t> offsetIsBaseFirstFlag;
             vector<uint16_t> offsetInUint16Value;
@@ -540,16 +590,32 @@ namespace PgTools {
             vector<int16_t> deltaInInt16Value;
             vector<uint_pg_len> notBasePairPos;
             pgPos.reserve(readsTotalCount);
-            readCompressed(pgrcIn, pgPos);
-            readCompressed(pgrcIn, offsetInUint16Flag);
-            readCompressed(pgrcIn, offsetIsBaseFirstFlag);
-            readCompressed(pgrcIn, offsetInUint16Value);
+
+            string offsetInUint16FlagStr, offsetIsBaseFirstFlagStr, offsetInUint16ValueStr;
+            string deltaInInt16FlagStr, deltaIsBaseFirstFlagStr, deltaInInt16ValueStr, notBasePairPosStr;
+            vector<string*> destStrings;
+            destStrings.push_back(&pgPosStr);
+            destStrings.push_back(&offsetInUint16FlagStr);
+            destStrings.push_back(&offsetIsBaseFirstFlagStr);
+            destStrings.push_back(&offsetInUint16ValueStr);
             if (deltaPairEncodingEnabled) {
-                readCompressed(pgrcIn, deltaInInt16Flag);
-                readCompressed(pgrcIn, deltaIsBaseFirstFlag);
-                readCompressed(pgrcIn, deltaInInt16Value);
+                destStrings.push_back(&deltaInInt16FlagStr);
+                destStrings.push_back(&deltaIsBaseFirstFlagStr);
+                destStrings.push_back(&deltaInInt16ValueStr);
             }
-            readCompressed(pgrcIn, notBasePairPos);
+            destStrings.push_back(&notBasePairPosStr);
+            readCompressedCollectiveParallel(pgrcIn, destStrings);
+            moveStringToVector(pgPosStr, pgPos);
+            moveStringToVector(offsetInUint16FlagStr, offsetInUint16Flag);
+            moveStringToVector(offsetIsBaseFirstFlagStr, offsetIsBaseFirstFlag);
+            moveStringToVector(offsetInUint16ValueStr, offsetInUint16Value);
+            if (deltaPairEncodingEnabled) {
+                moveStringToVector(deltaInInt16FlagStr, deltaInInt16Flag);
+                moveStringToVector(deltaIsBaseFirstFlagStr, deltaIsBaseFirstFlag);
+                moveStringToVector(deltaInInt16ValueStr, deltaInInt16Value);
+            }
+            moveStringToVector(notBasePairPosStr, notBasePairPos);
+
             const uint_reads_cnt_std pairsCount = readsTotalCount / 2;
             vector<uint_reads_cnt_std> bppRank;
             bppRank.reserve(pairsCount);
@@ -597,8 +663,8 @@ namespace PgTools {
             }
         }
     }
-    template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(istream &pgrcIn, vector<uint_pg_len_std> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
-    template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_max>(istream &pgrcIn, vector<uint_pg_len_max> &pgPos, uint_reads_cnt_std readsTotalCount, bool singleFileMode);
+    template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_std>(istream &pgrcIn, vector<uint_pg_len_std> &pgPos, PgRCParams* params);
+    template void SeparatedPseudoGenomePersistence::decompressReadsPgPositions<uint_pg_len_max>(istream &pgrcIn, vector<uint_pg_len_max> &pgPos, PgRCParams* params);
 
     SeparatedPseudoGenomeOutputBuilder::SeparatedPseudoGenomeOutputBuilder(const string pseudoGenomePrefix,
             bool disableRevComp, bool disableMismatches) : pseudoGenomePrefix(pseudoGenomePrefix),
@@ -642,7 +708,7 @@ namespace PgTools {
 
     void SeparatedPseudoGenomeOutputBuilder::destToFile(ostream *dest, const string &fileName) {
         if (!onTheFlyMode() && dest)
-            PgSAHelpers::writeStringToFile(fileName, ((ostringstream*) dest)->str());
+            PgHelpers::writeStringToFile(fileName, ((ostringstream*) dest)->str());
     }
 
     void SeparatedPseudoGenomeOutputBuilder::freeDest(ostream* &dest) {
@@ -710,7 +776,7 @@ namespace PgTools {
         prebuildAssert(false);
         buildProps();
         writeReadMode(*pgPropDest, plainTextWriteMode);
-        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_PROPERTIES_SUFFIX,
+        PgHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_PROPERTIES_SUFFIX,
                                       ((ostringstream*) pgPropDest)->str());
 
         destToFile(rlPosDest, pgPrefix + SeparatedPseudoGenomeBase::READSLIST_POSITIONS_FILE_SUFFIX);
@@ -724,28 +790,40 @@ namespace PgTools {
         destToFile(rlMisPosDest, pgPrefix + SeparatedPseudoGenomeBase::READSLIST_MISMATCHES_POSITIONS_FILE_SUFFIX);
     }
 
-    void SeparatedPseudoGenomeOutputBuilder::compressDest(ostream* dest, ostream &pgrcOut, uint8_t coder_type,
-                                                          uint8_t coder_level, int coder_param,
-                                                          double estimated_compression,
-                                                          SymbolsPackingFacility* symPacker) {
+    string SeparatedPseudoGenomeOutputBuilder::toStringAndSeparateZeros(ostream* dest, string& zeroFlags) {
+        string tmp = ((ostringstream*) dest)->str();
+        zeroFlags.reserve(tmp.size());
+        size_t j = 0;
+        for (size_t i = 0; i < tmp.size(); i++) {
+            bool isZero = tmp[i] == 0;
+            zeroFlags.push_back(isZero);
+            if (!isZero)
+                tmp[j++] = tmp[i];
+        }
+        tmp.resize(j);
+        return tmp;
+    }
+
+    string SeparatedPseudoGenomeOutputBuilder::toString(ostream* dest) {
         if (onTheFlyMode() || !dest) {
             fprintf(stderr, "Error during compression: an input stream missing.\n");
             exit(EXIT_FAILURE);
         }
-        string tmp = ((ostringstream*) dest)->str();
-        if (symPacker) {
-            PgSAHelpers::writeValue<uint64_t>(pgrcOut, tmp.length(), false);
-            tmp = symPacker->packSequence(tmp.data(), tmp.length());
-        }
-        writeCompressed(pgrcOut, tmp, coder_type, coder_level, coder_param, estimated_compression);
+        return ((ostringstream*) dest)->str();
     }
 
     void SeparatedPseudoGenomeOutputBuilder::compressRlMisRevOffDest(ostream &pgrcOut, uint8_t coder_level,
-            bool transposeMode) {
-        uint8_t mismatches_dests_count = coder_level == PGRC_CODER_LEVEL_FAST?1:(UINT8_MAX-1);
+                                                                     bool separateFirstOffsetMode, bool transposeMode) {
+        ostringstream mismatchesPropsOut;
+        auto fseCoderProps = getDefaultFSECoderProps();
+        uint8_t mismatches_dests_count = coder_level == CODER_LEVEL_FAST?1:(UINT8_MAX-1);
         if (mismatches_dests_count == 1) {
-            PgSAHelpers::writeValue<uint8_t>(pgrcOut, 1);
-            compressDest(rlMisRevOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+            PgHelpers::writeValue<uint8_t>(mismatchesPropsOut, 1);
+            string mismatchesPropsString(mismatchesPropsOut.str());
+            writeCompressed(pgrcOut, mismatchesPropsString, fseCoderProps.get());
+            auto coderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 3);
+            string tmp = toString(rlMisRevOffDest);
+            writeCompressed(pgrcOut, tmp, coderProps.get());
             return;
         }
         vector<uint8_t> misCnt2DestIdx; // NOT-TESTED => {0, 1, 2, 3, 4, 5, 6, 7, 7, 9, 9, 9 };
@@ -753,6 +831,7 @@ namespace PgTools {
         for(uint8_t m = 1; m < mismatches_dests_count; m++)
             misCnt2DestIdx[m] = m;
 
+        ostringstream destsFirst[UINT8_MAX];
         ostringstream dests[UINT8_MAX];
         istringstream misRevOffSrc(((ostringstream*) rlMisRevOffDest)->str());
         istringstream misCntSrc(((ostringstream*) rlMisCntDest)->str());
@@ -760,13 +839,12 @@ namespace PgTools {
         uint8_t misCnt = 0;
         uint16_t revOff = 0;
         for(uint_reads_cnt_max i = 0; i < readsCounter; i++) {
-             PgSAHelpers::readValue<uint8_t>(misCntSrc, misCnt, false);
+             PgHelpers::readValue<uint8_t>(misCntSrc, misCnt, false);
              for(uint8_t m = 0; m < misCnt; m++) {
-                 PgSAHelpers::readReadLengthValue(misRevOffSrc, revOff, false);
-                 PgSAHelpers::writeReadLengthValue(dests[misCnt2DestIdx[misCnt]], revOff);
+                 PgHelpers::readReadLengthValue(misRevOffSrc, revOff, false);
+                 PgHelpers::writeReadLengthValue(dests[misCnt2DestIdx[misCnt]], revOff);
              }
         }
-
 
         if (transposeMode) {
             for (uint8_t d = 1; d < mismatches_dests_count; d++) {
@@ -782,35 +860,84 @@ namespace PgTools {
         }
         while (mismatches_dests_count > 0 && dests[mismatches_dests_count].tellp() == 0)
             mismatches_dests_count--;
-        PgSAHelpers::writeValue<uint8_t>(pgrcOut, mismatches_dests_count);
+        PgHelpers::writeValue<uint8_t>(mismatchesPropsOut, mismatches_dests_count);
         for(uint8_t m = 1; m < mismatches_dests_count; m++)
-            PgSAHelpers::writeValue<uint8_t>(pgrcOut, misCnt2DestIdx[m]);
+            PgHelpers::writeValue<uint8_t>(mismatchesPropsOut, misCnt2DestIdx[m]);
+        string mismatchesPropsString(mismatchesPropsOut.str());
+
+        auto ppmdCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 2);
+        vector<unique_ptr<CoderProps>> rangeCoderPropsList(mismatches_dests_count + 1);
+        vector<unique_ptr<CoderProps>> firstCoderPropsList(mismatches_dests_count + 1);
+        vector<unique_ptr<CoderProps>> seleCoderPropsList(mismatches_dests_count + 1);
+        vector<string> misRefOffFirst(mismatches_dests_count + 1);
+        vector<string> misRefOff(mismatches_dests_count + 1);
+        vector<CompressionJob> cJobs;
+        cJobs.emplace_back("mismatches props... ", mismatchesPropsString, fseCoderProps.get());
         for(uint8_t m = 1; m <= mismatches_dests_count; m++) {
-            *logout << (int) m << ": ";
-            compressDest(&dests[m], pgrcOut, PPMD7_CODER, coder_level, 2);
+            rangeCoderPropsList[m] = getDefaultRangeCoderProps(rsProp->maxReadLength,
+                                                               separateFirstOffsetMode ? 1 : m);
+            firstCoderPropsList[m] = getSelectorCoderProps(
+                    {rangeCoderPropsList[m].get(), fseCoderProps.get(), ppmdCoderProps.get()}, 0.2);
+            seleCoderPropsList[m] = getSelectorCoderProps(
+                    {rangeCoderPropsList[m].get(), fseCoderProps.get(), ppmdCoderProps.get()}, 0.2);
         }
+        for(uint8_t m = 1; m <= mismatches_dests_count; m++) {
+            if (separateFirstOffsetMode) {
+                misRefOffFirst[m] = toString(&destsFirst[m]);
+                cJobs.emplace_back(to_string((int) m) + " (1st): ", misRefOffFirst[m], firstCoderPropsList[m].get());
+            }
+            if (!separateFirstOffsetMode || m > 1) {
+                misRefOff[m] = toString(&dests[m]);
+                cJobs.emplace_back(to_string((int) m) + ": ", misRefOff[m], seleCoderPropsList[m].get());
+            }
+        }
+        CompressionJob::writeCompressedCollectiveParallel(pgrcOut, cJobs);
     }
 
     void SeparatedPseudoGenomeOutputBuilder::compressedBuild(ostream &pgrcOut, uint8_t coder_level, bool ignoreOffDest) {
         prebuildAssert(false);
         buildProps();
         writeReadMode(*pgPropDest, false);
-        const string tmp = ((ostringstream*) pgPropDest)->str();
-        pgrcOut.write(tmp.data(), tmp.length());
-
+        const string pgPropStr = ((ostringstream*) pgPropDest)->str();
+        vector<CompressionJob> cJobs;
+        auto fse12CoderProps = getDefaultFSECoderProps(12);
+        cJobs.emplace_back("Pseudogenome props... ", pgPropStr, fse12CoderProps.get());
+        string rlOffStr, rlRevCompStr, zeroFlags, misCnts, rlMisSym;
+        auto ppmd5CoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 5);
+        auto rloCoderProps = getSelectorCoderProps( {fse12CoderProps.get(), ppmd5CoderProps.get() });
         if (!ignoreOffDest) {
-            *logout << "Reads list offsets... ";
-            compressDest(rlOffDest, pgrcOut, PPMD7_CODER, coder_level, 3);
+            rlOffStr = toString(rlOffDest);
+            cJobs.emplace_back("Reads list offsets... ", rlOffStr, rloCoderProps.get());
         }
+        auto rciCoderProps = ignoreOffDest ? getDefaultFSECoderProps( 12) :
+                getDefaultCoderProps(PPMD7_CODER, coder_level, 3);
         if (!this->disableRevComp) {
-            *logout << "Reverse complements info... ";
-            compressDest(rlRevCompDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_UINT8_BITMAP);
+            rlRevCompStr = toString(rlRevCompDest);
+            cJobs.emplace_back("Reverse complements info... ", rlRevCompStr, rciCoderProps.get(),
+                               COMPRESSION_ESTIMATION_UINT8_BITMAP);
         }
+        auto rangeCoderProps = getDefaultRangeCoderProps();
+        auto ppmd13CoderProps = getDefaultCoderProps(PPMD7_CODER, CODER_LEVEL_MAX, 13);
+        auto zerosFlagCoderProps = getSelectorCoderProps( { fse12CoderProps.get(),
+                                                            ignoreOffDest ? rangeCoderProps.get() : ppmd13CoderProps.get() } );;
+        auto mismatchesCountsCoderProps = getSelectorCoderProps( { fse12CoderProps.get(), rangeCoderProps.get() } );
+        auto mismatchesSymbolsCoderProps = getDefaultCoderProps(PPMD7_CODER, coder_level, 8);
         if (!this->disableMismatches) {
-            *logout << "Mismatches counts... ";
-            compressDest(rlMisCntDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_CNT);
-            *logout << "Mismatched symbols codes... ";
-            compressDest(rlMisSymDest, pgrcOut, PPMD7_CODER, coder_level, 2, COMPRESSION_ESTIMATION_MIS_SYM);
+            misCnts = toStringAndSeparateZeros(rlMisCntDest, zeroFlags);
+            cJobs.emplace_back("Mismatches counts (zero flags)... ", zeroFlags, zerosFlagCoderProps.get(),
+                               COMPRESSION_ESTIMATION_MIS_CNT);
+            cJobs.emplace_back("Mismatches counts (non-zero values)... ", misCnts,
+                               mismatchesCountsCoderProps.get(),
+                               COMPRESSION_ESTIMATION_MIS_CNT);
+            rlMisSym = toString(rlMisSymDest);
+            string basesOrdered = reorderingSymbolsExclusiveMismatchEncoding(rlMisSym);
+            pgrcOut.write(basesOrdered.data(), basesOrdered.length());
+
+            cJobs.emplace_back("Mismatched symbols codes... ", rlMisSym, mismatchesSymbolsCoderProps.get(),
+                               COMPRESSION_ESTIMATION_MIS_SYM);
+        }
+        CompressionJob::writeCompressedCollectiveParallel(pgrcOut, cJobs);
+        if (!this->disableMismatches) {
             *logout << "Mismatches offsets (rev-coded)... " << endl;
             compressRlMisRevOffDest(pgrcOut, coder_level);
         }
@@ -826,27 +953,27 @@ namespace PgTools {
     void SeparatedPseudoGenomeOutputBuilder::writeReadEntry(const DefaultReadsListEntry &rlEntry) {
         lastWrittenPos = rlEntry.pos;
         if (SeparatedPseudoGenomePersistence::enableReadPositionRepresentation)
-            PgSAHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
+            PgHelpers::writeValue<uint_pg_len_max>(*rlPosDest, rlEntry.pos);
         else
-            PgSAHelpers::writeReadLengthValue(*rlOffDest, rlEntry.offset);
-        PgSAHelpers::writeValue<uint_reads_cnt_std>(*rlOrgIdxDest, rlEntry.idx);
+            PgHelpers::writeReadLengthValue(*rlOffDest, rlEntry.offset);
+        PgHelpers::writeValue<uint_reads_cnt_std>(*rlOrgIdxDest, rlEntry.idx);
         if (!disableRevComp)
-            PgSAHelpers::writeValue<uint8_t>(*rlRevCompDest, rlEntry.revComp?1:0);
+            PgHelpers::writeValue<uint8_t>(*rlRevCompDest, rlEntry.revComp?1:0);
         if (!disableMismatches) {
-            PgSAHelpers::writeValue<uint8_t>(*rlMisCntDest, rlEntry.mismatchesCount);
+            PgHelpers::writeValue<uint8_t>(*rlMisCntDest, rlEntry.mismatchesCount);
             if (rlEntry.mismatchesCount) {
                 for (uint8_t i = 0; i < rlEntry.mismatchesCount; i++)
-                    PgSAHelpers::writeValue<uint8_t>(*rlMisSymDest, rlEntry.mismatchCode[i]);
+                    PgHelpers::writeValue<uint8_t>(*rlMisSymDest, rlEntry.mismatchCode[i]);
                 if (SeparatedPseudoGenomePersistence::enableRevOffsetMismatchesRepresentation) {
                     uint8_t currentPos = pgh->getMaxReadLength() - 1;
                     for (int16_t i = rlEntry.mismatchesCount - 1; i >= 0; i--) {
-                        PgSAHelpers::writeReadLengthValue(*rlMisRevOffDest,
+                        PgHelpers::writeReadLengthValue(*rlMisRevOffDest,
                                                                    currentPos - rlEntry.mismatchOffset[i]);
                         currentPos = rlEntry.mismatchOffset[i] - 1;
                     }
                 } else {
                     for (uint8_t i = 0; i < rlEntry.mismatchesCount; i++)
-                        PgSAHelpers::writeReadLengthValue(*rlMisPosDest, rlEntry.mismatchOffset[i]);
+                        PgHelpers::writeReadLengthValue(*rlMisPosDest, rlEntry.mismatchOffset[i]);
                 }
             }
         }
@@ -887,7 +1014,7 @@ namespace PgTools {
 
         initDest(pgDest, SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX);
         string pg = pgb->getPseudoGenomeVirtual();
-        PgSAHelpers::writeArray(*pgDest, (void*) pg.data(), pg.length());
+        PgHelpers::writeArray(*pgDest, (void*) pg.data(), pg.length());
 
         ReadsListIteratorExtendedWrapperBase* rlIt =
                 TemplateUserGenerator::generateReadsListUser<ReadsListIteratorExtendedWrapper, ReadsListIteratorExtendedWrapperBase>(pgb);
@@ -939,11 +1066,11 @@ namespace PgTools {
     void SeparatedPseudoGenomeOutputBuilder::appendPseudoGenome(const string &pg) {
         if (pgDest) {
             pgh->setPseudoGenomeLength(pgh->getPseudoGenomeLength() + pg.length());
-            PgSAHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
+            PgHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
         } else {
             pgh->setPseudoGenomeLength(pg.length());
             initDest(pgDest, SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX);
-            PgSAHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
+            PgHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
         }
     }
 
@@ -951,7 +1078,7 @@ namespace PgTools {
         if (!skipPgSequence) {
             initDest(pgDest, SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX);
             const string &pg = sPg->getPgSequence();
-            PgSAHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
+            PgHelpers::writeArray(*pgDest, (void *) pg.data(), pg.length());
         }
         if (sPg->isReadLengthMin())
             bytePerReadLengthMode = true;
@@ -975,5 +1102,30 @@ namespace PgTools {
         if (rsProp)
             delete(rsProp);
         freeDests();
+    }
+
+    string SeparatedPseudoGenomeOutputBuilder::reorderingSymbolsExclusiveMismatchEncoding(string &rlMisSym) {
+        size_t counts[5] {};
+        for(char c : rlMisSym) {
+            uint8_t ctxCode = c;
+            uint8_t mismatchValue = cxtCode2MismatchValue(ctxCode);
+            counts[mismatchValue]++;
+        }
+        vector<uint8_t> order = { 0, 1, 2, 3, 4 };
+        std::sort(order.begin(), order.end(), [counts](const uint8_t &o1, const uint8_t &o2) -> bool
+                                { return counts[o1] > counts[o2]; });
+        uint8_t orderRevIdx[5];
+        string basesOrder;
+        for(int i = 0; i < 5; i++) {
+            basesOrder.push_back(value2symbol(order[i]));
+            orderRevIdx[order[i]] = i;
+        }
+        for (char &c : rlMisSym) {
+            uint8_t ctxCode = c;
+            uint8_t actualValue = orderRevIdx[cxtCode2ActualValue(ctxCode)];
+            uint8_t mismatchValue = orderRevIdx[cxtCode2MismatchValue(ctxCode)];
+            c = (char) (mismatchValue - (mismatchValue > actualValue?1:0));
+        }
+        return basesOrder;
     }
 }

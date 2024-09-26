@@ -1,6 +1,6 @@
 #include "ReadsSetAnalyzer.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     template<class ReadsSourceIterator>
     ReadsSetProperties* ReadsSetAnalyzer::analyzeReadsSet(ReadsSourceIterator *readsIterator) {

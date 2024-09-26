@@ -5,7 +5,7 @@
 #include "../pseudogenome/readslist/ReadsListInterface.h"
 #include "iterator/ReadsSetIterator.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     typedef unsigned long long uint_reads_total_len;
 
@@ -82,15 +82,15 @@ namespace PgSAReadsSet {
 
             void printout(bool verbose = false) {
                 std::cout << "reads count: " << readsCount << endl;
-                *PgSAHelpers::logout << "all reads length: " << allReadsLength << endl;
-                *PgSAHelpers::logout << "reads length is " << (constantReadLength?"constant":"variable") << endl;
-                *PgSAHelpers::logout << "minReadLength: " << minReadLength << endl;
-                *PgSAHelpers::logout << "maxReadLength: " << maxReadLength << endl;
-                *PgSAHelpers::logout << "symbolsCount: " << (int) symbolsCount << endl;
-                *PgSAHelpers::logout << "symbols: ";
+                *PgHelpers::logout << "all reads length: " << allReadsLength << endl;
+                *PgHelpers::logout << "reads length is " << (constantReadLength?"constant":"variable") << endl;
+                *PgHelpers::logout << "minReadLength: " << minReadLength << endl;
+                *PgHelpers::logout << "maxReadLength: " << maxReadLength << endl;
+                *PgHelpers::logout << "symbolsCount: " << (int) symbolsCount << endl;
+                *PgHelpers::logout << "symbols: ";
                 for(uint_symbols_cnt i = 0; i < symbolsCount; i++)
-                    *PgSAHelpers::logout << symbolsList[(unsigned char) i];
-                *PgSAHelpers::logout << "\n" << endl;
+                    *PgHelpers::logout << symbolsList[(unsigned char) i];
+                *PgHelpers::logout << "\n" << endl;
             }
     };
 
@@ -123,11 +123,11 @@ namespace PgSAReadsSet {
 
             bool isReadLengthConstant() { return properties->constantReadLength; };
 
-            bool isReadLengthMin() { return PgSAReadsSet::isReadLengthMin(properties->maxReadLength); };
-            bool isReadLengthStd() { return PgSAReadsSet::isReadLengthStd(properties->maxReadLength); };
+            bool isReadLengthMin() { return PgReadsSet::isReadLengthMin(properties->maxReadLength); };
+            bool isReadLengthStd() { return PgReadsSet::isReadLengthStd(properties->maxReadLength); };
 
-            bool isReadsCountStd() { return PgSAReadsSet::isReadsCountStd(properties->readsCount); };
-            bool isReadsCountMax() { return PgSAReadsSet::isReadsCountMax(properties->readsCount); };
+            bool isReadsCountStd() { return PgReadsSet::isReadsCountStd(properties->readsCount); };
+            bool isReadsCountMax() { return PgReadsSet::isReadsCountMax(properties->readsCount); };
 
     };
 

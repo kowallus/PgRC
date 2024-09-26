@@ -2,7 +2,7 @@
 
 #include "tools/ReadsSetAnalyzer.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     PackedConstantLengthReadsSet::PackedConstantLengthReadsSet(uint_read_len_max readLength, const char *symbolsList,
                                                                uint8_t symbolsCount) {

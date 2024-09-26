@@ -3,8 +3,9 @@
 
 #include "iterator/ExtendedReadsListIteratorInterface.h"
 #include "../SeparatedPseudoGenomeBase.h"
-#include "../../utils/SymbolsPackingFacility.h"
+#include "../../coders/SymbolsPackingFacility.h"
 #include "../DefaultPseudoGenome.h"
+#include "../../pgrc/pgrc-params.h"
 
 namespace PgTools {
 
@@ -40,7 +41,7 @@ namespace PgTools {
 
         virtual ~ExtendedReadsListWithConstantAccessOption() {};
 
-        void enableConstantAccess(bool disableIterationMode = false);
+        void enableConstantAccess(bool disableIterationMode = false, bool skipPositions = false);
 
         bool isConstantAccessEnalbed();
 
@@ -77,8 +78,9 @@ namespace PgTools {
                                                                                     bool skipMismatches = false);
 
         static ExtendedReadsListWithConstantAccessOption *loadConstantAccessExtendedReadsList(istream &pgrcIn,
-                PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp, const string validationPgPrefix = "",
-                bool preserveOrderMode = false, bool disableRevCompl = false, bool disableMismatches = false);
+                PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp, const string validationPgPrefix,
+                PgRCParams* params, bool disableRevCompl = false, bool disableMismatches = false,
+                bool separateFirstOffsetMode = false);
 
         static ExtendedReadsListWithConstantAccessOption *loadConstantAccessExtendedReadsList(
                 DefaultSeparatedExtendedReadsListIterator &rl,
@@ -122,20 +124,12 @@ namespace PgTools {
 
         void initSrcs();
 
-        void decompressSrc(istream *&src, istream &pgrcIn, SymbolsPackingFacility *symPacker = 0);
-
-        void decompressMisRevOffSrc(istream &pgrcIn, bool trasposeMode = false);
-
-        void decompressSrcs(istream &pgrcIn);
-
         void freeSrc(istream *&src);
 
         void freeSrcs();
 
         SeparatedExtendedReadsListIterator(const string &pseudoGenomePrefix);
 
-        SeparatedExtendedReadsListIterator(istream &pgrcIn, PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp,
-                                           const string pseudoGenomePrefix = "");
 
     public:
         ~SeparatedExtendedReadsListIterator() override;
@@ -165,8 +159,8 @@ namespace PgTools {
         friend ExtendedReadsListWithConstantAccessOption *ExtendedReadsListWithConstantAccessOption::
         loadConstantAccessExtendedReadsList(istream &pgrcIn,
                                             PseudoGenomeHeader *pgh, ReadsSetProperties *rsProp,
-                                            const string validationPgPrefix,
-                                            bool preserveOrderMode, bool disableRevCompl, bool disableMismatches);
+                                            const string validationPgPrefix, PgRCParams* params, bool disableRevCompl,
+                                            bool disableMismatches, bool separateFirstOffsetMode);
     };
 
 }

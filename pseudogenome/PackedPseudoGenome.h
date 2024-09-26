@@ -4,11 +4,11 @@
 #include "DefaultPseudoGenome.h"
 #include "PackedPseudoGenomeBase.h"
 #include "readslist/ReadsListTypes.h"
-#include "../utils/SymbolsPackingFacility.h"
+#include "../coders/SymbolsPackingFacility.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     const string PGTYPE_PACKED = "PACKED_PGEN";
 

@@ -10,7 +10,7 @@
 #include "PseudoGenomeGeneratorBase.h"
 #include "../PackedPseudoGenome.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class PackedPseudoGenomeGenerator: public PseudoGenomeGeneratorBase {
         private:

@@ -1,6 +1,6 @@
 #include "PseudoGenomePersistence.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
     
     PseudoGenomePersistence::PseudoGenomePersistence() {
     }

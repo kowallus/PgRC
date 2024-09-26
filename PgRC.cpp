@@ -1,24 +1,35 @@
 #include <cstdlib>
 #include <unistd.h>
 
-#include "PgRCManager.h"
+#include "pgrc/pgrc-encoder.h"
+#include "pgrc/pgrc-decoder.h"
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include <omp.h>
 
-#define RELEASE_DATE "2021-05-03"
+#define RELEASE_DATE "2024-09-26"
 
 using namespace std;
 using namespace PgTools;
 
+void printVersion(bool details) {
+    string date = RELEASE_DATE;
+    if (!details)
+        date.resize(4);
+    fprintf(stderr, "PgRC %d.%d: Copyright (c) Tomasz Kowalski, Szymon Grabowski: %s\n\n",
+                        (int) PGRC_VERSION_MAJOR, (int) PGRC_VERSION_MINOR, date.c_str());
+}
+
 int main(int argc, char *argv[])
 {
     int opt; // current option
-    PgRCManager* pgRC = new PgRCManager();
+    PgRCParams* params = new PgRCParams();
     bool expectedPairFile = false;
     bool srcFilePresent = false;
     bool pairFilePresent = false;
     bool compressionParamPresent = false;
     bool decompressMode = false;
+
+    numberOfThreads = omp_get_num_procs();
 
 #ifndef DEVELOPER_BUILD
     NullBuffer null_buffer;
@@ -27,27 +38,23 @@ int main(int argc, char *argv[])
 #endif
 
 #ifdef DEVELOPER_BUILD
-    while ((opt = getopt(argc, argv, "c:t:i:q:g:s:M:p:l:B:E:doSIrNVvTaA?")) != -1) {
+    while ((opt = getopt(argc, argv, "c:t:i:q:g:s:M:p:l:B:E:C:doSIrNRVTaAQvh?")) != -1) {
         char* valPtr;
 #else
-    while ((opt = getopt(argc, argv, "c:t:i:q:g:s:M:p:do?")) != -1) {
+    while ((opt = getopt(argc, argv, "t:i:q:g:s:M:p:doQvh?")) != -1) {
 #endif
         switch (opt) {
-            case 'c':
-                compressionParamPresent = true;
-                pgRC->setCompressionLevel(atoi(optarg));
-                break;
             case 'i':
-                pgRC->setSrcFastqFile(optarg);
+                params->setSrcFastqFile(optarg);
                 srcFilePresent = true;
                 if (optind < (argc - 1) && argv[optind][0] != '-') {
-                    pgRC->setPairFastqFile(argv[optind++]);
+                    params->setPairFastqFile(argv[optind++]);
                     pairFilePresent = true;
                 }
                 break;
             case 'o':
                 compressionParamPresent = true;
-                pgRC->setPreserveOrderMode();
+                params->setPreserveOrderMode();
                 break;
             case 'd':
                 decompressMode = true;
@@ -55,14 +62,16 @@ int main(int argc, char *argv[])
             case 't':
                 numberOfThreads = atoi(optarg);
                 break;
-
             case 'q':
                 compressionParamPresent = true;
-                pgRC->setQualityBasedDivisionErrorLimitInPromils(atoi(optarg));
+                params->setQualityBasedDivisionErrorLimitInPromils(atoi(optarg));
                 break;
+            case 'Q':
+                compressionParamPresent = true;
+                params->disableSimplifiedSuffixMode4QualityBasedDivision();
             case 'g':
                 compressionParamPresent = true;
-                pgRC->setPgGeneratorBasedDivisionOverlapThreshold_str(optarg);
+                params->setPgGeneratorBasedDivisionOverlapThreshold_str(optarg);
                 break;
             case 's':
                 compressionParamPresent = true;
@@ -72,26 +81,34 @@ int main(int argc, char *argv[])
                     case 'd':case 'i':case 'c':
                         if(*valPtr == 's') {
                             valPtr++;
-                            pgRC->setMatchingMode(toupper(*optarg));
+                            params->setMatchingMode(toupper(*optarg));
                         } else
-                            pgRC->setMatchingMode(*optarg);
+                            params->setMatchingMode(*optarg);
                         break;
                     default: valPtr--;
                 }
-                pgRC->setReadSeedLength(atoi(valPtr));
+                params->setReadSeedLength(atoi(valPtr));
 #else
-                pgRC->setReadSeedLength(atoi(optarg));
+                params->setReadSeedLength(atoi(optarg));
 #endif
                 break;
             case 'M':
                 compressionParamPresent = true;
-                pgRC->setMinCharsPerMismatch(atoi(optarg));
+                params->setMinCharsPerMismatch(atoi(optarg));
                 break;
             case 'p':
                 compressionParamPresent = true;
-                pgRC->setMinimalPgReverseComplementedRepeatLength(atoi(optarg));
+                params->setMinimalPgReverseComplementedRepeatLength(atoi(optarg));
                 break;
 #ifdef DEVELOPER_BUILD
+            case 'c':
+                compressionParamPresent = true;
+                params->setCompressionLevel(atoi(optarg));
+                break;
+            case 'C':
+                compressionParamPresent = true;
+                setAutoSelectorLevel(atoi(optarg));
+                break;
             case 'l':
                 compressionParamPresent = true;
                 valPtr = optarg + 1;
@@ -99,38 +116,38 @@ int main(int argc, char *argv[])
                     case 'd':case 'i':case 'c':
                         if(*valPtr == 's') {
                             valPtr++;
-                            pgRC->setPreMatchingMode(toupper(*optarg));
+                            params->setPreMatchingMode(toupper(*optarg));
                         } else
-                            pgRC->setPreMatchingMode(*optarg);
+                            params->setPreMatchingMode(*optarg);
                         break;
                     default: valPtr--;
                 }
-                pgRC->setPreReadsExactMatchingChars(atoi(valPtr));
+                params->setPreReadsExactMatchingChars(atoi(valPtr));
                 break;
             case 'S':
                 compressionParamPresent = true;
-                pgRC->setSingleReadsMode();
+                params->setSingleReadsMode();
                 break;
             case 'I':
                 compressionParamPresent = true;
                 expectedPairFile = true;
-                pgRC->setIgnorePairOrderInformation();
+                params->setIgnorePairOrderInformation();
                 break;
             case 'r':
                 compressionParamPresent = true;
                 expectedPairFile = true;
-                pgRC->disableRevComplPairFile();
+                params->disableRevComplPairFile();
                 break;
             case 'N':
                 compressionParamPresent = true;
-                pgRC->doNotSeparateNReads();
+                params->doNotSeparateNReads();
+                break;
+            case 'R':
+                compressionParamPresent = true;
+                params->allowVariableParams();
                 break;
             case 'V':
-                compressionParamPresent = true;
-                pgRC->allowVariableParams();
-                break;
-            case 'v':
-                pgRC->setValidationOutputMode();
+                params->setValidationOutputMode();
                 break;
             case 'T':
                 compressionParamPresent = true;
@@ -146,25 +163,30 @@ int main(int argc, char *argv[])
                 break;
             case 'B':
                 compressionParamPresent = true;
-                pgRC->setBeginAfterStage(atoi(optarg));
+                params->setBeginAfterStage(atoi(optarg));
                 break;
             case 'E':
                 compressionParamPresent = true;
-                pgRC->setEndAtStage(atoi(optarg));
+                params->setEndAtStage(atoi(optarg));
                 break;
 #endif
+            case 'v':
+                printVersion(true);
+                exit(EXIT_SUCCESS);
             case '?':
+            case 'h':
             default: /* '?' */
-                fprintf(stderr, "PgRC %d.%d: Copyright (c) 2021 Tomasz Kowalski, Szymon Grabowski: %s\n\n",
-                        (int) PGRC_VERSION_MAJOR, (int) PGRC_VERSION_MINOR, RELEASE_DATE);
-                fprintf(stderr, "Usage: %s [-c compressionLevel] [-i seqSrcFile [pairSrcFile]] [-t noOfThreads]"
+                printVersion(false);
+                fprintf(stderr, "Usage: %s [-i seqSrcFile [pairSrcFile]] [-t noOfThreads]"
                                 "\n[-o] [-d] archiveName\n\n", argv[0]);
-                fprintf(stderr, "-c compression levels: 1 - fast; 2 - default; 3 - max\n");
-                fprintf(stderr, "-t number of threads used (8 - default)\n");
-                fprintf(stderr, "-d decompression mode\n");
-                fprintf(stderr, "-o preserve original read order information\n\n");
-                fprintf(stderr, "------------------ EXPERT OPTIONS ----------------\n");
+                fprintf(stderr, "\t-d decompression mode\n");
+                fprintf(stderr, "\t-o preserve original read order information\n");
+                fprintf(stderr, "\t-t number of threads used (%d - default)\n", numberOfThreads);
+                fprintf(stderr, "\t-h print full command help and exit\n");
+                fprintf(stderr, "\t-v print version number and exit\n");
+                fprintf(stderr, "\n------------------ EXPERT OPTIONS ----------------\n");
                 fprintf(stderr, "[-q qualityStreamErrorProbability*1000] (1000=>disable)\n"
+                                "[-Q] disable simplified quality estimation mode\n"
                                 "[-g generatorBasedQualityCoefficientIn_%%] (0=>disable; 'ov' param in the paper)\n"
                                 "[-s "
 #ifdef DEVELOPER_BUILD
@@ -176,6 +198,8 @@ int main(int argc, char *argv[])
 #ifdef DEVELOPER_BUILD
                 fprintf(stderr, "Matching modes: d[s]:default; i[s]:interleaved; c[s]:copMEM ('s' suffix: shortcut after first read match)\n");
                 fprintf(stderr, "------------------ DEVELOPER OPTIONS ----------------\n");
+                fprintf(stderr, "[-c backendCompressionLevel] 1 - fast; 2 - default; 3 - max\n");
+                fprintf(stderr, "[-C backendCompressionAutoSelectorLevel] 0 - default\n");
                 fprintf(stderr, "[-l [matchingMode]lengthOfReadSeedPartForReadsAlignmentPhase] (enables preliminary reads matching stage)\n"
                                 "[-S] [-I] [-r] [-N] [-V] [-v] [-t] [-a] [-A]\n"
                                 "[-B numberOfStagesToSkip] [-E numberOfAStageToEnd]\n\n");
@@ -183,8 +207,8 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "-I ignore order of reads in a pair (works when pairSrcFile is specified)\n");
                 fprintf(stderr, "-r disable reverse compliment reads in a pair file for all PE modes\n");
                 fprintf(stderr, "-N reads containing N are not processed separately\n");
-                fprintf(stderr, "-V allow variable (auto-adjusting) parameters during processing\n");
-                fprintf(stderr, "-v dump extra files for validation mode and development purposes "
+                fprintf(stderr, "-R allow variable (auto-adjusting) parameters during processing\n");
+                fprintf(stderr, "-V dump extra files for validation mode and development purposes "
                                 "(decompression supports -i parameter in validation mode)\n"
                                 "-T write numbers in text mode\n");
                 fprintf(stderr, "-a write absolute read position \n-A write mismatches as positions\n");
@@ -196,23 +220,23 @@ int main(int argc, char *argv[])
     }
     if (optind > (argc - 1) || optind < (argc - 1)) {
         fprintf(stderr, "%s: Expected 1 argument after options (found %d)\n", argv[0], argc - optind);
-        fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
+        fprintf(stderr, "try '%s -h' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
     if (decompressMode && compressionParamPresent) {
         fprintf(stderr, "Cannot use compression options in decompression mode.\n");
-        fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
+        fprintf(stderr, "try '%s -h' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
     if (!srcFilePresent && !decompressMode) {
         fprintf(stderr, "Input file(s) not specified.\n");
-        fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
+        fprintf(stderr, "try '%s -h' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 #ifdef DEVELOPER_BUILD
     if (expectedPairFile && !pairFilePresent) {
         fprintf(stderr, "Cannot use -r or -I option without specifying a pair file.\n");
-        fprintf(stderr, "try '%s -?' for more information\n", argv[0]);
+        fprintf(stderr, "try '%s -h' for more information\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 #endif
@@ -222,14 +246,18 @@ int main(int argc, char *argv[])
     }
     omp_set_num_threads(numberOfThreads);
 
-    pgRC->setPgRCFileName(argv[optind++]);
+    params->setPgRCFileName(argv[optind++]);
 
-    if (decompressMode)
-        pgRC->decompressPgRC();
-    else
-        pgRC->executePgRCChain();
+    if (decompressMode) {
+        PgRCDecoder decoder(params);
+        decoder.decompressPgRC();
+    }
+    else {
+        PgRCEncoder encoder(params);
+        encoder.executePgRCChain();
+    }
 
-    delete(pgRC);
+    delete(params);
 
     exit(EXIT_SUCCESS);
 }

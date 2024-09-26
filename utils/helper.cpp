@@ -2,9 +2,11 @@
 
 #include "byteswap.h"
 
-std::ostream *PgSAHelpers::logout = &std::cout;
+std::ostream *PgHelpers::logout = &std::cout;
+std::ostream *PgHelpers::appout = &std::cout;
+std::ostream *PgHelpers::devout = &std::cout;
 
-int PgSAHelpers::numberOfThreads = 8;
+int PgHelpers::numberOfThreads = 8;
 
 NullBuffer null_buffer;
 std::ostream null_stream(&null_buffer);
@@ -13,34 +15,34 @@ std::ostream null_stream(&null_buffer);
 
 clock_t checkpoint;
 
-clock_t PgSAHelpers::clock_checkpoint() {
+clock_t PgHelpers::clock_checkpoint() {
     checkpoint = clock();
     return checkpoint;
 //    cout << "Clock reset!\n";
 }
 
-unsigned long long int PgSAHelpers::clock_millis(clock_t checkpoint) {
+unsigned long long int PgHelpers::clock_millis(clock_t checkpoint) {
     return (clock() - checkpoint) * (unsigned long long int) 1000 / CLOCKS_PER_SEC;
 }
 
-unsigned long long int PgSAHelpers::clock_millis() {
+unsigned long long int PgHelpers::clock_millis() {
     return clock_millis(checkpoint);
 }
 
 
 chrono::steady_clock::time_point chronocheckpoint;
 
-chrono::steady_clock::time_point PgSAHelpers::time_checkpoint() {
+chrono::steady_clock::time_point PgHelpers::time_checkpoint() {
     chronocheckpoint = chrono::steady_clock::now();
     return chronocheckpoint;
 }
 
-unsigned long long int PgSAHelpers::time_millis(chrono::steady_clock::time_point checkpoint) {
+unsigned long long int PgHelpers::time_millis(chrono::steady_clock::time_point checkpoint) {
     chrono::nanoseconds time_span = chrono::duration_cast<chrono::nanoseconds>(chrono::steady_clock::now() - checkpoint);
     return (double)time_span.count() / 1000000.0;
 }
 
-unsigned long long int PgSAHelpers::time_millis() {
+unsigned long long int PgHelpers::time_millis() {
     return time_millis(chronocheckpoint);
 }
 
@@ -49,7 +51,7 @@ unsigned long long int PgSAHelpers::time_millis() {
 
 const size_t chunkSize = 10000000;
 
-void* PgSAHelpers::readArray(std::istream& in, size_t arraySizeInBytes) {
+void* PgHelpers::readArray(std::istream& in, size_t arraySizeInBytes) {
 
     if (in) {
         char* destArray = new char[arraySizeInBytes];
@@ -59,7 +61,7 @@ void* PgSAHelpers::readArray(std::istream& in, size_t arraySizeInBytes) {
         throw(errno);
 }
 
-void PgSAHelpers::readArray(std::istream& in, void* destArray, size_t arraySizeInBytes) {
+void PgHelpers::readArray(std::istream& in, void* destArray, size_t arraySizeInBytes) {
 
     if (in) {
         size_t length = arraySizeInBytes;
@@ -75,7 +77,7 @@ void PgSAHelpers::readArray(std::istream& in, void* destArray, size_t arraySizeI
         throw(errno);
 }
 
-void PgSAHelpers::writeArray(std::ostream& out, void* srcArray, size_t arraySize, bool verbose) {
+void PgHelpers::writeArray(std::ostream& out, void* srcArray, size_t arraySize, bool verbose) {
     size_t bytesLeft = arraySize;
     if (out) {
         while (bytesLeft > chunkSize) {
@@ -91,7 +93,7 @@ void PgSAHelpers::writeArray(std::ostream& out, void* srcArray, size_t arraySize
         cout << "Written " << arraySize << " bytes\n";
 }
 
-void* PgSAHelpers::readWholeArray(std::istream& in, size_t& arraySizeInBytes) {
+void* PgHelpers::readWholeArray(std::istream& in, size_t& arraySizeInBytes) {
 
     if (in) {
         in.seekg(0, in.end);
@@ -113,39 +115,39 @@ void* PgSAHelpers::readWholeArray(std::istream& in, size_t& arraySizeInBytes) {
         throw(errno);
 }
 
-void* PgSAHelpers::readWholeArrayFromFile(string srcFile, size_t& arraySizeInBytes) {
+void* PgHelpers::readWholeArrayFromFile(string srcFile, size_t& arraySizeInBytes) {
     time_checkpoint();
 
     std::ifstream in(srcFile.c_str(), std::ifstream::binary);
 
-    void* destArray = PgSAHelpers::readWholeArray(in, arraySizeInBytes);
+    void* destArray = PgHelpers::readWholeArray(in, arraySizeInBytes);
 
     cout << "Read " << arraySizeInBytes << " bytes from " << srcFile << " in " << time_millis() << " msec \n";
 
     return destArray;
 }
 
-void PgSAHelpers::writeArrayToFile(string destFile, void* srcArray, size_t arraySize) {
+void PgHelpers::writeArrayToFile(string destFile, void* srcArray, size_t arraySize) {
     time_checkpoint();
 
     std::ofstream out(destFile.c_str(), std::ios::out | std::ios::binary);
 
-    PgSAHelpers::writeArray(out, srcArray, arraySize);
+    PgHelpers::writeArray(out, srcArray, arraySize);
 
     cout << "Write " << arraySize << " bytes to " << destFile << " in " << time_millis() << " msec \n";
 }
 
-void PgSAHelpers::writeStringToFile(string destFile, const string &src) {
+void PgHelpers::writeStringToFile(string destFile, const string &src) {
     writeArrayToFile(destFile, (void*) src.data(), src.length());
 }
 
-bool PgSAHelpers::plainTextWriteMode = false;
+bool PgHelpers::plainTextWriteMode = false;
 
-void PgSAHelpers::writeReadMode(std::ostream &dest, bool plainTextWriteMode) {
+void PgHelpers::writeReadMode(std::ostream &dest, bool plainTextWriteMode) {
     dest << (plainTextWriteMode?TEXT_MODE_ID:BINARY_MODE_ID) << "\n";
 }
 
-bool PgSAHelpers::confirmTextReadMode(std::istream &src) {
+bool PgHelpers::confirmTextReadMode(std::istream &src) {
     string readMode;
     src >> readMode;
     if (readMode != TEXT_MODE_ID && readMode != BINARY_MODE_ID) {
@@ -157,7 +159,7 @@ bool PgSAHelpers::confirmTextReadMode(std::istream &src) {
 }
 
 template<>
-void PgSAHelpers::writeValue(std::ostream &dest, const uint8_t value, bool plainTextWriteMode) {
+void PgHelpers::writeValue(std::ostream &dest, const uint8_t value, bool plainTextWriteMode) {
     if (plainTextWriteMode)
         dest << (uint16_t) value << endl;
     else
@@ -165,7 +167,7 @@ void PgSAHelpers::writeValue(std::ostream &dest, const uint8_t value, bool plain
 }
 
 template<>
-void PgSAHelpers::readValue(std::istream &src, uint8_t &value, bool plainTextReadMode) {
+void PgHelpers::readValue(std::istream &src, uint8_t &value, bool plainTextReadMode) {
     if (plainTextReadMode) {
         uint16_t temp;
         src >> temp;
@@ -174,7 +176,7 @@ void PgSAHelpers::readValue(std::istream &src, uint8_t &value, bool plainTextRea
         src.read((char *) &value, sizeof(uint8_t));
 }
 
-void PgSAHelpers::writeUIntByteFrugal(std::ostream &dest, uint64_t value) {
+void PgHelpers::writeUIntByteFrugal(std::ostream &dest, uint64_t value) {
     while (value >= 128) {
         uint8_t yByte = 128 + (value % 128);
         dest.write((char *) &yByte, sizeof(uint8_t));
@@ -184,29 +186,29 @@ void PgSAHelpers::writeUIntByteFrugal(std::ostream &dest, uint64_t value) {
     dest.write((char *) &yByte, sizeof(uint8_t));
 }
 
-bool PgSAHelpers::bytePerReadLengthMode = false;
+bool PgHelpers::bytePerReadLengthMode = false;
 
-void PgSAHelpers::readReadLengthValue(std::istream &src, uint16_t &value, bool plainTextReadMode) {
+void PgHelpers::readReadLengthValue(std::istream &src, uint16_t &value, bool plainTextReadMode) {
     if (bytePerReadLengthMode)
         readValue<uint8_t>(src, (uint8_t&) value, plainTextReadMode);
     else
         readValue<uint16_t>(src, value, plainTextReadMode);
 }
 
-void PgSAHelpers::writeReadLengthValue(std::ostream &dest, const uint16_t value) {
+void PgHelpers::writeReadLengthValue(std::ostream &dest, const uint16_t value) {
     if (bytePerReadLengthMode)
         writeValue<uint8_t>(dest, (uint8_t) value, plainTextWriteMode);
     else
         writeValue<uint16_t>(dest, value, plainTextWriteMode);
 }
 
-string PgSAHelpers::toString(unsigned long long value) {
+string PgHelpers::toString(unsigned long long value) {
         std::ostringstream oss;
         oss << value;
         return oss.str();
 };
 
-string PgSAHelpers::toMB(unsigned long long value, unsigned char decimalPlaces) {
+string PgHelpers::toMB(unsigned long long value, unsigned char decimalPlaces) {
     std::ostringstream oss;
     int power = 1000000;
     oss << value / power;
@@ -219,7 +221,7 @@ string PgSAHelpers::toMB(unsigned long long value, unsigned char decimalPlaces) 
     return oss.str();
 }
 
-string PgSAHelpers::toString(long double value, unsigned char decimalPlaces) {
+string PgHelpers::toString(long double value, unsigned char decimalPlaces) {
     std::ostringstream oss;
     oss << (long long int) value;
     if (decimalPlaces > 0) {
@@ -232,12 +234,12 @@ string PgSAHelpers::toString(long double value, unsigned char decimalPlaces) {
     return oss.str();
 }
 
-unsigned long long int PgSAHelpers::powuint(unsigned long long int base, int exp)
+unsigned long long int PgHelpers::powuint(unsigned long long int base, int exp)
 {
     if (exp == 0) return 1;
     if (exp == 1) return base;
 
-    unsigned long long int tmp = PgSAHelpers::powuint(base, exp/2);
+    unsigned long long int tmp = PgHelpers::powuint(base, exp/2);
     if (exp%2 == 0) return tmp * tmp;
         else return base * tmp * tmp;
 }
@@ -247,6 +249,14 @@ struct LUT
     char complementsLut[256];
     char sym2val[256];
     char val2sym[5];
+    float qualityLut[133];
+
+    void reorderSymAndVal(const char* basesOrdered) {
+        for(char i = 0; i < 5; i++)
+            val2sym[i] = basesOrdered[i];
+        for(char i = 0; i < 5; i++)
+            sym2val[val2sym[i]] = i;
+    }
 
     LUT() {
         memset(complementsLut, 0, 256);
@@ -270,39 +280,107 @@ struct LUT
         val2sym[3] = 'T';
         val2sym[4] = 'N';
         memset(sym2val, -1, 256);
-        for(char i = 0; i < 5; i++)
-            sym2val[val2sym[i]] = i;
+        reorderSymAndVal("ACGTN");
+        qualityLut[33 + 0] = 0;
+        qualityLut[33 + 1] = 0.2056717652757185;
+        qualityLut[33 + 2] = 0.36904265551980675;
+        qualityLut[33 + 3] = 0.49881276637272776;
+        qualityLut[33 + 4] = 0.6018928294465028;
+        qualityLut[33 + 5] = 0.683772233983162;
+        qualityLut[33 + 6] = 0.748811356849042;
+        qualityLut[33 + 7] = 0.800473768503112;
+        qualityLut[33 + 8] = 0.8415106807538887;
+        qualityLut[33 + 9] = 0.8741074588205833;
+        qualityLut[33 + 10] = 0.9;
+        qualityLut[33 + 11] = 0.9205671765275718;
+        qualityLut[33 + 12] = 0.9369042655519807;
+        qualityLut[33 + 13] = 0.9498812766372727;
+        qualityLut[33 + 14] = 0.9601892829446502;
+        qualityLut[33 + 15] = 0.9683772233983162;
+        qualityLut[33 + 16] = 0.9748811356849042;
+        qualityLut[33 + 17] = 0.9800473768503112;
+        qualityLut[33 + 18] = 0.9841510680753889;
+        qualityLut[33 + 19] = 0.9874107458820583;
+        qualityLut[33 + 20] = 0.99;
+        qualityLut[33 + 21] = 0.9920567176527572;
+        qualityLut[33 + 22] = 0.993690426555198;
+        qualityLut[33 + 23] = 0.9949881276637272;
+        qualityLut[33 + 24] = 0.996018928294465;
+        qualityLut[33 + 25] = 0.9968377223398316;
+        qualityLut[33 + 26] = 0.9974881135684904;
+        qualityLut[33 + 27] = 0.9980047376850312;
+        qualityLut[33 + 28] = 0.9984151068075389;
+        qualityLut[33 + 29] = 0.9987410745882058;
+        qualityLut[33 + 30] = 0.999;
+        qualityLut[33 + 31] = 0.9992056717652757;
+        qualityLut[33 + 32] = 0.9993690426555198;
+        qualityLut[33 + 33] = 0.9994988127663728;
+        qualityLut[33 + 34] = 0.9996018928294464;
+        qualityLut[33 + 35] = 0.9996837722339832;
+        qualityLut[33 + 36] = 0.999748811356849;
+        qualityLut[33 + 37] = 0.9998004737685031;
+        qualityLut[33 + 38] = 0.9998415106807539;
+        qualityLut[33 + 39] = 0.9998741074588205;
+        qualityLut[33 + 40] = 0.9999;
+        for(int i = 41; i < 100; i++)
+            qualityLut[33 + i] = 1;
     }
-} instance;
+} lutInstance;
 
-char* complementsLUT = instance.complementsLut;
-char* sym2val = instance.sym2val;
-char* val2sym = instance.val2sym;
+char* complementsLUT = lutInstance.complementsLut;
+char* sym2val = lutInstance.sym2val;
+char* val2sym = lutInstance.val2sym;
+float* qualityLut = lutInstance.qualityLut;
 
-uint8_t PgSAHelpers::symbol2value(char symbol) {
+void PgHelpers::reorderSymAndVal(const char* basesOrdered) {
+    lutInstance.reorderSymAndVal(basesOrdered);
+}
+
+uint8_t PgHelpers::symbol2value(char symbol) {
     return sym2val[symbol];
 }
 
-char PgSAHelpers::value2symbol(uint8_t value) {
+char PgHelpers::value2symbol(uint8_t value) {
     return val2sym[value];
 }
 
-uint8_t PgSAHelpers::mismatch2code(char actual, char mismatch) {
+uint8_t PgHelpers::mismatch2code(char actual, char mismatch) {
     uint8_t actualValue = symbol2value(actual);
     uint8_t mismatchValue = symbol2value(mismatch);
     return mismatchValue - (mismatchValue > actualValue?1:0);
 }
 
-char PgSAHelpers::code2mismatch(char actual, uint8_t code) {
+char PgHelpers::code2mismatch(char actual, uint8_t code) {
     uint8_t actualValue = symbol2value(actual);
     return value2symbol(code < actualValue?code:(code+1));
 }
 
-char PgSAHelpers::reverseComplement(char symbol) {
+uint8_t PgHelpers::mismatch2CxtCode(char actual, char mismatch) {
+    uint8_t actualValue = symbol2value(actual);
+    uint8_t mismatchValue = symbol2value(mismatch);
+    return (actualValue << 4) + mismatchValue;
+}
+
+uint8_t PgHelpers::cxtCode2ActualValue(uint8_t code) {
+    uint8_t actualValue = code >> 4;
+    return actualValue;
+}
+
+uint8_t PgHelpers::cxtCode2MismatchValue(uint8_t code) {
+    uint8_t mismatchValue = code & 0x0F;
+    return mismatchValue;
+}
+
+char PgHelpers::cxtCode2Mismatch(uint8_t code) {
+    uint8_t mismatchValue = cxtCode2MismatchValue(code);
+    return value2symbol(mismatchValue);
+}
+
+char PgHelpers::reverseComplement(char symbol) {
     return complementsLUT[symbol];
 }
 
-void PgSAHelpers::reverseComplementInPlace(char* start, const std::size_t N) {
+void PgHelpers::reverseComplementInPlace(char* start, const std::size_t N) {
     char* left = start - 1;
     char* right = start + N;
     while (--right > ++left) {
@@ -314,7 +392,7 @@ void PgSAHelpers::reverseComplementInPlace(char* start, const std::size_t N) {
         *left = complementsLUT[*left];
 }
 
-string PgSAHelpers::reverseComplement(string kmer) {
+string PgHelpers::reverseComplement(string kmer) {
     size_t kmer_length = kmer.size();
     string revcomp;
     revcomp.resize(kmer_length);
@@ -324,11 +402,11 @@ string PgSAHelpers::reverseComplement(string kmer) {
     return revcomp;
 }
 
-void PgSAHelpers::reverseComplementInPlace(string &kmer) {
+void PgHelpers::reverseComplementInPlace(string &kmer) {
     reverseComplementInPlace((char*) kmer.data(), kmer.length());
 }
 
-double PgSAHelpers::qualityScore2approxCorrectProb(string quality) {
+double PgHelpers::qualityScore2approxCorrectProb(string& quality) {
     double val = 1;
     for (char q : quality) {
         switch (q) {
@@ -371,7 +449,33 @@ double PgSAHelpers::qualityScore2approxCorrectProb(string quality) {
     return pow(val, 1.0/quality.length());
 }
 
-double PgSAHelpers::qualityScore2correctProb(string quality) {
+double PgHelpers::qualityScore2correctProbArithAvg(string& quality, int fraction, bool onlyRightFraction) {
+    double val1 = 0, val2 = 0;
+    int fractionLength = quality.length() / fraction;
+    int rightLength = fractionLength;
+    if (!onlyRightFraction) {
+        int leftLength = fractionLength / 2;
+        rightLength = fractionLength - leftLength;
+        int i = 0;
+        for (; i < (leftLength / 2) * 2; i += 2) {
+            val1 += qualityLut[quality[i]];
+            val2 += qualityLut[quality[i + 1]];
+        }
+        for (; i < leftLength; i++)
+            val1 += qualityLut[quality[i]];
+    }
+    int i = quality.length() - rightLength;
+    for (; i < (quality.length() / 2) * 2; i += 2) {
+        val1 += qualityLut[quality[i]];
+        val2 += qualityLut[quality[i + 1]];
+    }
+    for (; i < quality.length(); i++)
+        val1 += qualityLut[quality[i]];
+    return (val1 + val2) / fractionLength;
+}
+
+
+double PgHelpers::qualityScore2correctProb(string& quality) {
     double val = 1;
     for (char q : quality) {
         switch (q) {
@@ -422,7 +526,7 @@ double PgSAHelpers::qualityScore2correctProb(string quality) {
     return pow(val, 1.0/quality.length());
 }
 
-int PgSAHelpers::readsSufPreCmp(const char* suffixPart, const char* prefixRead) {
+int PgHelpers::readsSufPreCmp(const char* suffixPart, const char* prefixRead) {
     while (*suffixPart) {
         if (*suffixPart > *prefixRead)
             return 1;
@@ -432,7 +536,7 @@ int PgSAHelpers::readsSufPreCmp(const char* suffixPart, const char* prefixRead) 
     return 0;
 }
 
-int PgSAHelpers::strcmplcp(const char* lStrPtr, const char* rStrPtr, int length) {
+int PgHelpers::strcmplcp(const char* lStrPtr, const char* rStrPtr, int length) {
     
     int i = 0;
     while (length - i >= 4) {

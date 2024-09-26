@@ -1,7 +1,7 @@
 #include "ListOfConstantLengthReads.h"
 #include "ReadsListTypes.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, unsigned char LIST_ELEMENT_SIZE, uchar FLAGS_OFFSET>
     ListOfConstantLengthReads<uint_read_len, uint_reads_cnt, uint_pg_len, LIST_ELEMENT_SIZE, FLAGS_OFFSET>::ListOfConstantLengthReads(uint_read_len readLength, uint_reads_cnt readsCount, uint_pg_len pseudoGenomeLength)
@@ -24,7 +24,7 @@ namespace PgSAIndex {
         src >> srchelper;
         duplicateFilterK = srchelper;
         src.get(); //"\n";
-        this->pgReadsList = (uchar*) PgSAHelpers::readArray(src, sizeof (uchar) * (readsCount + 1) * (uint_max) LIST_ELEMENT_SIZE);
+        this->pgReadsList = (uchar*) PgHelpers::readArray(src, sizeof (uchar) * (readsCount + 1) * (uint_max) LIST_ELEMENT_SIZE);
 
         this->isSortRequired = false;
         generateReverseIndex();
@@ -70,7 +70,7 @@ namespace PgSAIndex {
         dest << readsCount << "\n";
         dest << pseudoGenomeLength << "\n";
         dest << (int) duplicateFilterK << "\n";
-        PgSAHelpers::writeArray(dest, this->pgReadsList, sizeof (uchar) * (readsCount + 1) * (uint_max) LIST_ELEMENT_SIZE);
+        PgHelpers::writeArray(dest, this->pgReadsList, sizeof (uchar) * (readsCount + 1) * (uint_max) LIST_ELEMENT_SIZE);
     }
 
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, unsigned char LIST_ELEMENT_SIZE, uchar FLAGS_OFFSET>

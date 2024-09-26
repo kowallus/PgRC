@@ -36,7 +36,7 @@ namespace PgTools {
             destPg = srcPg;
 
         if (revComplMatching)
-            destPg = PgSAHelpers::reverseComplement(destPg);
+            destPg = PgHelpers::reverseComplement(destPg);
     }
 
     DefaultPgMatcher::~DefaultPgMatcher() {

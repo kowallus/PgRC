@@ -5,9 +5,9 @@
 
 #include "ReadsListInterface.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
     
     template <  typename uint_read_len,
                 typename uint_reads_cnt,

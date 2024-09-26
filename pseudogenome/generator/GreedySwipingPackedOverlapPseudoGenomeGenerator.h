@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <deque>
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template < typename uint_read_len, typename uint_reads_cnt >
     class GreedySwipingPackedOverlapGeneratorTemplate: public AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>

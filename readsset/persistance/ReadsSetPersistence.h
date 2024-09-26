@@ -5,7 +5,7 @@
 #include "../PackedConstantLengthReadsSet.h"
 #include "../iterator/ReadsSetIterator.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     class ReadsSetPersistence {
     private:
@@ -14,6 +14,9 @@ namespace PgSAReadsSet {
         private:
             vector<ReadsSourceIteratorTemplate< uint_read_len_max>*> coreIterators;
             ReadsSourceIteratorTemplate< uint_read_len_max>* readsIterator = 0;
+
+            char buf1[1 << 16];
+            char buf2[1 << 16];
 
             ifstream* srcSource = 0;
             ifstream* pairSource = 0;
@@ -25,8 +28,8 @@ namespace PgSAReadsSet {
 
         public:
             bool moveNext();
-            string getRead();
-            string getQualityInfo();
+            string& getRead();
+            string& getQualityInfo();
             uint_read_len_max getReadLength();
             void rewind();
 

@@ -24,7 +24,7 @@ public:
 
 extern std::ostream null_stream;
 
-namespace PgSAHelpers {
+namespace PgHelpers {
 
     extern int numberOfThreads;
 
@@ -34,13 +34,19 @@ namespace PgSAHelpers {
     string reverseComplement(string kmer);
     void reverseComplementInPlace(char* start, const std::size_t N);
     void reverseComplementInPlace(string &kmer);
-    double qualityScore2approxCorrectProb(string quality);
-    double qualityScore2correctProb(string quality);
+    double qualityScore2approxCorrectProb(string& quality);
+    double qualityScore2correctProbArithAvg(string& quality, int fraction = 1, bool onlyRightFraction = true);
+    double qualityScore2correctProb(string& quality);
 
+    void reorderSymAndVal(const char* basesOrdered);
     inline uint8_t symbol2value(char symbol);
-    inline char value2symbol(uint8_t value);
+    char value2symbol(uint8_t value);
     uint8_t mismatch2code(char actual, char mismatch);
     char code2mismatch(char actual, uint8_t code);
+    uint8_t mismatch2CxtCode(char actual, char mismatch);
+    uint8_t cxtCode2ActualValue(uint8_t code);
+    uint8_t cxtCode2MismatchValue(uint8_t code);
+    char cxtCode2Mismatch(uint8_t code);
 
     template<typename uint_read_len>
     void convertMisRevOffsets2Offsets(uint_read_len *mismatchOffsets, uint8_t mismatchesCount, uint_read_len readLength) {
@@ -142,6 +148,8 @@ namespace PgSAHelpers {
 
     // input output routines
 
+    extern std::ostream *appout;
+    extern std::ostream *devout;
     extern std::ostream *logout;
 
     void* readArray(std::istream&, size_t arraySizeInBytes);
@@ -183,6 +191,17 @@ namespace PgSAHelpers {
     template<typename t_val>
     void writeValue(std::ostream &dest, const t_val value) {
         writeValue(dest, value, plainTextWriteMode);
+    }
+
+    template<typename t_val>
+    inline void readValue(std::istream &src, t_val& value) {
+        src.read((char *) &value, sizeof(t_val));
+    }
+
+    template<typename t_val>
+    void readValue(unsigned char* &src, t_val& value) {
+        memcpy((void*) &value, src, sizeof(value));
+        src += sizeof(value);
     }
 
     void writeUIntByteFrugal(std::ostream &dest, uint64_t value);
@@ -228,7 +247,7 @@ namespace PgSAHelpers {
 
         static BufferedFileIStream* getIStream(string filename) {
             size_t readsArraySize;
-            char* readsArray = (char*) PgSAHelpers::readWholeArrayFromFile(filename, readsArraySize);
+            char* readsArray = (char*) PgHelpers::readWholeArrayFromFile(filename, readsArraySize);
 
             membuf* sbuf = new membuf(readsArray, readsArray + readsArraySize);
 

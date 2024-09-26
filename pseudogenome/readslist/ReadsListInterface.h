@@ -5,10 +5,10 @@
 #define OCCUR_FLAG 0x01
 #define OCCURFLAGS_MASK 0x03
 
-#include "../../pgsaconfig.h"
+#include "../../pgrc/pg-config.h"
 #include "iterator/ReadsListIteratorInterface.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
         
     template < typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass >
     class ReadsListInterface

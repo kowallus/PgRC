@@ -3,9 +3,9 @@
 
 #include "PseudoGenomeBase.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class PackedPseudoGenomeBase: public PseudoGenomeBase
     {

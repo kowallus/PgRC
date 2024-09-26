@@ -5,12 +5,12 @@
 #include <parallel/algorithm>
 #include <cassert>
 
-using namespace PgSAReadsSet;
-using namespace PgSAHelpers;
+using namespace PgReadsSet;
+using namespace PgHelpers;
 
 // GENERATOR
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template<typename uint_read_len, typename uint_reads_cnt>
     ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>::ParallelGreedySwipingPackedOverlapGeneratorTemplate(

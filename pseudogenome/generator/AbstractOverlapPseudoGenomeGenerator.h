@@ -6,9 +6,9 @@
 #include <set>
 #include "../persistence/SeparatedPseudoGenomePersistence.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template < typename uint_read_len, typename uint_reads_cnt >
     class AbstractOverlapPseudoGenomeGeneratorTemplate: public PseudoGenomeGeneratorBase

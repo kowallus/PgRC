@@ -2,7 +2,7 @@
 #include <deque>
 #include "TextMatchers.h"
 
-using namespace PgSAHelpers;
+using namespace PgHelpers;
 
 namespace PgTools {
 

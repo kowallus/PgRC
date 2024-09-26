@@ -71,25 +71,36 @@ namespace PgTools {
         return res;
     }
 
+    void SeparatedPseudoGenome::getRead_Unsafe(uint_reads_cnt_max idx, uint_pg_len_max pos, char *ptr) {
+        getRawSequenceOfReadLength(ptr, pos);
+        if (this->readsList->revComp[idx])
+            PgHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+        for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
+            const uint8_t misPos = this->readsList->getMisOff(idx, i);
+            ptr[misPos] = PgHelpers::code2mismatch(ptr[misPos],
+                                                   this->readsList->getMisSymCode(idx, i));
+        }
+    }
+
     void SeparatedPseudoGenome::getRead_Unsafe(uint_reads_cnt_max idx, char *ptr) {
         getRead_RawSequence(idx, ptr);
         if (this->readsList->revComp[idx])
-            PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+            PgHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
         for(uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
             const uint8_t misPos = this->readsList->getMisOff(idx, i);
-            ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
+            ptr[misPos] = PgHelpers::code2mismatch(ptr[misPos],
                                                this->readsList->getMisSymCode(idx, i));
         }
     }
 
-    void SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx, char *ptr) {
+    void SeparatedPseudoGenome::getRead(uint_reads_cnt_max idx, char *ptr) const {
         getRead_RawSequence(idx, ptr);
         if (this->readsList->isRevCompEnabled() && this->readsList->revComp[idx])
-            PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+            PgHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
         if (this->readsList->areMismatchesEnabled()) {
             for (uint8_t i = 0; i < this->readsList->getMisCount(idx); i++) {
                 const uint8_t misPos = this->readsList->getMisOff(idx, i);
-                ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
+                ptr[misPos] = PgHelpers::code2mismatch(ptr[misPos],
                                                          this->readsList->getMisSymCode(idx, i));
             }
         }
@@ -98,11 +109,11 @@ namespace PgTools {
     void SeparatedPseudoGenome::getNextRead_Unsafe(char *ptr, uint_pg_len_max pos) {
         getRawSequenceOfReadLength(ptr, pos);
         if (this->readsList->revComp[nextRlIdx])
-            PgSAHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
+            PgHelpers::reverseComplementInPlace(ptr, this->readsList->readLength);
         uint8_t mismatchesCount = this->readsList->misCnt[nextRlIdx];
         for (uint8_t i = 0; i < mismatchesCount; i++) {
             const uint8_t misPos = this->readsList->misOff[curMisCumCount];
-            ptr[misPos] = PgSAHelpers::code2mismatch(ptr[misPos],
+            ptr[misPos] = PgHelpers::code2mismatch(ptr[misPos],
                                                      this->readsList->misSymCode[curMisCumCount++]);
         }
         nextRlIdx++;

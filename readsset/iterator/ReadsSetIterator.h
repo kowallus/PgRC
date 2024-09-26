@@ -5,9 +5,9 @@
 #include <iostream>
 #include <vector>
 #include "../../utils/helper.h"
-#include "../../pgsaconfig.h"
+#include "../../pgrc/pg-config.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     typedef uint_read_len_std uint_read_len_max;
 
@@ -77,13 +77,16 @@ namespace PgSAReadsSet {
     template < typename uint_read_len >
     class ReadsSourceIteratorTemplate
     {
+        private:
+            string empty;
+
         public:
 
             virtual ~ReadsSourceIteratorTemplate();
 
             virtual bool moveNext() = 0;
-            virtual string getRead() = 0;
-            virtual string getQualityInfo() { return std::string(); };
+            virtual string& getRead() = 0;
+            virtual string& getQualityInfo() { return empty; };
             virtual uint_read_len getReadLength() = 0;
             virtual void rewind() = 0;
 
@@ -106,7 +109,7 @@ namespace PgSAReadsSet {
             ~ConcatenatedReadsSourceIterator();
 
             bool moveNext();
-            string getRead();
+            string& getRead();
             uint_read_len getReadLength();
             void rewind();
 
@@ -133,7 +136,7 @@ namespace PgSAReadsSet {
             ~FASTAReadsSourceIterator();
 
             bool moveNext();
-            string getRead();
+            string& getRead();
             uint_read_len getReadLength();
             void rewind();
 
@@ -160,8 +163,8 @@ namespace PgSAReadsSet {
             ~FASTQReadsSourceIterator();
 
             bool moveNext();
-            string getRead();
-            string getQualityInfo();
+            string& getRead();
+            string& getQualityInfo();
             uint_read_len getReadLength();
             void rewind();
 
@@ -173,13 +176,15 @@ namespace PgSAReadsSet {
     private:
         ReadsSourceIteratorTemplate<uint_read_len>* coreIterator;
         int64_t counter = -1;
+        bool read2Reverse, qual2Reverse, reverseQualityStream;
 
     public:
-        RevComplPairReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator);
+        RevComplPairReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator,
+                                     bool reverseQualityStream = false);
 
         bool moveNext();
-        string getRead();
-        string getQualityInfo();
+        string& getRead();
+        string& getQualityInfo();
         uint_read_len getReadLength();
         void rewind();
         IndexesMapping* retainVisitedIndexesMapping() override;
@@ -197,8 +202,8 @@ namespace PgSAReadsSet {
         IgnoreNReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator);
 
         bool moveNext();
-        string getRead();
-        string getQualityInfo();
+        string& getRead();
+        string& getQualityInfo();
         uint_read_len getReadLength();
         void rewind();
         IndexesMapping* retainVisitedIndexesMapping() override;

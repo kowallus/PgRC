@@ -28,11 +28,11 @@ namespace PgTools {
     const string SeparatedPseudoGenomeBase::READSLIST_PAIR_FIRST_SOURCE_FLAG_FILE_SUFFIX =
             "_rl_pr_sf" + PG_FILES_EXTENSION;
 
-    SeparatedPseudoGenomeBase::SeparatedPseudoGenomeBase(PgSAIndex::uint_pg_len_max length,
+    SeparatedPseudoGenomeBase::SeparatedPseudoGenomeBase(PgIndex::uint_pg_len_max length,
                                                          ReadsSetProperties *properties)
             : PseudoGenomeBase(length, properties) {}
 
-    SeparatedPseudoGenomeBase::SeparatedPseudoGenomeBase(PgSAIndex::uint_pg_len_max length, istream &src)
+    SeparatedPseudoGenomeBase::SeparatedPseudoGenomeBase(PgIndex::uint_pg_len_max length, istream &src)
             : PseudoGenomeBase(length, src) {}
 
     void SeparatedPseudoGenomeBase::getPseudoGenomeProperties(const string &pseudoGenomePrefix,
@@ -48,7 +48,7 @@ namespace PgTools {
         }
         pgh = new PseudoGenomeHeader(pgPropSrc);
         rsProp = new ReadsSetProperties(pgPropSrc);
-        plainTextReadMode = PgSAHelpers::confirmTextReadMode(pgPropSrc);
+        plainTextReadMode = PgHelpers::confirmTextReadMode(pgPropSrc);
         pgPropSrc.close();
     }
 

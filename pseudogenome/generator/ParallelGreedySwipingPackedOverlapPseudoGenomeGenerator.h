@@ -12,9 +12,9 @@
 #define MAX_BLOCKS_COUNT 625 // MAX_SYMBOLS_COUNT^MAX_BLOCK_PREFIX_LENGTH
 #define PARALLEL_PG_GENERATION_READS_COUNT_THRESHOLD 50000
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template < typename uint_read_len, typename uint_reads_cnt >
     class ParallelGreedySwipingPackedOverlapGeneratorTemplate: public AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>

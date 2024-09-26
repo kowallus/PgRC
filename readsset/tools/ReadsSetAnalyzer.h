@@ -3,7 +3,7 @@
 
 #include "../ReadsSetBase.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
     class ReadsSetAnalyzer {
     public:
 

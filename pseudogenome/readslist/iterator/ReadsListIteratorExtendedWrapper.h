@@ -8,7 +8,7 @@
 
 namespace PgTools {
 
-    using namespace PgSAIndex;
+    using namespace PgIndex;
 
     class ReadsListIteratorExtendedWrapperBase: public DefaultReadsListIteratorInterface {
     public:

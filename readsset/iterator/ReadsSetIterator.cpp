@@ -1,8 +1,8 @@
 #include "ReadsSetIterator.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
-    using namespace PgSAHelpers;
+    using namespace PgHelpers;
 
     void VectorMapping::saveMapping(string mappingFile) {
         std::ofstream mappingDest(mappingFile, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -10,7 +10,7 @@ namespace PgSAReadsSet {
             fprintf(stderr, "cannot write to indexes mapping file %s\n", mappingFile.c_str());
             exit(EXIT_FAILURE);
         }
-        writeReadMode(mappingDest, PgSAHelpers::plainTextWriteMode);
+        writeReadMode(mappingDest, PgHelpers::plainTextWriteMode);
         writeValue(mappingDest, readsCount);
         for(uint_reads_cnt_max orgIdx: this->mappingWithGuard) {
             writeValue(mappingDest, orgIdx);
@@ -52,8 +52,9 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    string ConcatenatedReadsSourceIterator<uint_read_len>::getRead() {
-        return line.substr(0, length);
+    string& ConcatenatedReadsSourceIterator<uint_read_len>::getRead() {
+        line.resize(length);
+        return line;
     }
 
     template<typename uint_read_len>
@@ -103,8 +104,9 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    string FASTAReadsSourceIterator<uint_read_len>::getRead() {
-        return line.substr(0, length);
+    string& FASTAReadsSourceIterator<uint_read_len>::getRead() {
+        line.resize(length);
+        return line;
     }
 
     template<typename uint_read_len>
@@ -184,13 +186,15 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    string FASTQReadsSourceIterator<uint_read_len>::getRead() {
-        return line.substr(0, length);
+    string& FASTQReadsSourceIterator<uint_read_len>::getRead() {
+        line.resize(length);
+        return line;
     }
 
     template<typename uint_read_len>
-    string FASTQReadsSourceIterator<uint_read_len>::getQualityInfo() {
-        return quality.substr(0, length);
+    string& FASTQReadsSourceIterator<uint_read_len>::getQualityInfo() {
+        quality.resize(length);
+        return quality;
     }
 
     template<typename uint_read_len>
@@ -244,31 +248,38 @@ namespace PgSAReadsSet {
 
     template<typename uint_read_len>
     RevComplPairReadsSetIterator<uint_read_len>::RevComplPairReadsSetIterator(
-            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator): coreIterator(coreIterator) {
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, bool reverseQualityStream):
+                coreIterator(coreIterator), reverseQualityStream(reverseQualityStream) {
     }
 
     template<typename uint_read_len>
     bool RevComplPairReadsSetIterator<uint_read_len>::moveNext() {
         if (coreIterator->moveNext()) {
             counter++;
+            read2Reverse = counter % 2;
+            qual2Reverse = read2Reverse && reverseQualityStream;
             return true;
         }
         return false;
     }
 
     template<typename uint_read_len>
-    string RevComplPairReadsSetIterator<uint_read_len>::getRead() {
-        string read = coreIterator->getRead();
-        if (counter % 2)
-            PgSAHelpers::reverseComplementInPlace(read);
+    string& RevComplPairReadsSetIterator<uint_read_len>::getRead() {
+        string& read = coreIterator->getRead();
+        if (read2Reverse) {
+            PgHelpers::reverseComplementInPlace(read);
+            read2Reverse = false;
+        }
         return read;
     }
 
     template<typename uint_read_len>
-    string RevComplPairReadsSetIterator<uint_read_len>::getQualityInfo() {
-        string q = coreIterator->getQualityInfo();
-        if (counter % 2)
+    string& RevComplPairReadsSetIterator<uint_read_len>::getQualityInfo() {
+        string& q = coreIterator->getQualityInfo();
+        if (qual2Reverse) {
             std::reverse(q.begin(), q.end());
+            qual2Reverse = false;
+        }
         return q;
     }
 
@@ -306,12 +317,12 @@ namespace PgSAReadsSet {
     }
 
     template<typename uint_read_len>
-    string IgnoreNReadsSetIterator<uint_read_len>::getRead() {
+    string& IgnoreNReadsSetIterator<uint_read_len>::getRead() {
         return coreIterator->getRead();
     }
 
     template<typename uint_read_len>
-    string IgnoreNReadsSetIterator<uint_read_len>::getQualityInfo() {
+    string& IgnoreNReadsSetIterator<uint_read_len>::getQualityInfo() {
         return coreIterator->getQualityInfo();
     }
 

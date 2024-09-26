@@ -8,13 +8,13 @@
 #ifndef READSLISTITERATORINTERFACE_H
 #define	READSLISTITERATORINTERFACE_H
 
-#include "../../../pgsaconfig.h"
+#include "../../../pgrc/pg-config.h"
 #include "../../../utils/helper.h"
 #include <vector>
 
 using namespace std;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template < typename uint_read_len, typename uint_reads_cnt, class ReadsIteratorClass >
     class ReadsIteratorInterface

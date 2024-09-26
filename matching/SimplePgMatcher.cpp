@@ -3,7 +3,9 @@
 #include "copmem/CopMEMMatcher.h"
 
 #include "../pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
-#include "../utils/LzmaLib.h"
+#include "../coders/CodersLib.h"
+#include "../coders/VarLenDNACoder.h"
+#include "../coders/PropsLibrary.h"
 
 namespace PgTools {
 
@@ -87,7 +89,7 @@ namespace PgTools {
         ostringstream pgMapOffDest;
         ostringstream pgMapLenDest;
 
-        PgSAHelpers::writeUIntByteFrugal(pgMapLenDest, minMatchLength);
+        PgHelpers::writeUIntByteFrugal(pgMapLenDest, minMatchLength);
 
         sort(textMatches.begin(), textMatches.end());
         textMatches.erase(unique(textMatches.begin(), textMatches.end()), textMatches.end());
@@ -123,10 +125,10 @@ namespace PgTools {
             nPos += length;
             destPg[nPos++] = MATCH_MARK;
             if (isPgLengthStd)
-                PgSAHelpers::writeValue<uint32_t>(pgMapOffDest, match.posSrcText);
+                PgHelpers::writeValue<uint32_t>(pgMapOffDest, match.posSrcText);
             else
-                PgSAHelpers::writeValue<uint64_t>(pgMapOffDest, match.posSrcText);
-            PgSAHelpers::writeUIntByteFrugal(pgMapLenDest, match.length - minMatchLength);
+                PgHelpers::writeValue<uint64_t>(pgMapOffDest, match.posSrcText);
+            PgHelpers::writeUIntByteFrugal(pgMapLenDest, match.length - minMatchLength);
             pos = match.endPosDestText();
         }
         uint64_t length = destPg.length() - pos;
@@ -147,11 +149,11 @@ namespace PgTools {
 
     void SimplePgMatcher::writeMatchingResult(const string &pgPrefix,
                                               const string &pgMapped, const string &pgMapOff, const string &pgMapLen) {
-        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX,
+        PgHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_FILE_SUFFIX,
                                        pgMapped);
-        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX,
+        PgHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_OFFSETS_FILE_SUFFIX,
                                        pgMapOff);
-        PgSAHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX,
+        PgHelpers::writeStringToFile(pgPrefix + SeparatedPseudoGenomeBase::PSEUDOGENOME_MAPPING_LENGTHS_FILE_SUFFIX,
                                        pgMapLen);
     }
 
@@ -203,9 +205,10 @@ namespace PgTools {
         *logout << "PgMatching hqPg finished in " << time_millis(hq_start) << " msec. " << endl;
         delete(matcher);
 
-        PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, hqPgSequence.length(), false);
-        PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, lqPgSequence.length(), false);
-        PgSAHelpers::writeValue<uint_pg_len_max>(pgrcOut, nPgSequence.length(), false);
+        ostringstream pgsLen;
+        PgHelpers::writeValue<uint_pg_len_max>(pgsLen, hqPgSequence.length(), false);
+        PgHelpers::writeValue<uint_pg_len_max>(pgsLen, lqPgSequence.length(), false);
+        PgHelpers::writeValue<uint_pg_len_max>(pgsLen, nPgSequence.length(), false);
         string comboPgSeq = std::move(hqPgSequence);
         comboPgSeq.reserve(comboPgSeq.size() + lqPgSequence.size() + nPgSequence.size());
         comboPgSeq.append(lqPgSequence);
@@ -214,82 +217,73 @@ namespace PgTools {
         comboPgSeq.append(nPgSequence);
         nPgSequence.clear();
         nPgSequence.shrink_to_fit();
-        compressPgSequence(pgrcOut, comboPgSeq, coder_level, nPgSequence.empty());
-        *logout << "Good sequence mapping - offsets... ";
+
+        string pgsLenString = pgsLen.str();
+        vector<CompressionJob> cJobs;
+        auto fseCoderProps = getDefaultFSECoderProps();
+        cJobs.emplace_back("Sequences length info... ", pgsLenString, fseCoderProps.get());
+        bool noNPgSequence = nPgSequence.empty();
+        auto dnaCoderProps = getDefaultCoderProps(VARLEN_DNA_CODER, coder_level);
+        auto pgSeqCoderProps = getVarLenEncodedPgCoderProps(coder_level);
+        auto compoundCoderProps = getCompoundCoderProps(dnaCoderProps.get(), pgSeqCoderProps.get());
+        cJobs.emplace_back(string("Joined mapped sequences (good&bad") + (noNPgSequence ? "" : "&N") + ")... ",
+                           (unsigned char*) comboPgSeq.data(), comboPgSeq.size(),
+                           compoundCoderProps.get(), COMPRESSION_ESTIMATION_VAR_LEN_DNA);
         double estimated_pg_offset_ratio = simpleUintCompressionEstimate(refSequenceLength, isPgLengthStd ? UINT32_MAX : UINT64_MAX);
-        const int pgrc_pg_offset_dataperiodcode = isPgLengthStd ? PGRC_DATAPERIODCODE_32_t : PGRC_DATAPERIODCODE_64_t;
-        writeCompressed(pgrcOut, hqPgMapOff.data(), hqPgMapOff.size(), LZMA_CODER, coder_level,
-                        pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
-        *logout << "lengths... ";
-        writeCompressed(pgrcOut, hqPgMapLen.data(), hqPgMapLen.size(), LZMA_CODER, coder_level,
-                        PGRC_DATAPERIODCODE_8_t);
-        *logout << "Bad sequence mapping - offsets... ";
-        writeCompressed(pgrcOut, lqPgMapOff.data(), lqPgMapOff.size(), LZMA_CODER, coder_level,
-                        pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
-        *logout << "lengths... ";
-        writeCompressed(pgrcOut, lqPgMapLen.data(), lqPgMapLen.size(), LZMA_CODER, coder_level,
-                        PGRC_DATAPERIODCODE_8_t);
+        const int pgrc_pg_offset_dataperiodcode = isPgLengthStd ? LZMA_DATAPERIODCODE_32_t : LZMA_DATAPERIODCODE_64_t;
+        auto hqMapOffCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, pgrc_pg_offset_dataperiodcode);
+        cJobs.emplace_back("Good sequence mapping - offsets... ", (unsigned char*) hqPgMapOff.data(),
+                           hqPgMapOff.size(), hqMapOffCoderProps.get(), estimated_pg_offset_ratio);
+        auto hqMapLenCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, LZMA_DATAPERIODCODE_8_t);
+        cJobs.emplace_back("lengths... ", (unsigned char*) hqPgMapLen.data(), hqPgMapLen.size(),
+                           hqMapLenCoderProps.get());
+        auto lqMapOffCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, pgrc_pg_offset_dataperiodcode);
+        cJobs.emplace_back("Bad sequence mapping - offsets... ", (unsigned char*) lqPgMapOff.data(),
+                           lqPgMapOff.size(), lqMapOffCoderProps.get(), estimated_pg_offset_ratio);
+        auto lqMapLenCoderProps = getDefaultFSECoderProps(12);
+        cJobs.emplace_back("lengths... ", (unsigned char*) lqPgMapLen.data(), lqPgMapLen.size(),
+                           lqMapLenCoderProps.get());
+        auto nMapOffCoderProps = getDefaultCoderProps(LZMA_CODER, coder_level, pgrc_pg_offset_dataperiodcode);
+        auto nMapLenCoderProps =  getDefaultFSECoderProps();
         if (separateNReads) {
-            *logout << "N sequence mapping - offsets... ";
-            writeCompressed(pgrcOut, nPgMapOff.data(), nPgMapOff.size(), LZMA_CODER, coder_level,
-                            pgrc_pg_offset_dataperiodcode, estimated_pg_offset_ratio);
-            *logout << "lengths... ";
-            writeCompressed(pgrcOut, nPgMapLen.data(), nPgMapLen.size(), LZMA_CODER, coder_level,
-                            PGRC_DATAPERIODCODE_8_t);
-        }
-    }
+            cJobs.emplace_back("N sequence mapping - offsets... ", (unsigned char*) nPgMapOff.data(),
+                               nPgMapOff.size(), nMapOffCoderProps.get(),estimated_pg_offset_ratio);
 
-    void SimplePgMatcher::compressPgSequence(ostream &pgrcOut, string &pgSequence, uint8_t coder_level,
-                                             bool noNPgSequence, bool testAndValidation) {
-        *logout << "Var-len encoding joined mapped sequences (good&bad" << (noNPgSequence ? "" : "&N") << ")... ";
-        size_t compLen = 0;
-        char *compSeq = componentCompress(pgrcOut, compLen, pgSequence.data(), pgSequence.size(), VARLEN_DNA_CODER, coder_level,
-                                          VarLenDNACoder::getCoderParam(VarLenDNACoder::STATIC_CODES_CODER_PARAM,
-                                                  VarLenDNACoder::AG_EXTENDED_CODES_ID), 1);
-        if (testAndValidation) {
-            cout << "\n*** Var-len coding validation and additional tests..." << endl;
-            string valPgSeq;
-            valPgSeq.resize(pgSequence.size());
-            size_t valSeq = pgSequence.size();
-            Uncompress((char *) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
-            cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
-            writeCompressed(null_stream, pgSequence.data(), pgSequence.length(), LZMA_CODER, coder_level,
-                            PGRC_DATAPERIODCODE_8_t, COMPRESSION_ESTIMATION_BASIC_DNA);
-            cout << "OTHER CODEBOOKS..." << endl;
-            for(int i = 1; i < VarLenDNACoder::CODEBOOK_ID::VARLEN_CODEBOOKS_COUNT; i++) {
-                cout << "codebook id: " << i << endl;
-                size_t compLen = 0;
-                char *compSeq = componentCompress(pgrcOut, compLen, pgSequence.data(), pgSequence.size(),
-                                                  VARLEN_DNA_CODER, coder_level,
-                                                  VarLenDNACoder::getCoderParam(
-                                                          VarLenDNACoder::STATIC_CODES_CODER_PARAM, i), 1);
-                Uncompress((char *) valPgSeq.data(), valSeq, compSeq, compLen, VARLEN_DNA_CODER);
-                cout << (valPgSeq == pgSequence ? "Coding validated :)" : "Coding error :(") << endl;
-                writeCompressed(null_stream, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t,
-                                COMPRESSION_ESTIMATION_VAR_LEN_DNA);
-                delete[] compSeq;
-            }
-            cout << "***\n" << endl;
 
+            cJobs.emplace_back("lengths... ", (unsigned char*) nPgMapLen.data(), nPgMapLen.size(),
+                               nMapLenCoderProps.get());
         }
-        pgSequence.clear();
-        pgSequence.shrink_to_fit();
-        *logout << "Joined var-len encoded mapped sequences (good&bad" << (noNPgSequence ? "" : "&N") << ")... ";
-        writeCompressed(pgrcOut, compSeq, compLen, LZMA_CODER, coder_level, PGRC_DATAPERIODCODE_8_t,
-                        COMPRESSION_ESTIMATION_VAR_LEN_DNA);
-        delete[] compSeq;
+        CompressionJob::writeCompressedCollectiveParallel(pgrcOut, cJobs);
     }
 
     void SimplePgMatcher::restoreMatchedPgs(istream &pgrcIn, uint_pg_len_max orgHqPgLen, string &hqPgSequence, string &lqPgSequence,
-                                            string &nPgSequence) {
+                                            string &nPgSequence, PgRCParams* params) {
         uint_pg_len_max hqPgMappedLen, lqPgMappedLen, nPgMappedLen;
-        string pgMapOff, pgMapLen;
+        string hqPgMapOff, hqPgMapLen, lqPgMapOff, lqPgMapLen, nPgMapOff, nPgMapLen;
         istringstream pgMapOffSrc, pgMapLenSrc;
-        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, hqPgMappedLen, false);
-        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, lqPgMappedLen, false);
-        PgSAHelpers::readValue<uint_pg_len_max>(pgrcIn, nPgMappedLen, false);
+        istream* propsIn = &pgrcIn;
+        string propsString;
+        if (params->isVersionAtLeast(1, 3)) {
+            readCompressed(pgrcIn, propsString);
+            propsIn = new istringstream(propsString);
+        }
+        PgHelpers::readValue<uint_pg_len_max>(*propsIn, hqPgMappedLen, false);
+        PgHelpers::readValue<uint_pg_len_max>(*propsIn, lqPgMappedLen, false);
+        PgHelpers::readValue<uint_pg_len_max>(*propsIn, nPgMappedLen, false);
+        if (params->isVersionAtLeast(1, 3))
+            delete propsIn;
         string comboPgMapped;
-        readCompressed(pgrcIn, comboPgMapped);
+        vector<string*> destStrings;
+        destStrings.push_back(&comboPgMapped);
+        destStrings.push_back(&hqPgMapOff);
+        destStrings.push_back(&hqPgMapLen);
+        destStrings.push_back(&lqPgMapOff);
+        destStrings.push_back(&lqPgMapLen);
+        if (nPgMappedLen) {
+            destStrings.push_back(&nPgMapOff);
+            destStrings.push_back(&nPgMapLen);
+        }
+        readCompressedCollectiveParallel(pgrcIn, destStrings, params->isVersion(1, 2) ? 0 : -1);
         string nPgMapped(comboPgMapped, hqPgMappedLen + lqPgMappedLen);
         comboPgMapped.resize(hqPgMappedLen + lqPgMappedLen);
         {
@@ -298,26 +292,21 @@ namespace PgTools {
             comboPgMapped.shrink_to_fit();
             {
                 string hqPgMapped = std::move(comboPgMapped);
-                readCompressed(pgrcIn, pgMapOff);
-                readCompressed(pgrcIn, pgMapLen);
-                pgMapOffSrc.str(pgMapOff);
-                pgMapLenSrc.str(pgMapLen);
+                pgMapOffSrc.str(hqPgMapOff);
+                pgMapLenSrc.str(hqPgMapLen);
                 hqPgSequence.clear();
                 hqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, hqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                                  true, false, true);
             }
-            readCompressed(pgrcIn, pgMapOff);
-            readCompressed(pgrcIn, pgMapLen);
-            pgMapOffSrc.str(pgMapOff);
-            pgMapLenSrc.str(pgMapLen);
+
+            pgMapOffSrc.str(lqPgMapOff);
+            pgMapLenSrc.str(lqPgMapLen);
             lqPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, lqPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                              true, false);
         }
         if (nPgMappedLen) {
-            readCompressed(pgrcIn, pgMapOff);
-            readCompressed(pgrcIn, pgMapLen);
-            pgMapOffSrc.str(pgMapOff);
-            pgMapLenSrc.str(pgMapLen);
+            pgMapOffSrc.str(nPgMapOff);
+            pgMapLenSrc.str(nPgMapLen);
             nPgSequence = SimplePgMatcher::restoreMatchedPg(hqPgSequence, orgHqPgLen, nPgMapped, pgMapOffSrc, pgMapLenSrc,
                                                             true, false);
         }
@@ -334,7 +323,7 @@ namespace PgTools {
         uint64_t posDest = 0;
         uint32_t minMatchLength = 0;
 
-        PgSAHelpers::readUIntByteFrugal(pgMapLenSrc, minMatchLength);
+        PgHelpers::readUIntByteFrugal(pgMapLenSrc, minMatchLength);
         uint64_t markPos = 0;
         while ((markPos = destPg.find(MATCH_MARK, posDest)) != std::string::npos) {
             resPg.append(destPg, posDest, markPos - posDest);
@@ -342,12 +331,12 @@ namespace PgTools {
             uint64_t matchSrcPos = 0;
             if (isPgLengthStd) {
                 uint32_t tmp;
-                PgSAHelpers::readValue<uint32_t>(pgMapOffSrc, tmp, plainTextReadMode);
+                PgHelpers::readValue<uint32_t>(pgMapOffSrc, tmp, plainTextReadMode);
                 matchSrcPos = tmp;
             } else
-                PgSAHelpers::readValue<uint64_t>(pgMapOffSrc, matchSrcPos, plainTextReadMode);
+                PgHelpers::readValue<uint64_t>(pgMapOffSrc, matchSrcPos, plainTextReadMode);
             uint64_t matchLength = 0;
-            PgSAHelpers::readUIntByteFrugal(pgMapLenSrc, matchLength);
+            PgHelpers::readUIntByteFrugal(pgMapLenSrc, matchLength);
             matchLength += minMatchLength;
             if (revComplMatching)
                 resPg.append(reverseComplement(srcPg.substr(matchSrcPos, matchLength)));

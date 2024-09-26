@@ -43,16 +43,17 @@ namespace PgTools {
         void disposeReadsList();
 
         // read access
-        inline void getRawSequenceOfReadLength(char *ptr, uint_pg_len_max pos) {
+        inline void getRawSequenceOfReadLength(char *ptr, uint_pg_len_max pos) const {
             memcpy((void*) ptr, (void*) (pgSequence.data() + pos), this->readsList->readLength);
         }
 
         const string getRead(uint_reads_cnt_max idx);
-        inline void getRead_RawSequence(uint_reads_cnt_max idx, char *ptr) {
+        inline void getRead_RawSequence(uint_reads_cnt_max idx, char *ptr) const {
             getRawSequenceOfReadLength(ptr, this->readsList->pos[idx]);
         }
+        void getRead_Unsafe(uint_reads_cnt_max idx, uint_pg_len_max pos, char *ptr);
         void getRead_Unsafe(uint_reads_cnt_max idx, char *ptr);
-        void getRead(uint_reads_cnt_max idx, char *ptr);
+        void getRead(uint_reads_cnt_max idx, char *ptr) const;
 
         // iteration routines
         void getNextRead_RawSequence(char *ptr);

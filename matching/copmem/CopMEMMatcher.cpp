@@ -82,7 +82,7 @@ void CopMEMMatcher::initParams(uint32 minMatchLength) {
     if (KmmL < K) K = KmmL;
     calcCoprimes();
     hashFunc32 = hashFuncMatrix[K][H];
-    v1logger = PgSAHelpers::logout;
+    v1logger = PgHelpers::logout;
 
     LK2 = (L - K) / 2;
     LK2_MINUS_4 = LK2 - 4;
@@ -102,10 +102,10 @@ void CopMEMMatcher::displayParams() {
 	std::cout << "HASH_SIZE = " << hash_size << "; ";
 	std::cout << "k1 = " << k1 << "; ";
 	std::cout << "k2 = " << k2 << std::endl;
-	*PgSAHelpers::logout << "Hash function: maRushPrime1HashSparsified" << std::endl;
-    *PgSAHelpers::logout << "Hash collisions per position limit: " << HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
-    *PgSAHelpers::logout << "Average hash collisions per position limit (in approx mode): " << AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
-    *PgSAHelpers::logout << "Unlimited number of hash collisions per position (in approx mode): " << UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION << std::endl;
+	*PgHelpers::logout << "Hash function: maRushPrime1HashSparsified" << std::endl;
+    *PgHelpers::logout << "Hash collisions per position limit: " << HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
+    *PgHelpers::logout << "Average hash collisions per position limit (in approx mode): " << AVERAGE_HASH_COLLISIONS_PER_POSITION_LIMIT << std::endl;
+    *PgHelpers::logout << "Unlimited number of hash collisions per position (in approx mode): " << UNLIMITED_NUMBER_OF_HASH_COLLISIONS_PER_POSITION << std::endl;
 }
 
 void CopMEMMatcher::calcCoprimes()
@@ -175,7 +175,7 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyU
 
 template<typename MyUINT1, typename MyUINT2>
 HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
-    if (PgSAHelpers::numberOfThreads > 1)
+    if (PgHelpers::numberOfThreads > 1)
         return processRefMultithreaded<MyUINT1, MyUINT2>();
 
     const unsigned int MULTI2 = 128;
@@ -348,7 +348,7 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
     size_t N2 = destText.length();
     const char* start2 = destText.data();
 
-    const int skip = K / k1 - k2;
+    const int skip = K / k1 - 1;
     const int skipK2 = skip * k2;
     const bool MULTI_MODE = true;
     *v1logger << "Minimal matching length = " << minMatchLength << "; ";
@@ -397,8 +397,8 @@ void CopMEMMatcher::processExactMatchQueryTight(HashBuffer<MyUINT1, MyUINT2> buf
                         break;
                     }
 
-                    memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
-                    memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
+                    if (curr1 - LK2 >= start1) memcpy(&l1, curr1 - LK2, sizeof(std::uint32_t));
+                    if (curr1 + K_PLUS_LK24 + sizeof(std::uint32_t) <= end1) memcpy(&r1, curr1 + K_PLUS_LK24, sizeof(std::uint32_t));
 
                     if (r1 == r2 || l1 == l2) {
                         const char *p1 = curr1 + K - 1;

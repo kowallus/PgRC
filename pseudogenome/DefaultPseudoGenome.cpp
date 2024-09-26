@@ -1,6 +1,6 @@
 #include "DefaultPseudoGenome.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     template < typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class ReadsListClass >
     DefaultPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::DefaultPseudoGenome(uint_pg_len pgLength, ReadsSetProperties* properties)
@@ -19,7 +19,7 @@ namespace PgSAIndex {
         if (arraySize != getLengthWithGuard())
             cout << "WARNING: wrong size of pseudogenome.";
 
-        sequence = (char_pg*) PgSAHelpers::readArray(src, getLengthWithGuard() * sizeof(char_pg));
+        sequence = (char_pg*) PgHelpers::readArray(src, getLengthWithGuard() * sizeof(char_pg));
         src.get(); // '/n'
         this->readsList = new ReadsListClass(maxReadLength(), src);
     }
@@ -46,7 +46,7 @@ namespace PgSAIndex {
     void DefaultPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>::write(std::ostream& dest) {
         this->getReadsSetProperties()->write(dest);
         dest << getLengthWithGuard() << "\n";
-        PgSAHelpers::writeArray(dest, sequence, getLengthWithGuard() * sizeof(char_pg));
+        PgHelpers::writeArray(dest, sequence, getLengthWithGuard() * sizeof(char_pg));
         dest << "\n";
         this->readsList->write(dest);
     }

@@ -3,7 +3,7 @@
 
 #include "ListOfConstantLengthReads.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     class WrongListOfConstantLengthReads { };
     

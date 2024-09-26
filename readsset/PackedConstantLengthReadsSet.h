@@ -5,11 +5,11 @@
 #include "ReadsSetBase.h"
 #include "iterator/ReadsSetIterator.h"
 #include "ReadsSetInterface.h"
-#include "../utils/SymbolsPackingFacility.h"
+#include "../coders/SymbolsPackingFacility.h"
 
-using namespace PgSAIndex;
+using namespace PgIndex;
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     class PackedConstantLengthReadsSet: public ConstantLengthReadsSetInterface
     {

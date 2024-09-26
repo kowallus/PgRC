@@ -6,7 +6,7 @@
 #include "iterator/ReadsSetIterator.h"
 #include "ReadsSetInterface.h"
 
-namespace PgSAReadsSet {
+namespace PgReadsSet {
 
     class DefaultReadsSet: public ReadsSetBase, public ReadsSetInterface< uint_read_len_max, uint_reads_cnt_max >
     {

@@ -3,7 +3,7 @@
 
 #include "PackedConstantLengthReadsSet.h"
 
-using namespace PgSAReadsSet;
+using namespace PgReadsSet;
 
 namespace PgTools {
 
@@ -36,7 +36,7 @@ namespace PgTools {
 
         static DividedPCLReadsSets* getQualityDivisionBasedReadsSets(
                 ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt, uint_read_len_max readLength,
-                double error_limit, bool separateNReadsSet = false, bool nReadsLQ = false);
+                double error_limit, bool simplified_suffix_mode, bool separateNReadsSet = false, bool nReadsLQ = false);
 
         static DividedPCLReadsSets *
     getSimpleDividedPCLReadsSets(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIt, uint_read_len_max readLength,

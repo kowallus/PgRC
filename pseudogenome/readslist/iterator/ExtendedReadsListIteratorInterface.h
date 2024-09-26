@@ -4,12 +4,12 @@
 #include <stdint.h>
 #include <unistd.h>
 
-#include "../../../pgsaconfig.h"
+#include "../../../pgrc/pg-config.h"
 
 namespace PgTools {
 
-    using namespace PgSAReadsSet;
-    using namespace PgSAIndex;
+    using namespace PgReadsSet;
+    using namespace PgIndex;
 
     template <int maxMismatches, typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len>
     struct ReadsListEntry {

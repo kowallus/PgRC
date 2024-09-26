@@ -1,6 +1,6 @@
 #include "PackedPseudoGenome.h"
 
-namespace PgSAIndex {
+namespace PgIndex {
     
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, typename uint_pg_element, class ReadsListClass>
     PackedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, uint_pg_element, ReadsListClass>::PackedPseudoGenome(DefaultPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>* srcPseudoGenome, uchar symbolsPerElement)
@@ -32,7 +32,7 @@ namespace PgSAIndex {
         if (arraySize != getElementsCountWithGuard())
             cout << "WARNING: wrong size of pseudogenome.";
 
-        sequence = (uint_pg_element*) PgSAHelpers::readArray(src, getElementsCountWithGuard() * sizeof (uint_pg_element));
+        sequence = (uint_pg_element*) PgHelpers::readArray(src, getElementsCountWithGuard() * sizeof (uint_pg_element));
         src.get(); // '/n'
         this->readsList = new ReadsListClass(maxReadLength(), src);
 
@@ -53,7 +53,7 @@ namespace PgSAIndex {
         dest << (int) this->symbolsPerElement << "\n";
 
         dest << getElementsCountWithGuard() << "\n";
-        PgSAHelpers::writeArray(dest, sequence, getElementsCountWithGuard() * sizeof (uint_pg_element));
+        PgHelpers::writeArray(dest, sequence, getElementsCountWithGuard() * sizeof (uint_pg_element));
         dest << "\n";
         this->readsList->write(dest);
     }

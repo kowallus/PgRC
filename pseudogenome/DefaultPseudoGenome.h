@@ -5,10 +5,10 @@
 #include "readslist/ReadsListTypes.h"
 #include "PseudoGenomeBase.h"
 
-using namespace PgSAReadsSet;
-using namespace PgSAHelpers;
+using namespace PgReadsSet;
+using namespace PgHelpers;
 
-namespace PgSAIndex {
+namespace PgIndex {
 
     const string PGTYPE_DEFAULT = "DEFAULT_PGEN";
 

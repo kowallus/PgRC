@@ -5,10 +5,10 @@
 #include "../readsset/ReadsSetBase.h"
 #include "readslist/ReadsListInterface.h"
 
-using namespace PgSAReadsSet;
-using namespace PgSAIndex;
+using namespace PgReadsSet;
+using namespace PgIndex;
 
-namespace PgSAIndex {
+namespace PgIndex {
     
     template < typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, class PseudoGenomeClass>
     class PseudoGenomeInterface: public ReadsSetInterface<uint_read_len, uint_reads_cnt>
