@@ -2,7 +2,15 @@
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 #include "AbstractOverlapPseudoGenomeGenerator.h"
 
+#ifdef __APPLE__
+#define PSTLD_HEADER_ONLY
+#include "../../utils/pstld.h"
+#define parallel_algorithm pstld
+#else
 #include <parallel/algorithm>
+#define parallel_algorithm __gnu_parallel
+#endif
+
 #include <cassert>
 
 using namespace PgReadsSet;
@@ -113,7 +121,7 @@ namespace PgIndex {
         for (uint_reads_cnt i = 1; i <= packedReadsSet->readsCount(); i++)
             sortedReadsIdxs.push_back(i);
         PackedReadsComparator comparePacked = PackedReadsComparator(this);
-        __gnu_parallel::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
+        parallel_algorithm::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
 
         blocksCount = pow(symbolsCount, blockPrefixLength);
         #pragma omp parallel for
@@ -349,7 +357,7 @@ namespace PgIndex {
                                 bool cycleCheck = false;
 #pragma omp critical
                                 {
-                                    if (!(cycleCheck = this->isHeadOf(*sufIt, *preIt))) {
+                                    if (!((cycleCheck = this->isHeadOf(*sufIt, *preIt)))) {
                                         if (this->headRead[*sufIt] == 0)
                                             this->headRead[*preIt] = *sufIt;
                                         else
@@ -429,7 +437,7 @@ namespace PgIndex {
                             bool cycleCheck = false;
 #pragma omp critical
                             {
-                                if (!(cycleCheck = this->isHeadOf(*sufIt, *preIt))) {
+                                if (!((cycleCheck = this->isHeadOf(*sufIt, *preIt)))) {
                                     if (this->headRead[*sufIt] == 0)
                                         this->headRead[*preIt] = *sufIt;
                                     else
@@ -524,7 +532,7 @@ namespace PgIndex {
         else
             cout << "UNSUPPORTED READS COUNT!!!???";
 
-        return 0;
+        return nullptr;
     }
 
     PseudoGenomeGeneratorBase* ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) {
@@ -536,7 +544,7 @@ namespace PgIndex {
     }
 
     PseudoGenomeGeneratorBase* ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet) {
-        PseudoGenomeGeneratorBase* generatorBase = 0;
+        PseudoGenomeGeneratorBase* generatorBase = nullptr;
         if (isReadLengthMin(readsSet->maxReadLength()))
             generatorBase = getGeneratorPartialTemplate<uint_read_len_min>(readsSet, ownReadsSet);
         else if (isReadLengthStd(readsSet->maxReadLength()))
@@ -554,7 +562,7 @@ namespace PgIndex {
         delete(pggb);
         delete(pggf);
 
-        if (pgb == 0) {
+        if (pgb == nullptr) {
             fprintf(stderr, "Failed generating Pg\n");
             exit(EXIT_FAILURE);
         }
@@ -570,7 +578,7 @@ namespace PgIndex {
         delete(pggb);
         delete(pggf);
 
-        if (pgb == 0) {
+        if (pgb == nullptr) {
             fprintf(stderr, "Failed generating Pg\n");
             exit(EXIT_FAILURE);
         }
@@ -586,7 +594,7 @@ namespace PgIndex {
         delete(pggb);
         delete(pggf);
 
-        if (pg == 0) {
+        if (pg == nullptr) {
             fprintf(stderr, "Failed generating Pg\n");
             exit(EXIT_FAILURE);
         }

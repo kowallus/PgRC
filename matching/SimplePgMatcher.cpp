@@ -47,7 +47,7 @@ namespace PgTools {
             { return match1.length > match2.length; });
         cout << "Largest matches:" << endl;
         for (uint32_t i = 0; i < textMatches.size() && i < 10; i++)
-            textMatches[i].report(cout);/**/
+            textMatches[i].report(cout);*/
 
         if (revComplMatching)
             correctDestPositionDueToRevComplMatching();
@@ -360,8 +360,8 @@ namespace PgTools {
 
     string
     SimplePgMatcher::restoreAutoMatchedPg(const string &pgPrefix, bool revComplMatching) {
-        PseudoGenomeHeader *pgh = 0;
-        ReadsSetProperties *prop = 0;
+        PseudoGenomeHeader *pgh = nullptr;
+        ReadsSetProperties *prop = nullptr;
         bool plainTextReadMode = false;
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgPrefix, pgh, prop, plainTextReadMode);
         string destPg = SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(pgPrefix);

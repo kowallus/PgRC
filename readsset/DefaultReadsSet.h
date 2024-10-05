@@ -19,15 +19,15 @@ namespace PgReadsSet {
             template<class ReadsSourceIterator>
             DefaultReadsSet(ReadsSourceIterator*);
 
-            virtual ~DefaultReadsSet() {};
+            ~DefaultReadsSet() override {};
 
-            inline uint_read_len_max maxReadLength() { return properties->maxReadLength; };
-            inline uint_reads_cnt_max readsCount() { return properties->readsCount; };
+            inline uint_read_len_max maxReadLength() override { return properties->maxReadLength; };
+            inline uint_reads_cnt_max readsCount() override { return properties->readsCount; };
 
-            inline bool isReadLengthConstant() { return properties->constantReadLength; };
+            inline bool isReadLengthConstant() override { return properties->constantReadLength; };
 
-            inline const string getRead(uint_reads_cnt_max i) { return reads[i];};
-            inline uint_read_len_max readLength(uint_reads_cnt_max i) { return reads[i].length(); };
+            inline const string getRead(uint_reads_cnt_max i) override { return reads[i];};
+            inline uint_read_len_max readLength(uint_reads_cnt_max i) override { return reads[i].length(); };
 
             uint_read_len_max maxReadLengthVirtual() { return maxReadLength(); };
             uint_reads_cnt_max readsCountVirtual() { return readsCount(); };

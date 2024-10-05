@@ -19,7 +19,7 @@ using namespace std;
 class NullBuffer : public std::streambuf
 {
 public:
-    int overflow(int c) { return c; }
+    int overflow(int c) override { return c; }
 };
 
 extern std::ostream null_stream;
@@ -235,8 +235,8 @@ namespace PgHelpers {
             }
         };
 
-        membuf* sbuf = 0;
-        char* readsArray = 0;
+        membuf* sbuf = nullptr;
+        char* readsArray = nullptr;
 
         BufferedFileIStream(membuf* sbuf, char* readsArray) : istream(sbuf) {
             this->sbuf = sbuf;
@@ -258,7 +258,7 @@ namespace PgHelpers {
             return source;
         }
 
-        virtual ~BufferedFileIStream() {
+        ~BufferedFileIStream() override {
             delete(sbuf);
             delete[] readsArray;
         }

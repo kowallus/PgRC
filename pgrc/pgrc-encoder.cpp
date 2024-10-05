@@ -76,7 +76,7 @@ namespace PgTools {
             int nError = mkdir(tmpDirectoryName.data(), mode);
 #endif
             if (nError != 0) {
-                srand(time(NULL));
+                srand(time(nullptr));
                 tmpDirectoryName = tmpDirectoryName + "_" + toString(rand() % 100000);
 #ifdef __MINGW32__
                 int nError = mkdir(tmpDirectoryName.data());
@@ -203,7 +203,7 @@ namespace PgTools {
                 data.nPg->disposeReadsList();
             }
             delete(data.divReadsSets);
-            data.divReadsSets = 0;
+            data.divReadsSets = nullptr;
         }
         bad_t = chrono::steady_clock::now();
         if (!params->singleReadsMode && params->skipStages < ++stageCount && params->endAtStage >= stageCount) {

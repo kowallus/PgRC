@@ -33,7 +33,7 @@ namespace PgTools {
     void SeparatedPseudoGenome::disposeReadsList() {
         if (readsList) {
             delete(readsList);
-            readsList = 0;
+            readsList = nullptr;
         }
     }
 

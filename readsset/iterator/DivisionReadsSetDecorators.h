@@ -19,15 +19,15 @@ namespace PgTools {
         QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
                                         bool suffix_simplified_mode = true);
 
-        virtual ~QualityDividingReadsSetIterator();
+        ~QualityDividingReadsSetIterator() override;
 
         uint_reads_cnt_max getReadOriginalIndex();
 
-        bool moveNext();
-        string& getRead();
-        string& getQualityInfo();
-        uint_read_len getReadLength();
-        void rewind();
+        bool moveNext() override;
+        string& getRead() override;
+        string& getQualityInfo() override;
+        uint_read_len getReadLength() override;
+        void rewind() override;
 
         bool isQualityHigh();
         bool containsN();
@@ -53,11 +53,11 @@ namespace PgTools {
         DividedReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, std::istream* divSource,
                 bool visitComplement = false, bool ignoreNReads = false, bool ignoreNoNReads = false);
 
-        bool moveNext();
-        string& getRead();
-        string& getQualityInfo();
-        uint_read_len getReadLength();
-        void rewind();
+        bool moveNext() override;
+        string& getRead() override;
+        string& getQualityInfo() override;
+        uint_read_len getReadLength() override;
+        void rewind() override;
 
         IndexesMapping* retainVisitedIndexesMapping() override;
     };

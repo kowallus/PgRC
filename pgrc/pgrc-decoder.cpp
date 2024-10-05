@@ -34,7 +34,7 @@ namespace PgTools {
                 params->compressionLevel = pgrcIn.get();
                 pgrc_mode = pgrcIn.get();
             } else
-                SimplePgMatcher::MATCH_MARK = 128;
+                SimplePgMatcher::MATCH_MARK = (char) 128;
             if (pgrc_mode < PGRC_SE_MODE || pgrc_mode > PGRC_MIN_PE_MODE) {
                 fprintf(stderr, "Unsupported decompression mode: %d.\n", pgrc_mode);
                 exit(EXIT_FAILURE);
@@ -67,21 +67,23 @@ namespace PgTools {
                                               + data.lqPg->getReadsSetProperties()->readsCount;
         uint_reads_cnt_max nPgReadsCount = data.nPg ? data.nPg->getReadsSetProperties()->readsCount : 0;
         uint_reads_cnt_max readsTotalCount = nonNPgReadsCount + nPgReadsCount;
-        if (params->revComplPairFile)
-            if (params->isJoinedPgLengthStd)
+        if (params->revComplPairFile) {
+            if (params->isJoinedPgLengthStd) {
                 applyRevComplPairFileToPgs<uint_pg_len_std>(data.orgIdx2StdPgPos);
-            else
+            } else {
                 applyRevComplPairFileToPgs<uint_pg_len_max>(data.orgIdx2PgPos);
-
+            }
+        }
         if (params->srcFastqFile.empty()) {
             if (params->singleReadsMode && !params->preserveOrderMode) {
                 writeAllReadsInSEModeParallelWritingThreads(params->pgRCFileName);
-            } else if (!params->preserveOrderMode)
+            } else if (!params->preserveOrderMode) {
                 writeAllReadsInPEModeParallelChunks(params->pgRCFileName);
-            else if (params->isJoinedPgLengthStd)
+            } else if (params->isJoinedPgLengthStd) {
                 writeAllReadsInORDModeParallelChunks<uint_pg_len_std>(params->pgRCFileName, data.orgIdx2StdPgPos);
-            else
+            } else {
                 writeAllReadsInORDModeParallelChunks<uint_pg_len_max>(params->pgRCFileName, data.orgIdx2PgPos);
+            }
             cout << "Decompressed ";
         } else {
             preparePgsForValidation();
@@ -766,7 +768,7 @@ namespace PgTools {
                                                                                                ? ""
                                                                                                : params->pgSeqFinalLqPrefix,
                                                                                                params, true, true);
-        ExtendedReadsListWithConstantAccessOption *nCaeRl = 0;
+        ExtendedReadsListWithConstantAccessOption *nCaeRl = nullptr;
         ReadsSetProperties nRsProp;
         PseudoGenomeHeader nPgh;
         if (params->separateNReads) {
@@ -826,8 +828,8 @@ namespace PgTools {
 
     void PgRCDecoder::loadAllPgs() {
         string hqPgSeq = SimplePgMatcher::restoreAutoMatchedPg(params->pgSeqFinalHqPrefix, true);
-        PseudoGenomeHeader *pgh = 0;
-        ReadsSetProperties *prop = 0;
+        PseudoGenomeHeader *pgh = nullptr;
+        ReadsSetProperties *prop = nullptr;
         bool plainTextReadMode = false;
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(params->pgSeqFinalHqPrefix, pgh, prop, plainTextReadMode);
         ExtendedReadsListWithConstantAccessOption *caeRl =

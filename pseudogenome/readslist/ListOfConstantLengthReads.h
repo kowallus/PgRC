@@ -33,8 +33,8 @@ namespace PgIndex {
                 return 0;
             }
 
-            uchar* pgReadsList = 0;
-            uchar* pgReadsListEnd = 0;
+            uchar* pgReadsList = nullptr;
+            uchar* pgReadsListEnd = nullptr;
 
             const uint_read_len readLength;
 

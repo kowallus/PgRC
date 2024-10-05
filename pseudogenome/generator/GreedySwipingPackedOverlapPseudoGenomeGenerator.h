@@ -17,7 +17,7 @@ namespace PgIndex {
     private:
 
         bool ownReadsSet = false;
-        PackedConstantLengthReadsSet* packedReadsSet = 0;
+        PackedConstantLengthReadsSet* packedReadsSet = nullptr;
 
         vector<uint_reads_cnt> sortedReadsIdxs;
 
@@ -42,14 +42,14 @@ namespace PgIndex {
         int compareSuffixes(uchar lSymOrder, uchar rSymOrder, uint_read_len offset);
         int compareSuffixWithPrefix(uint_reads_cnt sufIncIdx, uint_reads_cnt preIncIdx, uint_read_len sufOffset);
 
-        virtual uint_read_len readLength(uint_reads_cnt incIdx) override;
-        virtual string getReadUpToOverlap(uint_reads_cnt incIdx) override;
-        virtual void getReadSuffix(char *destPtr, uint_reads_cnt incIdx, uint_read_len suffixPos) override;
-        virtual uint_reads_cnt readsTotal() override;
+        uint_read_len readLength(uint_reads_cnt incIdx) override;
+        string getReadUpToOverlap(uint_reads_cnt incIdx) override;
+        void getReadSuffix(char *destPtr, uint_reads_cnt incIdx, uint_read_len suffixPos) override;
+        uint_reads_cnt readsTotal() override;
 
-        virtual ReadsSetProperties* getReadsSetProperties() override;
+        ReadsSetProperties* getReadsSetProperties() override;
 
-        bool isGenerationCyclesAware(bool pgGenerationMode) { return false; };
+        bool isGenerationCyclesAware(bool pgGenerationMode) override { return false; };
 
         template<bool pgGenerationMode>
         void initAndFindDuplicates();
@@ -82,7 +82,7 @@ namespace PgIndex {
 
         GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory() {};
 
-        PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
+        PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) override;
         PseudoGenomeGeneratorBase* getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet);
 
         static PseudoGenomeBase* generatePg(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);

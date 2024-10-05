@@ -32,9 +32,9 @@ private:
     std::uint32_t hash_size;
     std::uint32_t hash_size_minus_one;
 
-    int LK2 = (L - K) / 2;
-    int LK2_MINUS_4 = LK2 - 4;
-    int K_PLUS_LK24 = K + LK2_MINUS_4;
+    int LK2;
+    int LK2_MINUS_4;
+    int K_PLUS_LK24;
 
     void initHashFuncMatrix();
     void initParams(uint32_t minMatchLength);
@@ -78,7 +78,7 @@ private:
 public:
     CopMEMMatcher(const char *srcText, const size_t srcLength, const uint32_t targetMatchLength, uint32_t minMatchLength = UINT32_MAX);
 
-    virtual ~CopMEMMatcher();
+    ~CopMEMMatcher() override;
 
     void matchTexts(vector<TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
                     uint32_t minMatchLength) override;

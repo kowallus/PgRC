@@ -28,7 +28,7 @@ namespace PgTools {
         string &getPgSequence();
         ExtendedReadsListWithConstantAccessOption *getReadsList();
 
-        virtual ~SeparatedPseudoGenome();
+        ~SeparatedPseudoGenome() override;
 
         void applyIndexesMapping(IndexesMapping *indexesMapping);
 

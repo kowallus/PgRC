@@ -59,7 +59,7 @@ namespace PgReadsSet {
     template<class ReadsSourceIterator>
     PackedConstantLengthReadsSet* PackedConstantLengthReadsSet::loadReadsSet(ReadsSourceIterator* readsIterator,
                                                                              ReadsSetProperties *properties) {
-        bool ownProperties = properties == 0;
+        bool ownProperties = properties == nullptr;
         if (ownProperties)
             properties = ReadsSetAnalyzer::analyzeReadsSet(readsIterator);
 

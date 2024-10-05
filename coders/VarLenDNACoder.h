@@ -17,11 +17,11 @@ namespace PgHelpers {
         VarLenDNACoderProps(uint8_t staticCodeBookID = 0)
                 : CoderProps(VARLEN_DNA_CODER), mode(STATIC_CODES_CODER_PARAM), staticCodeBookID(staticCodeBookID) { }
 
-        string log() {
+        string log() override {
             return " var-len (mode = " + to_string(mode) + "; cbId = " + to_string(staticCodeBookID) + ")";
         }
 
-        virtual ~VarLenDNACoderProps() { };
+        ~VarLenDNACoderProps() override { };
     };
 
     class VarLenDNACoder {

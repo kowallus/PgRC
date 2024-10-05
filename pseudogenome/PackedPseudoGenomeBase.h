@@ -28,7 +28,7 @@ namespace PgIndex {
                 this->bytesPerElement = bytesPerElement;
             };
 
-            virtual ~PackedPseudoGenomeBase() { };
+            ~PackedPseudoGenomeBase() override { };
 
         public:
 

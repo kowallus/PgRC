@@ -25,15 +25,15 @@ namespace PgIndex {
 
             DefaultPseudoGenome(uint_pg_len pgLength, ReadsSetProperties* properties);
             DefaultPseudoGenome(uint_pg_len pgLength, std::istream& src);
-            ~DefaultPseudoGenome();
+            ~DefaultPseudoGenome() override;
             
             static DefaultPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>* castBase(PseudoGenomeBase* base);
 
-            string getTypeID();
+            string getTypeID() override;
 
-            void write(std::ostream& dest);
+            void write(std::ostream& dest) override;
             
-            bool validateUsing(DefaultReadsSet* readsSet);
+            bool validateUsing(DefaultReadsSet* readsSet) override;
             
             ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass>* getReadsList();
             void unmanageReadsList() {
@@ -50,15 +50,15 @@ namespace PgIndex {
 
             const char_pg* getSuffixPtrByPosition(const uint_reads_cnt originalIdx, const uint_read_len pos);
             
-            uint_read_len maxReadLength();
+            uint_read_len maxReadLength() override;
 
-            uint_reads_cnt readsCount();
+            uint_reads_cnt readsCount() override;
 
-            bool isReadLengthConstant();
+            bool isReadLengthConstant() override;
 
-            const string getRead(const uint_reads_cnt originalIdx);
+            const string getRead(const uint_reads_cnt originalIdx) override;
             
-            uint_read_len readLength(const uint_reads_cnt originalIdx);
+            uint_read_len readLength(const uint_reads_cnt originalIdx) override;
 
             const char_pg getSymbolImpl(const uint_pg_len posIdx);
             const string getPartImpl(const uint_pg_len posIdx, const uint_pg_len length);
@@ -70,7 +70,7 @@ namespace PgIndex {
             const string getReadVirtual(uint_reads_cnt i);
             uint_read_len readLengthVirtual(uint_reads_cnt i);
 
-            const string getPseudoGenomeVirtual();
+            const string getPseudoGenomeVirtual() override;
     };
 
     template <typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len>
@@ -94,14 +94,14 @@ namespace PgIndex {
 
             GeneratedPseudoGenome(uint_pg_len sequenceLength, ReadsSetProperties* properties);
 
-            ~GeneratedPseudoGenome();
+            ~GeneratedPseudoGenome() override;
 
             void append(const string& read, uint_read_len length, uint_read_len overlap, uint_reads_cnt orgIdx);
             void append(uint_read_len_max length, uint_read_len_max overlap, uint_reads_cnt_max orgIdx);
 
             void validate();
             
-            void buildRepetitiveReadsFilter();
+            void buildRepetitiveReadsFilter() override;
     };
 
     template <typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len>

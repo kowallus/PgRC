@@ -22,7 +22,7 @@ namespace PgIndex {
     private:
 
         bool ownReadsSet = false;
-        PackedConstantLengthReadsSet* packedReadsSet = 0;
+        PackedConstantLengthReadsSet* packedReadsSet = nullptr;
         const uint_symbols_cnt symbolsCount;
 
         vector<uint_reads_cnt> sortedReadsIdxs;
@@ -39,7 +39,7 @@ namespace PgIndex {
         uint_reads_cnt sortedSuffixBlockPlusSymbolPos[MAX_BLOCKS_COUNT + 1][MAX_SYMBOLS_COUNT + 1];
         uint_reads_cnt sortedSuffixBlockPos[MAX_BLOCKS_COUNT + 1];
 
-        uint16_t threadStartBlock[UINT8_MAX] = { 0 };
+        uint16_t threadStartBlock[UINT8_MAX + 1] = { 0 };
 
         struct PackedReadsComparator {
             ParallelGreedySwipingPackedOverlapGeneratorTemplate<uint_read_len, uint_reads_cnt>* myGenerator;
@@ -85,7 +85,7 @@ namespace PgIndex {
 
         virtual ReadsSetProperties* getReadsSetProperties() override;
 
-        bool isGenerationCyclesAware(bool pgGenerationMode) { return false; };
+        bool isGenerationCyclesAware(bool pgGenerationMode) override { return false; };
 
         template<bool pgGenerationMode>
         void initAndFindDuplicates();
@@ -131,7 +131,7 @@ namespace PgIndex {
 
         ParallelGreedySwipingPackedOverlapPseudoGenomeGeneratorFactory() {};
 
-        PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);
+        PseudoGenomeGeneratorBase* getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) override;
         PseudoGenomeGeneratorBase* getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet);
 
         static PseudoGenomeBase* generatePg(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator);

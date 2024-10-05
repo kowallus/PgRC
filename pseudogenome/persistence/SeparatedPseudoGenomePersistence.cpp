@@ -5,7 +5,15 @@
 #include "../../coders/PropsLibrary.h"
 #include <memory>
 
+#ifdef __APPLE__
+#define PSTLD_HEADER_ONLY
+#include "../../utils/pstld.h"
+#define parallel_algorithm pstld
+#else
 #include <parallel/algorithm>
+#define parallel_algorithm __gnu_parallel
+#endif
+
 #include <cassert>
 
 namespace PgTools {
@@ -49,12 +57,12 @@ namespace PgTools {
 
     SeparatedPseudoGenome* SeparatedPseudoGenomePersistence::loadSeparatedPseudoGenome(const string &pgPrefix,
             bool skipReadsList){
-        PseudoGenomeHeader* pgh = 0;
-        ReadsSetProperties* prop = 0;
+        PseudoGenomeHeader* pgh = nullptr;
+        ReadsSetProperties* prop = nullptr;
         bool plainTextReadMode = false;
         SeparatedPseudoGenomeBase::getPseudoGenomeProperties(pgPrefix, pgh, prop, plainTextReadMode);
         string pgSequence = SeparatedPseudoGenomePersistence::loadPseudoGenomeSequence(pgPrefix);
-        ExtendedReadsListWithConstantAccessOption* caeRl = skipReadsList?0:
+        ExtendedReadsListWithConstantAccessOption* caeRl = skipReadsList?nullptr:
                 ExtendedReadsListWithConstantAccessOption::loadConstantAccessExtendedReadsList(pgPrefix, pgh->getPseudoGenomeLength());
         SeparatedPseudoGenome* spg = new SeparatedPseudoGenome(std::move(pgSequence), caeRl, prop);
         delete(pgh);
@@ -480,7 +488,7 @@ namespace PgTools {
                 basePairPos.push_back(orgIdx2PgPos[i]);
                 bppRank.push_back(i >> 1);
             }
-            __gnu_parallel::stable_sort(bppRank.begin(), bppRank.end(),
+            parallel_algorithm::stable_sort(bppRank.begin(), bppRank.end(),
                     [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                         { return basePairPos[idx1] < basePairPos[idx2]; });
             *logout << "... reordering bases checkpoint: " << time_millis() << " msec. " << endl;
@@ -621,7 +629,7 @@ namespace PgTools {
             bppRank.reserve(pairsCount);
             for (uint_reads_cnt_std p = 0; p < pairsCount; p++)
                 bppRank.push_back(p);
-            __gnu_parallel::stable_sort(bppRank.begin(), bppRank.end(),
+            parallel_algorithm::stable_sort(bppRank.begin(), bppRank.end(),
                              [&](const uint_reads_cnt_std &idx1, const uint_reads_cnt_std &idx2) -> bool
                              { return pgPos[idx1] < pgPos[idx2]; });
 
@@ -678,7 +686,7 @@ namespace PgTools {
     }
 
     void SeparatedPseudoGenomeOutputBuilder::initDest(ostream *&dest, const string &fileSuffix) {
-        if (dest == 0) {
+        if (dest == nullptr) {
             if (onTheFlyMode())
                 dest = new ofstream(
                         SeparatedPseudoGenomePersistence::getPseudoGenomeElementDest(pseudoGenomePrefix, fileSuffix, true));
@@ -716,7 +724,7 @@ namespace PgTools {
             if (onTheFlyMode())
                 ((ofstream*) dest)->close();
             delete(dest);
-            dest = 0;
+            dest = nullptr;
         }
     }
 
@@ -742,7 +750,7 @@ namespace PgTools {
                 fprintf(stderr, "This build mode is not supported in on-the-fly mode.\n");
             exit(EXIT_FAILURE);
         }
-        if (pgh == 0) {
+        if (pgh == nullptr) {
             fprintf(stderr, "Pseudo genome header not initialized in separated Pg builder.\n");
             exit(EXIT_FAILURE);
         }
@@ -754,7 +762,7 @@ namespace PgTools {
         rsProp->allReadsLength = rsProp->constantReadLength ? (size_t) readsCounter * rsProp->maxReadLength : -1;
         if (pgPropDest) {
             delete (pgPropDest);
-            pgPropDest = 0;
+            pgPropDest = nullptr;
         }
         initDest(pgPropDest, SeparatedPseudoGenomeBase::PSEUDOGENOME_PROPERTIES_SUFFIX);
         pgh->write(*pgPropDest);
@@ -982,7 +990,7 @@ namespace PgTools {
 
     void SeparatedPseudoGenomeOutputBuilder::writeExtraReadEntry(const DefaultReadsListEntry &rlEntry) {
         writeReadEntry(rlEntry);
-        if (rlIt != 0) {
+        if (rlIt != nullptr) {
             ReadsListEntry<255, uint_read_len_max, uint_reads_cnt_max, uint_pg_len_max> &itEntry = this->rlIt->peekReadEntry();
             itEntry.offset -= rlEntry.offset;
         }
@@ -1026,9 +1034,9 @@ namespace PgTools {
         setReadsSourceIterator(rlIt);
         writeReadsFromIterator();
 
-        if (pgh == 0)
+        if (pgh == nullptr)
             pgh = new PseudoGenomeHeader(pgb);
-        if (rsProp == 0)
+        if (rsProp == nullptr)
             rsProp = new ReadsSetProperties(*(pgb->getReadsSetProperties()));
         if (pgh->getReadsCount() != readsCounter) {
             fprintf(stderr, "Incorrect reads count validation while building separated Pg (%u instead of %u).\n",
@@ -1047,9 +1055,9 @@ namespace PgTools {
                     pseudoGenomePrefix.c_str());
             exit(EXIT_FAILURE);
         }
-        if (pgh != 0)
+        if (pgh != nullptr)
             delete(pgh);
-        if (rsProp != 0)
+        if (rsProp != nullptr)
             delete(rsProp);
         this->pgh = new PseudoGenomeHeader(pgPropSrc);
         this->rsProp = new ReadsSetProperties(pgPropSrc);
@@ -1083,11 +1091,11 @@ namespace PgTools {
         if (sPg->isReadLengthMin())
             bytePerReadLengthMode = true;
         setReadsSourceIterator(sPg->getReadsList());
-        if (pgh == 0)
+        if (pgh == nullptr)
             pgh = new PseudoGenomeHeader(sPg);
         writeReadsFromIterator();
 
-        if (rsProp == 0)
+        if (rsProp == nullptr)
             rsProp = new ReadsSetProperties(*(sPg->getReadsSetProperties()));
         if (pgh->getReadsCount() != readsCounter) {
             fprintf(stderr, "Incorrect reads count validation while building separated Pg (%u instead of %u).\n",

@@ -15,7 +15,7 @@ private:
 
     CyclicHash<uint32_t> hf;
 
-    const  char* txt = 0;
+    const  char* txt = nullptr;
     uint64_t txtSize = 0;
 
     //iterator fields
@@ -77,7 +77,7 @@ private:
     std::vector<CyclicHash<uint32_t>> hf;
     uint8_t currentHF = 0;
 
-    const  char* txt = 0;
+    const  char* txt = nullptr;
     uint64_t txtSize = 0;
 
     //iterator fields

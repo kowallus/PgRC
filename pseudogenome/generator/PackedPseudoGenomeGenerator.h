@@ -26,12 +26,12 @@ namespace PgIndex {
                     symbolsPerElement(symbolsPerElement) 
             { };
             
-            ~PackedPseudoGenomeGenerator() {} ;
+            ~PackedPseudoGenomeGenerator() override {} ;
                         
             bool isPseudoGenomeLengthStandardVirtual() { return isPGLengthStd(pseudoGenomeLength); };
             bool isPseudoGenomeLengthMaximalVirtual() { return isPGLengthMax(pseudoGenomeLength); };
             
-            PseudoGenomeBase* generatePseudoGenomeBase() {
+            PseudoGenomeBase* generatePseudoGenomeBase() override {
                 if (pgb->getTypeID() == PGTYPE_DEFAULT) {
                     if (pgb->isReadLengthMin()) {
                         if (pgb->isReadsCountStd()) {
@@ -52,7 +52,7 @@ namespace PgIndex {
                     }
                 }
                 cout << "ERROR: wrong source PGSATYPE " << pgb->getTypeID();
-                return 0;
+                return nullptr;
             };
      
             template < typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len >
@@ -68,7 +68,7 @@ namespace PgIndex {
                     }
                 }
                 cout << "ERROR: wrong source PGSATYPE " << pgb->getTypeID();
-                return 0;
+                return nullptr;
             }
             
     };

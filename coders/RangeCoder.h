@@ -38,11 +38,11 @@ public:
             : CoderProps(RANGE_CODER, 1), no_of_symbols(normalizeNoOfSymbols(no_of_symbols)),
             schema(PERIODIC_SCHEMA), bytes_period(bytes_period)  { }
 
-    string log() {
+    string log() override {
         return " range_coder (sigma = " + to_string(no_of_symbols) + "; period = " + to_string(bytes_period) + ")";
     }
 
-    virtual ~RangeCoderProps() { };
+    ~RangeCoderProps() override { };
 };
 
 MY_STDAPI RangeCompress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,

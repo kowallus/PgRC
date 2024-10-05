@@ -1,7 +1,14 @@
 #include "GreedySwipingPackedOverlapPseudoGenomeGenerator.h"
 #include "../../readsset/persistance/ReadsSetPersistence.h"
 
+#ifdef __APPLE__
+#define PSTLD_HEADER_ONLY
+#include "../../utils/pstld.h"
+#define parallel_algorithm pstld
+#else
 #include <parallel/algorithm>
+#define parallel_algorithm __gnu_parallel
+#endif
 
 using namespace PgReadsSet;
 using namespace PgHelpers;
@@ -95,7 +102,7 @@ namespace PgIndex {
             sortedReadsIdxs.push_back(i);
         
         PackedReadsComparator comparePacked = PackedReadsComparator(this);
-        __gnu_parallel::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
+        parallel_algorithm::sort(sortedReadsIdxs.begin(), sortedReadsIdxs.end(), comparePacked);
 
         uint_reads_cnt sortedReadsLeftCount = 1;
 
@@ -256,7 +263,7 @@ namespace PgIndex {
         else
             cout << "UNSUPPORTED READS COUNT!!!???";
 
-        return 0;
+        return nullptr;
     }
 
     PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(ReadsSourceIteratorTemplate<uint_read_len_max> *readsIterator) {
@@ -268,7 +275,7 @@ namespace PgIndex {
     }
 
     PseudoGenomeGeneratorBase* GreedySwipingPackedOverlapPseudoGenomeGeneratorFactory::getGenerator(PackedConstantLengthReadsSet* readsSet, bool ownReadsSet) {
-        PseudoGenomeGeneratorBase* generatorBase = 0;
+        PseudoGenomeGeneratorBase* generatorBase = nullptr;
         if (isReadLengthMin(readsSet->maxReadLength()))
             generatorBase = getGeneratorPartialTemplate<uint_read_len_min>(readsSet, ownReadsSet);
         else if (isReadLengthStd(readsSet->maxReadLength()))
@@ -286,7 +293,7 @@ namespace PgIndex {
         delete(pggb);
         delete(pggf);
 
-        if (pgb == 0) {
+        if (pgb == nullptr) {
             fprintf(stderr, "Failed generating Pg\n");
             exit(EXIT_FAILURE);
         }
@@ -302,7 +309,7 @@ namespace PgIndex {
         delete(pggb);
         delete(pggf);
 
-        if (pgb == 0) {
+        if (pgb == nullptr) {
             fprintf(stderr, "Failed generating Pg\n");
             exit(EXIT_FAILURE);
         }
@@ -318,7 +325,7 @@ namespace PgIndex {
         delete(pggb);
         delete(pggf);
 
-        if (pg == 0) {
+        if (pg == nullptr) {
             fprintf(stderr, "Failed generating Pg\n");
             exit(EXIT_FAILURE);
         }

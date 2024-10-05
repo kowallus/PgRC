@@ -25,7 +25,7 @@ namespace PgIndex {
 
         public:
             
-            virtual ~PseudoGenomeBase() { };
+            ~PseudoGenomeBase() override { };
             
             bool isPGLengthStd() { return PgIndex::isPGLengthStd(length); };
             bool isPGLengthMax() { return PgIndex::isPGLengthMax(length); };

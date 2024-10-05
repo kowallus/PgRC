@@ -29,29 +29,29 @@ namespace PgTools {
     void DividedPCLReadsSets::disposeHqReadsSet() {
         if (hqReadsSet) {
             delete (hqReadsSet);
-            hqReadsSet = 0;
+            hqReadsSet = nullptr;
         }
     }
 
     void DividedPCLReadsSets::disposeLqReadsSet() {
         if (lqReadsSet) {
             delete (lqReadsSet);
-            lqReadsSet = 0;
+            lqReadsSet = nullptr;
         }
         if (lqMapping) {
             delete (lqMapping);
-            lqMapping = 0;
+            lqMapping = nullptr;
         }
     }
 
     void DividedPCLReadsSets::disposeNReadsSet() {
         if (nReadsSet) {
             delete (nReadsSet);
-            nReadsSet = 0;
+            nReadsSet = nullptr;
         }
         if (nMapping) {
             delete (nMapping);
-            nMapping = 0;
+            nMapping = nullptr;
         }
     }
 

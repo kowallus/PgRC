@@ -23,8 +23,8 @@ namespace PgTools {
 
         if (targetPgPrefix != srcPgPrefix) {
             cout << "Reading target pseudogenome..." << endl;
-            PseudoGenomeHeader *pgh = 0;
-            ReadsSetProperties* rsProp = 0;
+            PseudoGenomeHeader *pgh = nullptr;
+            ReadsSetProperties* rsProp = nullptr;
             bool plainTextReadMode = false;
             SeparatedPseudoGenomeBase::getPseudoGenomeProperties(targetPgPrefix, pgh, rsProp,
                                                                                  plainTextReadMode);

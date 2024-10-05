@@ -9,14 +9,14 @@ namespace PgTools {
 
     class DividedPCLReadsSets {
     private:
-        PackedConstantLengthReadsSet* hqReadsSet = 0;
-        PackedConstantLengthReadsSet* lqReadsSet = 0;
+        PackedConstantLengthReadsSet* hqReadsSet = nullptr;
+        PackedConstantLengthReadsSet* lqReadsSet = nullptr;
         bool nReadsLQ;
-        PackedConstantLengthReadsSet* nReadsSet = 0;
+        PackedConstantLengthReadsSet* nReadsSet = nullptr;
         bool separateNReadsSet;
 
-        VectorMapping* lqMapping = 0;
-        VectorMapping* nMapping = 0;
+        VectorMapping* lqMapping = nullptr;
+        VectorMapping* nMapping = nullptr;
 
     public:
         DividedPCLReadsSets(uint_read_len_max readLength, bool separateNReadsSet = false, bool nReadsLQ = false);

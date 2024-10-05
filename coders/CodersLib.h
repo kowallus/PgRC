@@ -92,15 +92,15 @@ public:
         }
     }
 
-    string log() {
+    string log() override {
         return " compound_coders (" + secondaryCoder->log() + " over " + primaryCoder->log() + ")";
     }
 
-    size_t getHeaderLen() {
+    size_t getHeaderLen() override {
         return 3 * sizeof(uint64_t) + 2 * sizeof(uint8_t) + primaryCoder->getHeaderLen();
     }
 
-    virtual ~CompoundCoderProps() { };
+    ~CompoundCoderProps() override { };
 
 };
 
@@ -165,14 +165,14 @@ public:
               numOfBlocks(numOfBlocks), minBlockLength(minBlockLength),
               blockAlignment(blockAlignment) { }
 
-    string log() {
+    string log() override {
         if (numOfBlocks > 1)
             return " parallel_blocks (no = " + to_string(numOfBlocks) + ") of" + blocksCoder->log();
         else
             return " (skipped blocks)" + blocksCoder->log();
     }
 
-    virtual ~ParallelBlocksCoderProps() { };
+    ~ParallelBlocksCoderProps() override { };
 
     void prepare(size_t srcLen) {
         int maxBlocks = srcLen / minBlockLength;
@@ -235,7 +235,7 @@ public:
         }
     }
 
-    string log() {
+    string log() override {
         if (!selected) {
             fprintf(stderr, "before selection printing log is not possible in selector coder.\n");
             exit(EXIT_FAILURE);
@@ -243,7 +243,7 @@ public:
         return selectedAFlag ? coderA->log() : coderB->log();
     }
 
-    size_t getHeaderLen() {
+    size_t getHeaderLen() override {
         if (!selected) {
             fprintf(stderr, "before selection header length is not available in selector coder.\n");
             exit(EXIT_FAILURE);
@@ -251,7 +251,7 @@ public:
         return selectedAFlag ? coderA->getHeaderLen() : coderB->getHeaderLen();
     }
 
-    virtual ~SelectorCoderProps() { };
+    ~SelectorCoderProps() override { };
 
     void selectCoder(bool selectA) {
         if (selected) {

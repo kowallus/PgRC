@@ -30,18 +30,18 @@ namespace PgTools {
         ReadsListIteratorExtendedWrapper(ReadsListInterface<uint_read_len, uint_reads_cnt, uint_pg_len, ReadsListClass> *readsList)
         : readsList(readsList), orgIndexesMapping(new DirectMapping(readsList->getReadsCount()))  {}
 
-        ~ReadsListIteratorExtendedWrapper() { }
+        ~ReadsListIteratorExtendedWrapper() override { }
 
         inline uint_reads_cnt_max mapIndex(uint_reads_cnt idx) {
             return orgIndexesMapping->getReadOriginalIndex(idx);
         }
 
-        void applyIndexesMapping(IndexesMapping* orgIndexesMapping) {
+        void applyIndexesMapping(IndexesMapping* orgIndexesMapping) override {
             delete(this->orgIndexesMapping);
             this->orgIndexesMapping = orgIndexesMapping;
         }
 
-        void applyRevComplPairFileFlag() {
+        void applyRevComplPairFileFlag() override {
             revComplPairFile = true;
         }
 

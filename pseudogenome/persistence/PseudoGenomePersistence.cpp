@@ -29,7 +29,7 @@ namespace PgIndex {
         }
 
         cout << "ERROR: CANNOT DETERMINE TEMPLATE TYPES";
-        return 0;
+        return nullptr;
     }
 
     PseudoGenomeBase* PseudoGenomePersistence::readPseudoGenome(string pseudoGenomeFile) {
@@ -84,16 +84,16 @@ namespace PgIndex {
         }
         
         cout << "ERROR: unsupported PGTYPE " << pgh.getType() << " with " << (pgh.isReadLengthConstant()?"constant":"variable") << " read length\n";
-        return 0;
+        return nullptr;
     }
 
     PseudoGenomeBase* PseudoGenomePersistence::checkAndReadPseudoGenome(string pgFile) {
-        PseudoGenomeBase* pgb = 0;
+        PseudoGenomeBase* pgb = nullptr;
 
         if (PseudoGenomePersistence::isValidPseudoGenome(pgFile))
             pgb = PseudoGenomePersistence::readPseudoGenome(pgFile);
 
-        if (pgb == 0) {
+        if (pgb == nullptr) {
             fprintf(stderr, "Failed loading Pg\n");
             exit(EXIT_FAILURE);
         }

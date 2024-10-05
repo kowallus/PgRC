@@ -175,9 +175,10 @@ void CopMEMMatcher::genCumm(size_t N, const char* gen, MyUINT2* cumm, vector<MyU
 
 template<typename MyUINT1, typename MyUINT2>
 HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRef() {
+#ifndef __APPLE__
     if (PgHelpers::numberOfThreads > 1)
         return processRefMultithreaded<MyUINT1, MyUINT2>();
-
+#endif
     const unsigned int MULTI2 = 128;
     const unsigned int k1MULTI2 = k1 * MULTI2;
 

@@ -13,27 +13,27 @@ namespace PgReadsSet {
         class ManagedReadsSetIterator: public ReadsSourceIteratorTemplate<uint_read_len_max> {
         private:
             vector<ReadsSourceIteratorTemplate< uint_read_len_max>*> coreIterators;
-            ReadsSourceIteratorTemplate< uint_read_len_max>* readsIterator = 0;
+            ReadsSourceIteratorTemplate< uint_read_len_max>* readsIterator = nullptr;
 
             char buf1[1 << 16];
             char buf2[1 << 16];
 
-            ifstream* srcSource = 0;
-            ifstream* pairSource = 0;
-            ifstream* divSource = 0;
+            ifstream* srcSource = nullptr;
+            ifstream* pairSource = nullptr;
+            ifstream* divSource = nullptr;
         public:
             ManagedReadsSetIterator(const string &srcFile, const string &pairFile = "", bool revComplPairFile = false,
                     const string &divisionFile = "", bool divisionComplement = false,
                     bool ignoreNReads = false, bool ignoreNoNReads = false);
 
         public:
-            bool moveNext();
-            string& getRead();
-            string& getQualityInfo();
-            uint_read_len_max getReadLength();
-            void rewind();
+            bool moveNext() override;
+            string& getRead() override;
+            string& getQualityInfo() override;
+            uint_read_len_max getReadLength() override;
+            void rewind() override;
 
-            virtual ~ManagedReadsSetIterator();
+            ~ManagedReadsSetIterator() override;
 
             IndexesMapping* retainVisitedIndexesMapping() override;
         };

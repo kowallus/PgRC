@@ -15,7 +15,7 @@ public:
         return " ppmd (mem = " + to_string(memSize >> 20) + "MB; ord = " + to_string(order) + ")";
     }
 
-    virtual ~PpmdCoderProps() { };
+    ~PpmdCoderProps() override { };
 };
 
 MY_STDAPI Ppmd7Compress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,

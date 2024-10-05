@@ -22,8 +22,8 @@ namespace PgTools {
 
         bool plainTextReadMode = false;
 
-        PseudoGenomeHeader* srcPgh = 0;
-        ReadsSetProperties* srcRsProp = 0;
+        PseudoGenomeHeader* srcPgh = nullptr;
+        ReadsSetProperties* srcRsProp = nullptr;
         uint_read_len_max readLength;
         string srcPg;
         string destPg;
@@ -31,7 +31,7 @@ namespace PgTools {
         vector<TextMatch> textMatches;
         vector<PgMatch> pgMatches;
 
-        ExtendedReadsListWithConstantAccessOption* srcRl = 0;
+        ExtendedReadsListWithConstantAccessOption* srcRl = nullptr;
         vector<uint_pg_len_max> newRlPos;
 
         void mapPgMatches2SrcReadsList();

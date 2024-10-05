@@ -77,7 +77,7 @@
 
 #include <iostream>
 #include <limits.h>
-#include <stdio.h>
+#include <cstdint>
 #include <time.h>
 
 #ifdef __MINGW32__

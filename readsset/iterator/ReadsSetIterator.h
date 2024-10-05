@@ -13,6 +13,8 @@ namespace PgReadsSet {
 
     class IndexesMapping {
     public:
+        virtual ~IndexesMapping() = default;
+
         virtual uint_reads_cnt_max getReadOriginalIndex(uint_reads_cnt_max idx) = 0;
         virtual uint_reads_cnt_max getMappedReadsCount() = 0;
         virtual uint_reads_cnt_max getReadsTotalCount() = 0;
@@ -52,8 +54,8 @@ namespace PgReadsSet {
 
     class SumOfMappings : public IndexesMapping {
     private:
-        IndexesMapping* im1 = 0;
-        IndexesMapping* im2 = 0;
+        IndexesMapping* im1 = nullptr;
+        IndexesMapping* im2 = nullptr;
         uint_reads_cnt_max idxBeg2 = 0;
         inline IndexesMapping *getIm(uint_reads_cnt_max i) const { return (i < idxBeg2 ? im1 : im2); }
         inline uint_reads_cnt_max getImIdx(uint_reads_cnt_max i) const { return i < idxBeg2 ? i : i - idxBeg2; }
@@ -99,19 +101,19 @@ namespace PgReadsSet {
         private:
             std::string line;
             uint_read_len length;
-            std::istream* source = 0;
+            std::istream* source = nullptr;
             int64_t counter = -1;
 
         public:
 
             ConcatenatedReadsSourceIterator(std::istream* source);
 
-            ~ConcatenatedReadsSourceIterator();
+            ~ConcatenatedReadsSourceIterator() override;
 
-            bool moveNext();
-            string& getRead();
-            uint_read_len getReadLength();
-            void rewind();
+            bool moveNext() override;
+            string& getRead() override;
+            uint_read_len getReadLength() override;
+            void rewind() override;
 
             IndexesMapping* retainVisitedIndexesMapping() override;
     };
@@ -122,8 +124,8 @@ namespace PgReadsSet {
         private:
             std::string line;
             uint_read_len length;
-            std::istream* source = 0;
-            std::istream* pairSource = 0;
+            std::istream* source = nullptr;
+            std::istream* pairSource = nullptr;
             bool pair = false;
             int64_t counter = -1;
             
@@ -133,12 +135,12 @@ namespace PgReadsSet {
             
             FASTAReadsSourceIterator(std::istream* source, std::istream* pairSource);
 
-            ~FASTAReadsSourceIterator();
+            ~FASTAReadsSourceIterator() override;
 
-            bool moveNext();
-            string& getRead();
-            uint_read_len getReadLength();
-            void rewind();
+            bool moveNext() override;
+            string& getRead() override;
+            uint_read_len getReadLength() override;
+            void rewind() override;
 
             IndexesMapping* retainVisitedIndexesMapping() override;
     };
@@ -149,8 +151,8 @@ namespace PgReadsSet {
         private:
             std::string id, line, opt_id, quality;
             uint_read_len length;
-            std::ifstream* source = 0;
-            std::ifstream* pairSource = 0;
+            std::ifstream* source = nullptr;
+            std::ifstream* pairSource = nullptr;
             bool ownStreams = false;
             bool pair = false;
             int64_t counter = -1;
@@ -160,13 +162,13 @@ namespace PgReadsSet {
             FASTQReadsSourceIterator(const string &srcFile, const string &pairFile = std::string());
             FASTQReadsSourceIterator(std::ifstream* source, std::ifstream* pairSource);
 
-            ~FASTQReadsSourceIterator();
+            ~FASTQReadsSourceIterator() override;
 
-            bool moveNext();
-            string& getRead();
-            string& getQualityInfo();
-            uint_read_len getReadLength();
-            void rewind();
+            bool moveNext() override;
+            string& getRead() override;
+            string& getQualityInfo() override;
+            uint_read_len getReadLength() override;
+            void rewind() override;
 
             IndexesMapping* retainVisitedIndexesMapping() override;
     };
@@ -182,11 +184,11 @@ namespace PgReadsSet {
         RevComplPairReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator,
                                      bool reverseQualityStream = false);
 
-        bool moveNext();
-        string& getRead();
-        string& getQualityInfo();
-        uint_read_len getReadLength();
-        void rewind();
+        bool moveNext() override;
+        string& getRead() override;
+        string& getQualityInfo() override;
+        uint_read_len getReadLength() override;
+        void rewind() override;
         IndexesMapping* retainVisitedIndexesMapping() override;
     };
 
@@ -201,11 +203,11 @@ namespace PgReadsSet {
     public:
         IgnoreNReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator);
 
-        bool moveNext();
-        string& getRead();
-        string& getQualityInfo();
-        uint_read_len getReadLength();
-        void rewind();
+        bool moveNext() override;
+        string& getRead() override;
+        string& getQualityInfo() override;
+        uint_read_len getReadLength() override;
+        void rewind() override;
         IndexesMapping* retainVisitedIndexesMapping() override;
     };
 }

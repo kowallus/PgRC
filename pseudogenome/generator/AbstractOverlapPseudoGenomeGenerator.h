@@ -60,7 +60,7 @@ namespace PgIndex {
     public:
 
         AbstractOverlapPseudoGenomeGeneratorTemplate() {}
-        virtual ~AbstractOverlapPseudoGenomeGeneratorTemplate() {}
+        ~AbstractOverlapPseudoGenomeGeneratorTemplate() override {}
 
         SeparatedPseudoGenome *generateSeparatedPseudoGenome() override;
 

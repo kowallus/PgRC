@@ -15,7 +15,7 @@ namespace PgTools {
     private:
         uint32_t targetMatchLength;
 
-        TextMatcher* matcher = 0;
+        TextMatcher* matcher = nullptr;
         const string& srcPg;
 
         uint64_t destPgLength;

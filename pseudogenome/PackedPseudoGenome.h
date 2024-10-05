@@ -29,13 +29,13 @@ namespace PgIndex {
 
             PackedPseudoGenome(uint_pg_len pgLength, std::istream& src);
 
-            ~PackedPseudoGenome();
+            ~PackedPseudoGenome() override;
 
             static PackedPseudoGenome<uint_read_len, uint_reads_cnt, uint_pg_len, uint_pg_element, ReadsListClass>* castBase(PseudoGenomeBase* base);
 
-            string getTypeID();
+            string getTypeID() override;
 
-            void write(std::ostream& dest);
+            void write(std::ostream& dest) override;
             
             uint_pg_len getElementsCountWithGuard();
             
@@ -49,11 +49,11 @@ namespace PgIndex {
             
             const uint_pg_element* getRawSuffix(const uint_reads_cnt readsListIdx, const uint_read_len pos);
             
-            uint_read_len maxReadLength();
+            uint_read_len maxReadLength() override;
 
-            uint_reads_cnt readsCount();
+            uint_reads_cnt readsCount() override;
 
-            bool isReadLengthConstant();
+            bool isReadLengthConstant() override;
 
             const string getSuffix(const uint_pg_len pos, const uint_pg_len length);
 
@@ -61,9 +61,9 @@ namespace PgIndex {
           
             void getKmerByPosition(const uint_reads_cnt originalIdx, const uint_read_len pos, const uint_read_len kmerLength, char_pg* kmerPtr);
             
-            const string getRead(uint_reads_cnt originalIdx);
+            const string getRead(uint_reads_cnt originalIdx) override;
             
-            uint_read_len readLength(uint_reads_cnt originalIdx);
+            uint_read_len readLength(uint_reads_cnt originalIdx) override;
 
             const char_pg getSymbolImpl(const uint_pg_len posIdx);
             const string getPartImpl(const uint_pg_len posIdx, const uint_pg_len length);
@@ -77,7 +77,7 @@ namespace PgIndex {
             const string getReadVirtual(uint_reads_cnt i);
             uint_read_len readLengthVirtual(uint_reads_cnt i);
 
-            const string getPseudoGenomeVirtual();
+            const string getPseudoGenomeVirtual() override;
     };
 
     template <typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, typename uint_pg_element>

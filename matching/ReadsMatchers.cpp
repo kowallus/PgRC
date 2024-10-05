@@ -6,7 +6,14 @@
 #include "../pseudogenome/readslist/SeparatedExtendedReadsList.h"
 #include <omp.h>
 
+#ifdef __APPLE__
+#define PSTLD_HEADER_ONLY
+#include "../utils/pstld.h"
+#define parallel_algorithm pstld
+#else
 #include <parallel/algorithm>
+#define parallel_algorithm __gnu_parallel
+#endif
 
 namespace PgTools {
 
@@ -49,7 +56,8 @@ namespace PgTools {
         uint64_t pos = readLength;
         uint8_t count = 0;
         while (count < mismatchesCount) {
-            if (read[--pos] != pgPart[pos]) {
+            --pos;
+            if (read[pos] != pgPart[pos]) {
                 entry.addMismatch(mismatch2CxtCode(reverseComplement(pgPart[pos]), reverseComplement(read[pos])),
                         readLength - pos - 1);
                 count++;
@@ -562,7 +570,7 @@ namespace PgTools {
             if (readMatchPos[i] != NOT_MATCHED_POSITION)
                 idxs[counter++] = i;
 
-        __gnu_parallel::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
+        parallel_algorithm::sort(idxs.begin(), idxs.end(), [this](const uint_reads_cnt_max& idx1, const uint_reads_cnt_max& idx2) -> bool
         { return readMatchPos[idx1] < readMatchPos[idx2]; });
 
         initEntryUpdating();

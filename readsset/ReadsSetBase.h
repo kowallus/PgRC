@@ -98,7 +98,7 @@ namespace PgReadsSet {
     {
         protected:
 
-            ReadsSetProperties* properties = 0;
+            ReadsSetProperties* properties = nullptr;
 
             ReadsSetBase() {
                 this->properties = new ReadsSetProperties();

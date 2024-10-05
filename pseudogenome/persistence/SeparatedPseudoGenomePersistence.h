@@ -64,17 +64,17 @@ namespace PgTools {
 
         bool onTheFlyMode() { return !pseudoGenomePrefix.empty(); }
 
-        ostream* pgDest = 0;
-        ostream* pgPropDest = 0;
-        ostream* rlPosDest = 0;
-        ostream* rlOrgIdxDest = 0;
-        ostream* rlRevCompDest = 0;
-        ostream* rlMisCntDest = 0;
-        ostream* rlMisSymDest = 0;
-        ostream* rlMisPosDest = 0;
+        ostream* pgDest = nullptr;
+        ostream* pgPropDest = nullptr;
+        ostream* rlPosDest = nullptr;
+        ostream* rlOrgIdxDest = nullptr;
+        ostream* rlRevCompDest = nullptr;
+        ostream* rlMisCntDest = nullptr;
+        ostream* rlMisSymDest = nullptr;
+        ostream* rlMisPosDest = nullptr;
 
-        ostream* rlOffDest = 0;
-        ostream* rlMisRevOffDest = 0;
+        ostream* rlOffDest = nullptr;
+        ostream* rlMisRevOffDest = nullptr;
 
         bool disableRevComp = false;
         bool disableMismatches = false;
@@ -82,14 +82,14 @@ namespace PgTools {
         void initDest(ostream *&dest, const string &fileSuffix);
         void initReadsListDests();
 
-        DefaultReadsListIteratorInterface *rlIt = 0;
+        DefaultReadsListIteratorInterface *rlIt = nullptr;
         bool iterationPaused = false;
 
         uint_pg_len_max lastWrittenPos = 0;
         uint_reads_cnt_max readsCounter = 0;
 
-        PseudoGenomeHeader* pgh = 0;
-        ReadsSetProperties* rsProp = 0;
+        PseudoGenomeHeader* pgh = nullptr;
+        ReadsSetProperties* rsProp = nullptr;
 
         void prebuildAssert(bool requireOnTheFlyMode);
         void buildProps();

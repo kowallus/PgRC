@@ -30,7 +30,7 @@ namespace PgReadsSet {
     {
     public:
 
-        virtual ~ConstantLengthReadsSetInterface() {};
+        ~ConstantLengthReadsSetInterface() override {};
 
         virtual char getReadSymbol(uint_reads_cnt_max index, uint_read_len_max pos) = 0;
 
@@ -39,14 +39,14 @@ namespace PgReadsSet {
         virtual uint8_t countMismatchesVsPattern(uint_reads_cnt_max index, const char *pattern, const uint_read_len_max patLength,
                                            uint8_t mismatchesLimit) = 0;
         virtual void getRead(uint_reads_cnt_max index, char* res) = 0;
-        virtual const string getRead(uint_reads_cnt_max index) = 0;
+        const string getRead(uint_reads_cnt_max index) override = 0;
     };
 
     class SumOfConstantLengthReadsSets: public ConstantLengthReadsSetInterface
     {
     private:
-        ConstantLengthReadsSetInterface* clrs1 = 0;
-        ConstantLengthReadsSetInterface* clrs2 = 0;
+        ConstantLengthReadsSetInterface* clrs1 = nullptr;
+        ConstantLengthReadsSetInterface* clrs2 = nullptr;
         uint_reads_cnt_max idxBeg2 = 0;
 
         inline ConstantLengthReadsSetInterface *getCrls(uint_reads_cnt_max i) const

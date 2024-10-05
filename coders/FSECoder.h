@@ -25,11 +25,11 @@ public:
             tableLog(tableLog ? tableLog : FSE_DEFAULT_TABLELOG),
             blockSizeOrder(blockSizeOrder ? blockSizeOrder : (huffman ? HUF_BLOCKSIZE_ORDER_MAX : FSE_BLOCKSIZE_ORDER_DEFAULT)) { }
 
-    string log() {
+    string log() override {
         return string(" fse_coder (") + (mode == HUF_MODE ? "huffman mode; ": "") + "blockSizeOrder = " + to_string(blockSizeOrder) + "; max_symbol = " + to_string(maxSymbolValue) + "; tableLog = " + to_string(tableLog) + ")";
     }
 
-    virtual ~FSECoderProps() { };
+    ~FSECoderProps() override { };
 };
 
 MY_STDAPI FSECompress(unsigned char *&dest, size_t &destLen, const unsigned char *src, size_t srcLen,

@@ -121,8 +121,8 @@ unsigned char* Compress(size_t &destLen, const unsigned char *src, size_t srcLen
     }
 #endif
     chrono::steady_clock::time_point start_t = chrono::steady_clock::now();
-    unsigned char* dest = 0;
-    unsigned char* compSeq = 0;
+    unsigned char* dest = nullptr;
+    unsigned char* compSeq = nullptr;
     CompoundCoderProps *ccProps;
     SelectorCoderProps* scProps;
     int res = 0;

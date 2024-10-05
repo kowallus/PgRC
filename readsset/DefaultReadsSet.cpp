@@ -51,13 +51,13 @@ namespace PgReadsSet {
 
     };
 
-    template DefaultReadsSet::DefaultReadsSet<ReadsSourceIteratorTemplate<uint_read_len_min>>(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<ReadsSourceIteratorTemplate<uint_read_len_std>>(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_min>>(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<ConcatenatedReadsSourceIterator<uint_read_len_std>>(ConcatenatedReadsSourceIterator<uint_read_len_std>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<FASTAReadsSourceIterator<uint_read_len_min>>(FASTAReadsSourceIterator<uint_read_len_min>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<FASTAReadsSourceIterator<uint_read_len_std>>(FASTAReadsSourceIterator<uint_read_len_std>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<FASTQReadsSourceIterator<uint_read_len_min>>(FASTQReadsSourceIterator<uint_read_len_min>* readsIterator);
-    template DefaultReadsSet::DefaultReadsSet<FASTQReadsSourceIterator<uint_read_len_std>>(FASTQReadsSourceIterator<uint_read_len_std>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(ReadsSourceIteratorTemplate<uint_read_len_min>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(ReadsSourceIteratorTemplate<uint_read_len_std>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(ConcatenatedReadsSourceIterator<uint_read_len_min>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(ConcatenatedReadsSourceIterator<uint_read_len_std>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(FASTAReadsSourceIterator<uint_read_len_min>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(FASTAReadsSourceIterator<uint_read_len_std>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(FASTQReadsSourceIterator<uint_read_len_min>* readsIterator);
+    template DefaultReadsSet::DefaultReadsSet(FASTQReadsSourceIterator<uint_read_len_std>* readsIterator);
     
 }

@@ -34,7 +34,7 @@ namespace PgIndex {
     template<typename uint_read_len, typename uint_reads_cnt, typename uint_pg_len, unsigned char LIST_ELEMENT_SIZE, uchar FLAGS_OFFSET>
     ListOfConstantLengthReads<uint_read_len, uint_reads_cnt, uint_pg_len, LIST_ELEMENT_SIZE, FLAGS_OFFSET>::~ListOfConstantLengthReads() {
         delete[] (this->pgReadsList);
-        if (this->readsListIdx != 0)
+        if (this->readsListIdx != nullptr)
             delete[] (this->readsListIdx);
     }
 

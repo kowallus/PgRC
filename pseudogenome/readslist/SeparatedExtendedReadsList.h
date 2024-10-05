@@ -39,7 +39,7 @@ namespace PgTools {
 
         ExtendedReadsListWithConstantAccessOption(uint_read_len_max readLength) : readLength(readLength) {}
 
-        virtual ~ExtendedReadsListWithConstantAccessOption() {};
+        ~ExtendedReadsListWithConstantAccessOption() override {};
 
         void enableConstantAccess(bool disableIterationMode = false, bool skipPositions = false);
 
@@ -69,7 +69,7 @@ namespace PgTools {
 
         bool moveNext() override;
         void rewind() override;
-        DefaultReadsListEntry &peekReadEntry() { return entry; };
+        DefaultReadsListEntry &peekReadEntry() override { return entry; };
 
         // reads list factories
 
@@ -101,19 +101,19 @@ namespace PgTools {
 
         bool fromFileMode() { return !pseudoGenomePrefix.empty(); }
 
-        istream *rlPosSrc = 0;
-        istream *rlOrgIdxSrc = 0;
-        istream *rlRevCompSrc = 0;
-        istream *rlMisCntSrc = 0;
-        istream *rlMisSymSrc = 0;
-        istream *rlMisOffSrc = 0;
+        istream *rlPosSrc = nullptr;
+        istream *rlOrgIdxSrc = nullptr;
+        istream *rlRevCompSrc = nullptr;
+        istream *rlMisCntSrc = nullptr;
+        istream *rlMisSymSrc = nullptr;
+        istream *rlMisOffSrc = nullptr;
 
-        istream *rlOffSrc = 0;
-        istream *rlMisRevOffSrc = 0;
+        istream *rlOffSrc = nullptr;
+        istream *rlMisRevOffSrc = nullptr;
 
         bool ownProps = true;
-        PseudoGenomeHeader *pgh = 0;
-        ReadsSetProperties *rsProp = 0;
+        PseudoGenomeHeader *pgh = nullptr;
+        ReadsSetProperties *rsProp = nullptr;
         bool plainTextReadMode = false;
 
         int64_t current = -1;

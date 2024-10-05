@@ -98,7 +98,7 @@ public:
         p->numThreads = numThreads;
     }
 
-    virtual int getNumThreads() const override { return p->numThreads; };
+    int getNumThreads() const override { return p->numThreads; };
 
     string log() override {
         return " lzma (algo = " + to_string(p->algo) + "; dictSize = " + to_string(p->dictSize >> 20)
@@ -107,7 +107,7 @@ public:
                              + "; th = " + to_string(p->numThreads) + ")";
     }
 
-    virtual ~LzmaCoderProps() { delete p; };
+    ~LzmaCoderProps() override { delete p; };
 
     CLzmaEncProps* getProps() const { return p; }
 };

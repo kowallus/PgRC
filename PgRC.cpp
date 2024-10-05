@@ -6,7 +6,7 @@
 #include "pseudogenome/persistence/SeparatedPseudoGenomePersistence.h"
 #include <omp.h>
 
-#define RELEASE_DATE "2024-09-26"
+#define RELEASE_DATE "2024-10-04"
 
 using namespace std;
 using namespace PgTools;
@@ -215,7 +215,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Stages: 1:QualDivision; 2:PgGenDivision; 3:Pg(HQ); 4:ReadsMatching; 5:Pg(LQ&N); 6:OrderInfo; 7:PgSequences\n\n");
 #endif
                 fprintf(stderr, "The order of all selected options is arbitrary.\n\n");
-                exit(EXIT_FAILURE);
+                exit(opt == 'h' ? EXIT_SUCCESS : EXIT_FAILURE);
         }
     }
     if (optind > (argc - 1) || optind < (argc - 1)) {

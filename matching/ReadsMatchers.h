@@ -84,12 +84,12 @@ namespace PgTools {
 
     class DefaultReadsExactMatcher: public DefaultReadsMatcher {
     private:
-        DefaultConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
+        DefaultConstantLengthPatternsOnTextHashMatcher* hashMatcher = nullptr;
 
     protected:
-        void initMatching();
-        void executeMatching(bool revCompMode = false);
-        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest);
+        void initMatching() override;
+        void executeMatching(bool revCompMode = false) override;
+        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest) override;
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
                 SeparatedPseudoGenome *sPg, bool allStreams = true) override;
@@ -101,7 +101,7 @@ namespace PgTools {
         DefaultReadsExactMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                  uint32_t matchPrefixLength);
 
-        virtual ~DefaultReadsExactMatcher();
+        ~DefaultReadsExactMatcher() override;
 
         void transferMatchingResults(AbstractReadsApproxMatcher *approxMatcher) override;
     };
@@ -115,7 +115,7 @@ namespace PgTools {
         vector<uint8_t> readMismatchesCount;
         uint_reads_cnt_max matchedCountPerMismatches[NOT_MATCHED_COUNT + 1] = {};
 
-        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest);
+        void writeMatchesInfo(ofstream &offsetsDest, ofstream &missedPatternsDest, ofstream &dumpDest) override;
         void printApproxMatchingStats();
 
         SeparatedPseudoGenomeOutputBuilder *createSeparatedPseudoGenomeOutputBuilder(
@@ -131,7 +131,7 @@ namespace PgTools {
         AbstractReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                    uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
-        virtual ~AbstractReadsApproxMatcher();
+        ~AbstractReadsApproxMatcher() override;
 
         void continueMatchingConstantLengthReads(DefaultReadsMatcher *pMatcher);
 
@@ -144,33 +144,33 @@ namespace PgTools {
 
     class DefaultReadsApproxMatcher: public AbstractReadsApproxMatcher {
     private:
-        DefaultConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
+        DefaultConstantLengthPatternsOnTextHashMatcher* hashMatcher = nullptr;
 
     protected:
         uint_read_len_max partLength;
 
-        void initMatching();
+        void initMatching() override;
 
         void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
 
-        void executeMatching(bool revCompMode = false);
+        void executeMatching(bool revCompMode = false) override;
 
     public:
         DefaultReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
-        virtual ~DefaultReadsApproxMatcher();
+        ~DefaultReadsApproxMatcher() override;
     };
 
     class InterleavedReadsApproxMatcher: public AbstractReadsApproxMatcher {
     private:
-        InterleavedConstantLengthPatternsOnTextHashMatcher* hashMatcher = 0;
+        InterleavedConstantLengthPatternsOnTextHashMatcher* hashMatcher = nullptr;
 
     protected:
         uint_read_len_max partLength;
 
-        void initMatching();
-        void executeMatching(bool revCompMode = false);
+        void initMatching() override;
+        void executeMatching(bool revCompMode = false) override;
 
         void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
 
@@ -178,7 +178,7 @@ namespace PgTools {
         InterleavedReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
-        virtual ~InterleavedReadsApproxMatcher();
+        ~InterleavedReadsApproxMatcher() override;
     };
 
     class CopMEMReadsApproxMatcher: public AbstractReadsApproxMatcher {
@@ -187,8 +187,8 @@ namespace PgTools {
     protected:
         uint_read_len_max partLength;
 
-        void initMatching();
-        void executeMatching(bool revCompMode = false);
+        void initMatching() override;
+        void executeMatching(bool revCompMode = false) override;
 
         void initMatchingContinuation(DefaultReadsMatcher *pMatcher) override;
 
@@ -196,7 +196,7 @@ namespace PgTools {
         CopMEMReadsApproxMatcher(char* pgPtr, const uint_pg_len_max pgLength, bool revComplPg, ConstantLengthReadsSetInterface *readsSet,
                                   uint32_t matchPrefixLength, uint16_t readsExactMatchingChars, uint8_t maxMismatches, uint8_t minMismatches = 0);
 
-        virtual ~CopMEMReadsApproxMatcher();
+        ~CopMEMReadsApproxMatcher() override;
     };
 
     const vector<bool> mapReadsIntoPg(SeparatedPseudoGenome* sPg, bool revComplPg, bool preserveOrderMode,

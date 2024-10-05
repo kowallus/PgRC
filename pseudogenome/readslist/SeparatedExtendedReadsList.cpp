@@ -35,7 +35,7 @@ namespace PgTools {
             src = new ifstream(pseudoGenomePrefix + fileSuffix, ios_base::in | ios_base::binary);
             if (src->fail()) {
                 delete (src);
-                src = 0;
+                src = nullptr;
             }
         }
     }
@@ -62,7 +62,7 @@ namespace PgTools {
 /*            if (fromFileMode())
                 ((ifstream*) src)->close();*/
             delete (src);
-            src = 0;
+            src = nullptr;
         }
     }
 
@@ -193,7 +193,7 @@ namespace PgTools {
             res->misSymCode.resize(cumCount);
             PgHelpers::readArray(*(rl.rlMisSymSrc), res->misSymCode.data(), sizeof(uint8_t) * cumCount);
             res->misOff.resize(cumCount);
-            bool misRevOffMode = rl.rlMisOffSrc == 0;
+            bool misRevOffMode = rl.rlMisOffSrc == nullptr;
             PgHelpers::readArray(misRevOffMode?*(rl.rlMisRevOffSrc):*(rl.rlMisOffSrc), res->misOff.data(),
                     sizeof(uint8_t) * cumCount);
             if (misRevOffMode) {
@@ -298,8 +298,10 @@ namespace PgTools {
             entry.advanceEntryByOffset(off[current], orgIdx[current], this->getRevComp(current));
             if (!misCnt.empty()) {
                 uint8_t mismatchesCount = misCnt[current];
-                for (uint8_t i = 0; i < mismatchesCount; i++)
-                    entry.addMismatch(misSymCode[curMisCumCount], misOff[curMisCumCount++]);
+                for (uint8_t i = 0; i < mismatchesCount; i++) {
+                    entry.addMismatch(misSymCode[curMisCumCount], misOff[curMisCumCount]);
+                    ++curMisCumCount;
+                }
             }
             return true;
         }

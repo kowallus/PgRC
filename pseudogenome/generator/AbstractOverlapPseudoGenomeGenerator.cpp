@@ -9,7 +9,7 @@ void AbstractOverlapPseudoGenomeGeneratorTemplate<uint_read_len, uint_reads_cnt>
     uint_reads_cnt overlapLost = 0;
     uint_reads_cnt nextIdx;
     for(uint_reads_cnt curIdx = 1; curIdx <= this->readsTotal(); curIdx++) {
-        if (nextIdx = this->nextRead[curIdx]) {
+        if ((nextIdx = this->nextRead[curIdx])) {
             if (this->isHeadOf(curIdx, nextIdx)) {
                 cyclesCount++;
                 uint_read_len minOverlap = this->overlap[curIdx];

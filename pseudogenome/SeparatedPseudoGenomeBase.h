@@ -14,7 +14,7 @@ namespace PgTools {
 
         SeparatedPseudoGenomeBase(uint_pg_len_max length, istream &src);
 
-        virtual ~SeparatedPseudoGenomeBase() {};
+        ~SeparatedPseudoGenomeBase() override {};
 
 
 

@@ -12,9 +12,9 @@ high-quality reads.
 The implementation supports constant-length reads limited
 to 255 bases.
 
-### Installation on Linux
-The following steps create an PgRC executable. 
-On Linux PgRC build requires installed cmake version >= 3.5 (check using ```cmake --version```):
+### Installation on Linux - manual build
+The following steps create an *PgRC* executable.
+On Linux *PgRC* build requires installed cmake version >= 3.5 (check using ```cmake --version```):
 ```bash
 git clone https://github.com/kowallus/PgRC.git
 cd PgRC
@@ -48,7 +48,7 @@ compression of paired-end DNA stream in order non-preserving regime (PE mode):
 ```
 compression of paired-end DNA stream in order preserving regime (PE mode):
 ```
-./PgRC -o -i in.fastq comp.pgrc
+./PgRC -o -i in1.fastq in2.fastq comp.pgrc
 ```
 decompression of DNA stream to the current folder:
 ```

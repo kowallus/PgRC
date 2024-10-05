@@ -71,7 +71,7 @@ namespace PgTools {
 
     public:
         void matchTexts(vector<TextMatch> &resMatches, const string &destText, bool destIsSrc, bool revComplMatching,
-                        uint32_t minMatchLength);
+                        uint32_t minMatchLength) override;
 
     };
 }
