@@ -259,7 +259,7 @@ void CopMEMMatcher::genCummMultithreaded(size_t N, const char* gen, uint8_t* cou
 		if (counts[h] <= HASH_COLLISIONS_PER_POSITION_LIMIT)
 		    ++counts[h];
 	}
-	//////////////////// processing the end part of R //////////////////////
+
     MyUINT2 sum = 0;
     for(size_t i = 0; i < hash_size + 1; i++) {
         cumm[i] = sum;
@@ -278,7 +278,7 @@ HashBuffer<MyUINT1, MyUINT2> CopMEMMatcher::processRefMultithreaded() {
     uint8_t* counts = new uint8_t[hash_size + 2]();
 	genCummMultithreaded(N, start1, counts, cumm);
     const size_t hashCount = cumm[hash_size + 1];
-    MyUINT1* sampledPositions = new MyUINT1[hashCount + 2];
+    MyUINT1* sampledPositions = new MyUINT1[hashCount + 2 + UINT8_MAX];
     *v1logger << "Hash count = " << hashCount << std::endl;
 
     #pragma omp parallel for

@@ -64,7 +64,7 @@ namespace PgTools {
         time_checkpoint();
         QualityDividingReadsSetIterator<uint_read_len_max> *divReadsIt =
                 new QualityDividingReadsSetIterator<uint_read_len_max>(readsIt, error_limit,
-                                                                       simplified_suffix_mode);
+                                                                       simplified_suffix_mode, readLength);
         vector<uint_reads_cnt_max> lqMapping, nMapping;
         while (divReadsIt->moveNext()) {
             if (separateNReadsSet || nReadsLQ) {

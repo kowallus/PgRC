@@ -15,8 +15,8 @@ namespace PgReadsSet {
             vector<ReadsSourceIteratorTemplate< uint_read_len_max>*> coreIterators;
             ReadsSourceIteratorTemplate< uint_read_len_max>* readsIterator = nullptr;
 
-            char buf1[1 << 16];
-            char buf2[1 << 16];
+            char* buf1 = new char[1 << 16];
+            char* buf2 = new char[1 << 16];
 
             ifstream* srcSource = nullptr;
             ifstream* pairSource = nullptr;

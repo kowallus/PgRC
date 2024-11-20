@@ -17,7 +17,7 @@ namespace PgTools {
     static const char PGRC_VERSION_MODE = '#';
     static const char PGRC_VERSION_MAJOR = 2;
     static const char PGRC_VERSION_MINOR = 0;
-    static const char PGRC_VERSION_REVISION = 1;
+    static const char PGRC_VERSION_REVISION = 2;
 
     static const char *const BAD_INFIX = "bad";
     static const char *const GOOD_INFIX = "good";

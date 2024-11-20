@@ -63,6 +63,8 @@ namespace PgReadsSet {
     }
 
     ReadsSetPersistence::ManagedReadsSetIterator::~ManagedReadsSetIterator() {
+        delete[] buf1;
+        delete[] buf2;
         delete(readsIterator);
         for(ReadsSourceIteratorTemplate<uint_read_len_max>* coreIterator: coreIterators)
             delete(coreIterator);

@@ -11,7 +11,7 @@ namespace PgTools {
 #endif
         start_t = chrono::steady_clock::now();
         string tmpDirectoryPath = params->pgRCFileName + "/";
-        ifstream pgrcIn(params->pgRCFileName);
+        ifstream pgrcIn(params->pgRCFileName, ios_base::in | ios_base::binary);
         char pgrc_mode;
         if (pgrcIn) {
             for (int i = 0; i < strlen(PGRC_HEADER); i++) {

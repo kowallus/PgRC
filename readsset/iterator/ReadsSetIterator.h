@@ -150,7 +150,7 @@ namespace PgReadsSet {
     {
         private:
             std::string id, line, opt_id, quality;
-            uint_read_len length;
+            uint_read_len length = 0;
             std::ifstream* source = nullptr;
             std::ifstream* pairSource = nullptr;
             bool ownStreams = false;

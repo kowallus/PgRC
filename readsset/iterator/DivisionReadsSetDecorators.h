@@ -17,7 +17,7 @@ namespace PgTools {
     public:
 
         QualityDividingReadsSetIterator(ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level,
-                                        bool suffix_simplified_mode = true);
+                                        bool suffix_simplified_mode = true, double read_length = 0);
 
         ~QualityDividingReadsSetIterator() override;
 

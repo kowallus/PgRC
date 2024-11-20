@@ -8,9 +8,8 @@ namespace PgTools {
 
     template<typename uint_read_len>
     QualityDividingReadsSetIterator<uint_read_len>::QualityDividingReadsSetIterator(
-            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level, bool suffix_simplified_mode)
+            ReadsSourceIteratorTemplate<uint_read_len> *coreIterator, double error_level, bool suffix_simplified_mode, double read_length)
             :coreIterator(coreIterator), error_level(error_level), suffix_simplified_mode(suffix_simplified_mode) {
-                double read_length = coreIterator->getReadLength();
                 suffix_pos = read_length * (1 - error_level);
             }
 
